@@ -20,7 +20,7 @@ export interface RequestContext {
 export async function buildRequestContext(userId: string): Promise<RequestContext | null> {
   // Query via service role to bypass RLS for internal hydration
   const { data: membership, error } = await supabaseServer
-    .from('organization_members')
+    .from('org_members')
     .select('org_id, role')
     .eq('user_id', userId)
     .limit(1)
