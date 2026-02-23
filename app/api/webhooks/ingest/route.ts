@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/authGuard';
 import { resolveOrgContext } from '@/lib/orgResolver';
 import { recordWebhookEvent } from '@/lib/idempotency';
+import { redactPII } from '@/lib/redactor';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/logger';
 
 /**
  * API: /api/webhooks/ingest
@@ -21,6 +24,7 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { provider, event_id, idempotency_key, payload } = body;
+    const redactedPayload = typeof payload === 'object' ? redactPII(payload) : payload;
 
     if (!provider || !event_id || !payload) {
       return NextResponse.json({ error: "Missing required fields: provider, event_id, payload" }, { status: 400 });
@@ -31,7 +35,7 @@ export async function POST(req: Request) {
       provider,
       event_id,
       idempotency_key,
-      payload
+      payload: redactedPayload
     });
 
     if (result.duplicate) {
@@ -48,6 +52,11 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
+    logger.error('Webhook ingestion failed', { 
+      error: error.message, 
+      status: 500 
+    });
+    Sentry.captureException(error);
     return NextResponse.json(
       { error: error.message || 'Ingestion failed' },
       { status: 500 }

@@ -7,13 +7,29 @@
 
 type LogLevel = 'INFO' | 'WARN' | 'ERROR' | 'DEBUG';
 
+export interface LogContext {
+  request_id?: string;
+  org_id?: string;
+  agent_id?: string;
+  status?: number;
+  [key: string]: any;
+}
+
 export const logger = {
-  log: (level: LogLevel, message: string, meta?: any) => {
+  log: (level: LogLevel, message: string, meta?: LogContext) => {
     const timestamp = new Date().toISOString();
+    
+    // Tag 4xx vs 5xx for errors
+    let errorCategory = undefined;
+    if (level === 'ERROR' && meta?.status) {
+      errorCategory = meta.status >= 500 ? 'SERVER_ERROR_5XX' : 'CLIENT_ERROR_4XX';
+    }
+
     const logEntry = {
       timestamp,
       level,
       message,
+      ...(errorCategory && { errorCategory }),
       ...(meta && { meta }),
     };
 
@@ -27,8 +43,8 @@ export const logger = {
     // Level 1 logic: Simple logging. 
     // Audit logs integration happens at the API/DB layer.
   },
-  info: (message: string, meta?: any) => logger.log('INFO', message, meta),
-  warn: (message: string, meta?: any) => logger.log('WARN', message, meta),
-  error: (message: string, meta?: any) => logger.log('ERROR', message, meta),
-  debug: (message: string, meta?: any) => logger.log('DEBUG', message, meta),
+  info: (message: string, meta?: LogContext) => logger.log('INFO', message, meta),
+  warn: (message: string, meta?: LogContext) => logger.log('WARN', message, meta),
+  error: (message: string, meta?: LogContext) => logger.log('ERROR', message, meta),
+  debug: (message: string, meta?: LogContext) => logger.log('DEBUG', message, meta),
 };

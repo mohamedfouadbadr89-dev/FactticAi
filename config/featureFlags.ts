@@ -1,12 +1,9 @@
-/**
- * Feature Flags Configuration
- * 
- * Empty but structured for Level 1.
- * No hardcoded toggles allowed as per mission rules.
- */
-
 export const featureFlags = {
-  // To be populated in subsequent levels
+  PER_ORG_RATE_LIMITS: true,
+  SESSION_RETENTION_PRUNING: true,
+  WEBHOOK_RETRY_QUEUE: true,
+  AI_CIRCUIT_BREAKER: true,
+  REDIS_CACHE_LAYER: true,
 };
 
 export type FeatureFlagKey = keyof typeof featureFlags;

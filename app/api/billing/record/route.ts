@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/authGuard';
 import { resolveOrgContext } from '@/lib/orgResolver';
 import { recordBillingEvent } from '@/lib/billingResolver';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/logger';
 
 /**
  * API: /api/billing/record
@@ -25,6 +27,11 @@ export async function POST(req: Request) {
         { error: "Missing required fields: type, units" },
         { status: 400 }
       );
+    }
+
+    if (units > 100) {
+      logger.warn('Billing anomaly detected: High EU spike', { org_id, units });
+      Sentry.captureMessage(`Billing anomaly EU spike: ${units} units for org ${org_id}`, 'warning');
     }
 
     const result = await recordBillingEvent(org_id, type, units, metadata);
