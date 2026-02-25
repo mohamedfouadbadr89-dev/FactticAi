@@ -5,6 +5,8 @@ import { recordWebhookEvent } from '@/lib/idempotency';
 import { redactPII } from '@/lib/redactor';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/logger';
+import { webhookQueue } from '@/lib/webhookQueue';
+import { supabaseServer } from '@/lib/supabaseServer';
 
 /**
  * API: /api/webhooks/ingest
@@ -16,7 +18,7 @@ export async function POST(req: Request) {
     const auth = await withAuth(req);
 
     if (auth.error || !auth.user) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
     }
 
     // Solve Org Context deterministically
@@ -43,6 +45,51 @@ export async function POST(req: Request) {
         error: "Duplicate event detected", 
         idempotency_key: result.idempotency_key 
       }, { status: 409 });
+    }
+
+    // --- PHASE 3: PRODUCTION INGESTION BLOCK ---
+    // If the payload contains session context, we persist it to the forensic layer
+    if (redactedPayload.session_id && redactedPayload.turn_index !== undefined) {
+      const { session_id, agent_id, turn_index, role, content, metadata } = redactedPayload;
+      
+      // 1. Evaluate Turn Risk (Deterministic)
+      const { RiskScoringEngine } = await import('@/lib/riskScoringEngine');
+      const score = await RiskScoringEngine.evaluateTurn(org_id, event_id, redactedPayload);
+
+      // 2. Persist Turn to session_turns
+      const { error: turnError } = await supabaseServer
+        .from('session_turns')
+        .insert({
+          session_id,
+          agent_id,
+          turn_index,
+          role,
+          content,
+          metadata,
+          incremental_risk: score.total_risk,
+          factors: score.factors
+        });
+
+      if (turnError) {
+        logger.error('TURN_PERSISTENCE_FAILED', { session_id, error: turnError.message });
+      } else {
+        // 3. Trigger Session Aggregation (RPC)
+        // This ensures the session's total_risk remains deterministic and sync'd
+        await supabaseServer.rpc('compute_session_aggregate', { 
+          p_session_id: session_id 
+        });
+      }
+    }
+    // ------------------------------------------
+
+    // Enqueue for processing with deterministic failure handling
+    const enqueued = await webhookQueue.enqueue(event_id, redactedPayload);
+    
+    if (!enqueued) {
+      return NextResponse.json({ 
+        error: "Webhook retry queue disabled",
+        message: "Event recorded but background processing is unavailable" 
+      }, { status: 503 });
     }
 
     return NextResponse.json({

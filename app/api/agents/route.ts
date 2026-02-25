@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/authGuard';
 import { resolveOrgContext } from '@/lib/orgResolver';
 import { supabaseServer } from '@/lib/supabaseServer';
+import { createAuthenticatedClient } from '@/lib/supabaseClient';
+import { extractToken } from '@/core/auth';
 
 /**
  * API: /api/agents
@@ -11,15 +13,18 @@ export async function GET(req: Request) {
     const auth = await withAuth(req);
 
     if (auth.error || !auth.user) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
     }
 
-    const { org_id } = await resolveOrgContext(auth.user.id);
-
-    const { data: agents, error } = await supabaseServer
+    // Extract raw JWT to build user-scoped client bound by RLS
+    const token = extractToken(req);
+    const supabaseUserClient = createAuthenticatedClient(token!);
+    
+    // RLS Drift Control: We do NOT append .eq('org_id') here.
+    // The Postgres RLS policy automatically filters based on auth.uid()
+    const { data: agents, error } = await supabaseUserClient
       .from('agents')
       .select('*')
-      .eq('org_id', org_id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -39,7 +44,7 @@ export async function POST(req: Request) {
     const auth = await withAuth(req);
 
     if (auth.error || !auth.user) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
     }
 
     const { org_id } = await resolveOrgContext(auth.user.id);

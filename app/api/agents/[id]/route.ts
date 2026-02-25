@@ -12,7 +12,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const auth = await withAuth(req);
 
     if (auth.error || !auth.user) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
     }
 
     const { org_id } = await resolveOrgContext(auth.user.id);

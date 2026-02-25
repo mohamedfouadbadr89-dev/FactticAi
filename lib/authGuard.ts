@@ -1,21 +1,21 @@
-import { extractToken, verifySession } from '@/core/auth';
-import { NextResponse } from 'next/server';
+import { createServerAuthClient } from './supabaseAuth';
 
 /**
- * Auth Guard
+ * Auth Guard (v5.0.0)
  * 
- * Middleware-friendly guard to protect routes.
+ * Refactored to use modern Supabase SSR session handling.
+ * Returns authenticated user context or error.
  */
 export const withAuth = async (req: Request) => {
-  const token = extractToken(req);
-  
-  if (!token) {
-    return { error: 'Unauthorized', status: 401 };
-  }
-
   try {
-    const user = await verifySession(token);
-    return { user };
+    const supabase = await createServerAuthClient();
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error || !session) {
+      return { error: 'Unauthorized', status: 401 };
+    }
+
+    return { user: session.user };
   } catch (err: any) {
     return { error: err.message, status: 401 };
   }

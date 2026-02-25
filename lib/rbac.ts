@@ -4,12 +4,13 @@
  * Deterministic role checking for Level 1.
  */
 
-export type Role = 'owner' | 'admin' | 'member';
+export type Role = 'owner' | 'admin' | 'member' | 'viewer';
 
 const ROLE_HIERARCHY: Record<Role, number> = {
   owner: 3,
   admin: 2,
   member: 1,
+  viewer: 0,
 };
 
 export const hasRequiredRole = (currentRole: Role, requiredRole: Role): boolean => {

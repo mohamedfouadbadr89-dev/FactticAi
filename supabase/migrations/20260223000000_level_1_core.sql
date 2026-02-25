@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS public.webhook_events (
     idempotency_key TEXT NOT NULL,
     payload_hash TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(provider, idempotency_key)
+    UNIQUE(org_id, provider, idempotency_key)
 );
 
 ALTER TABLE public.webhook_events ENABLE ROW LEVEL SECURITY;

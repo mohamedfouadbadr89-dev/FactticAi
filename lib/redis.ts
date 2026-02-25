@@ -7,6 +7,10 @@ class CacheService {
   private memoryMap: Map<string, { value: any; expiry: number }> = new Map();
 
   constructor() {
+    this.init();
+  }
+
+  private init() {
     if (isFeatureEnabled('REDIS_CACHE_LAYER') && process.env.REDIS_URL) {
       try {
         this.client = new Redis(process.env.REDIS_URL, {
@@ -17,13 +21,17 @@ class CacheService {
         });
         
         this.client.on('error', (err) => {
-          logger.warn('Redis connection failed, falling back to memory', { error: err.message });
+          logger.warn('Redis connection failed', { error: err.message });
           this.client = null;
         });
       } catch (err) {
-        logger.warn('Failed to initialize Redis, using memory fallback');
+        logger.warn('Failed to initialize Redis');
       }
     }
+  }
+
+  isReady(): boolean {
+    return this.client !== null;
   }
 
   async get(key: string): Promise<any | null> {
@@ -55,6 +63,28 @@ class CacheService {
     const newVal = (cached?.value || 0) + 1;
     this.memoryMap.set(key, { value: newVal, expiry: cached?.expiry || Date.now() + 60000 });
     return newVal;
+  }
+
+  /**
+   * Atomic increment with TTL.
+   * Returns the new count.
+   */
+  async atomicIncrement(key: string, ttlSeconds: number): Promise<number> {
+    if (!this.client) {
+      throw new Error('Redis client unavailable for atomic operation');
+    }
+
+    const res = await this.client
+      .multi()
+      .incr(key)
+      .expire(key, ttlSeconds, 'NX')
+      .exec();
+
+    if (!res || res[0][0]) {
+      throw new Error('Redis transaction failed');
+    }
+
+    return res[0][1] as number;
   }
 }
 

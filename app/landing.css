@@ -1,0 +1,113 @@
+/**
+ * Institutional Landing Styling (v1)
+ * Optimized for Enterprise Trust and Governance Narrative.
+ */
+
+.landing-hero {
+  padding: 8rem 2rem;
+  text-align: center;
+  background: radial-gradient(circle at center, #f9fafb 0%, #ffffff 100%);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.hero-title {
+  font-size: 4rem;
+  font-weight: 850;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  margin-bottom: 1.5rem;
+  color: var(--text-main);
+}
+
+.hero-subtitle {
+  font-size: var(--text-xl);
+  color: var(--text-muted);
+  max-width: 600px;
+  margin: 0 auto 2.5rem;
+}
+
+.section-container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 6rem 2rem;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.feature-block {
+  padding: 2rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-primary);
+  transition: transform 0.2s ease;
+}
+
+.feature-block:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.05);
+}
+
+.visual-preview {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-strip {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  filter: grayscale(1);
+  opacity: 0.5;
+  margin-top: 4rem;
+}
+
+.logo-item {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.risk-gradient {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--status-stable), var(--status-warning), var(--status-critical));
+  margin: 1rem 0;
+}
+
+.cta-group {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.btn-large {
+  padding: 1rem 2rem;
+  font-size: var(--text-lg);
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary-dark {
+  background: var(--text-main);
+  color: white;
+  border: none;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--text-main);
+  color: var(--text-main);
+}

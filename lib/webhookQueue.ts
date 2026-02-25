@@ -11,14 +11,15 @@ export class WebhookQueue {
   private queue: RetryTask[] = [];
   private maxRetries = 5;
 
-  async enqueue(taskId: string, payload: any) {
+  async enqueue(taskId: string, payload: any): Promise<boolean> {
     if (!isFeatureEnabled('WEBHOOK_RETRY_QUEUE')) {
       logger.warn('Webhook queue disabled. Dropping payload', { taskId });
-      return;
+      return false;
     }
     this.queue.push({ id: taskId, payload, attempt: 0 });
     logger.info('Task enqueued for processing', { taskId });
     this.processNext();
+    return true;
   }
 
   private async processNext() {

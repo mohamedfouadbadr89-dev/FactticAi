@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: "Helvetica", "Arial", sans-serif; line-height: 1.6; color: #1a1a1a; margin: 40px; }
+        h1 { font-size: 24px; border-bottom: 2px solid #000; padding-bottom: 10px; text-transform: uppercase; }
+        h2 { font-size: 18px; margin-top: 30px; border-bottom: 1px solid #ccc; padding-bottom: 5px; text-transform: uppercase; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f5f5f5; font-weight: bold; }
+        .critical { color: #d32f2f; font-weight: bold; }
+        .high { color: #f57c00; font-weight: bold; }
+        .note { background-color: #f9f9f9; padding: 15px; border-left: 5px solid #333; font-style: italic; }
+        .footer { margin-top: 50px; font-size: 12px; color: #666; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Phase 3B – Hard Alert Enforcement Layer</h1>
+    
+    <h2>1. Executive Summary</h2>
+    <p>The Facttic Hard Alert Enforcement Layer is designed to ensure that institutional governance remains deterministic, actionable, and resilient against <strong>alert fatigue</strong>. In high-scale AI deployments, signal noise can obscure critical failures. Deterministic alert enforcement is required to gate human attention towards statistically significant breaches only.</p>
+    <p><strong>Enforcement Objectives:</strong></p>
+    <ul>
+        <li>Eliminate volatility-induced alert noise.</li>
+        <li>Enforce deterministic response windows via mandatory cooldowns.</li>
+        <li>Provide an immutable forensic log for every severity escalation.</li>
+    </ul>
+
+    <h2>2. Escalation Matrix</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Trigger Metric</th>
+                <th>Threshold</th>
+                <th>Assigned Severity</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Drift Frequency Index (DFI)</td>
+                <td>&gt; 0.3</td>
+                <td>HIGH</td>
+            </tr>
+            <tr>
+                <td>Drift Frequency Index (DFI)</td>
+                <td>&gt; 0.5</td>
+                <td class="critical">CRITICAL</td>
+            </tr>
+            <tr>
+                <td>Risk Momentum Signal (RMS)</td>
+                <td>&gt; 0.4</td>
+                <td>HIGH</td>
+            </tr>
+            <tr>
+                <td>Governance Health Score (GHS)</td>
+                <td>&lt; 50</td>
+                <td class="critical">CRITICAL</td>
+            </tr>
+            <tr>
+                <td>Governance Health Score (GHS)</td>
+                <td>&lt; 40</td>
+                <td class="critical">SYSTEMIC_FAILURE</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>3. Cooldown Enforcement Model</h2>
+    <p>To prevent signal flooding during remediation, the system enforces a deterministic cooldown period where no new alerts of the same type can be triggered for the specific organization.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Severity Level</th>
+                <th>Lock Duration (Cooldown)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Elevated</td>
+                <td>6 Hours</td>
+            </tr>
+            <tr>
+                <td>High</td>
+                <td>12 Hours</td>
+            </tr>
+            <tr>
+                <td>Critical / Systemic</td>
+                <td>24 Hours</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>4. Duplicate Prevention Logic</h2>
+    <p>The enforcement layer rejects the creation of any alert where an <strong>ACTIVE</strong> alert already exists for the same <code>org_id</code> and <code>triggered_by</code> key. This is enforced via unique partial indices and application-level pre-checks during the escalation phase.</p>
+
+    <h2>5. Escalation Forensics Layer</h2>
+    <p>Every severity state change is recorded in the <code>governance_escalation_log</code> for post-incident audit and SOC2 Type II compliance.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Field</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>org_id</code></td>
+                <td>Organization Reference</td>
+            </tr>
+            <tr>
+                <td><code>metric_snapshot_id</code></td>
+                <td>Reference to the specific <code>governance_predictions</code> snapshot</td>
+            </tr>
+            <tr>
+                <td><code>previous_severity</code></td>
+                <td>State prior to escalation</td>
+            </tr>
+            <tr>
+                <td><code>new_severity</code></td>
+                <td>State after enforcement</td>
+            </tr>
+            <tr>
+                <td><code>escalation_reason</code></td>
+                <td>Mathematical rationale (e.g., "DFI Breach > 0.3")</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>6. Security Hardening</h2>
+    <ul>
+        <li><strong>SECURITY DEFINER:</strong> All enforcement RPCs execute with elevated privileges to ensure RLS-protected log insertion.</li>
+        <li><strong>Search Path Locking:</strong> Mandatory <code>set_config('search_path', 'public', true)</code> to prevent search-path injection attacks.</li>
+        <li><strong>RLS Enforcement:</strong> Visibility of alerts and logs is strictly bound to organization membership.</li>
+    </ul>
+
+    <h2>7. Institutional Certification Criteria</h2>
+    <p>Phase 3B qualifies as <strong>LOCKED</strong> only when:</p>
+    <ol>
+        <li>Unique constraints prevent duplicate active alerts.</li>
+        <li>Cooldown periods are mathematically verified via database timestamps.</li>
+        <li>Immuntable forensic logs reflect 100% of severity transitions.</li>
+    </ol>
+
+    <div class="footer">
+        FACTTIC.AI CONSTITUTIONAL GOVERNANCE ARCHITECTURE – DOCUMENT CLASSIFICATION: [INTERNAL/RESTRICTED]
+    </div>
+</body>
+</html>

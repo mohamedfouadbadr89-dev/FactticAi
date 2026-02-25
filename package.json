@@ -1,7 +1,11 @@
 {
+  "type": "module",
   "dependencies": {
     "@sentry/nextjs": "^10.39.0",
+    "@supabase/auth-helpers-nextjs": "^0.15.0",
+    "@supabase/auth-helpers-react": "^0.15.0",
     "@supabase/supabase-js": "^2.97.0",
+    "framer-motion": "^12.34.3",
     "ioredis": "^5.9.3",
     "next": "^16.1.6",
     "react": "^19.2.4",

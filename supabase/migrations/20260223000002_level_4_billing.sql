@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS public.billing_events (
     type text NOT NULL CHECK (type IN ('chat_session', 'voice_minute', 'manual_eval', 'sandbox_use')),
     units numeric(10,2) NOT NULL,
     eu_calculated numeric(10,2) NOT NULL,
+    event_hash text UNIQUE,
     metadata jsonb DEFAULT '{}'::jsonb,
     created_at timestamptz DEFAULT now()
 );
@@ -66,6 +67,7 @@ CREATE OR REPLACE FUNCTION public.record_billing_event(
     p_org_id uuid,
     p_type text,
     p_units numeric,
+    p_event_hash text,
     p_metadata jsonb DEFAULT '{}'::jsonb
 )
 RETURNS jsonb AS $$
@@ -97,29 +99,22 @@ BEGIN
 
     v_eu_calculated := p_units * v_eu_per_unit;
 
-    -- 3. Check Quota / Hard Cap
-    SELECT total_eu_consumed, eu_limit 
-    INTO v_current_consumed, v_limit
-    FROM public.billing_summaries
-    WHERE org_id = p_org_id
-    FOR UPDATE; -- Locked for consistency
-
-    -- Auto-initialize if missing
-    IF NOT FOUND THEN
-        INSERT INTO public.billing_summaries (org_id, total_eu_consumed, eu_limit)
-        VALUES (p_org_id, 0.00, 1000.00)
-        RETURNING total_eu_consumed, eu_limit INTO v_current_consumed, v_limit;
-    END IF;
+    -- 3. Check Quota / Hard Cap & Initialize Summaries Securely
+    -- Utilizing UPSERT to eliminate initialization race conditions
+    INSERT INTO public.billing_summaries (org_id, total_eu_consumed, eu_limit)
+    VALUES (p_org_id, 0.00, 1000.00)
+    ON CONFLICT (org_id) DO UPDATE SET org_id = EXCLUDED.org_id
+    RETURNING total_eu_consumed, eu_limit INTO v_current_consumed, v_limit;
 
     IF (v_current_consumed + v_eu_calculated) > v_limit THEN
         RAISE EXCEPTION '402: Organization quota exceeded. Limit: %, Current: %, Requested: %', v_limit, v_current_consumed, v_eu_calculated;
     END IF;
 
-    -- 4. Record Immutable Event
+    -- 4. Record Immutable Event (Idempotency check via UNIQUE constraint)
     INSERT INTO public.billing_events (
-        org_id, type, units, eu_calculated, metadata
+        org_id, type, units, eu_calculated, event_hash, metadata
     ) VALUES (
-        p_org_id, p_type, p_units, v_eu_calculated, p_metadata
+        p_org_id, p_type, p_units, v_eu_calculated, p_event_hash, p_metadata
     );
 
     -- 5. Atomic Aggregate Update
