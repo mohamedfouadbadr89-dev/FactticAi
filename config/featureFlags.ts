@@ -7,10 +7,18 @@ export const featureFlags = {
   PREDICTIVE_GOVERNANCE_ACTIVE: true,
   DEMO_AUTO_PROVISION_ENABLED: true,
   DEPLOYMENT_GUARD: true,
-};
+} as const;
 
 export type FeatureFlagKey = keyof typeof featureFlags;
 
 export const isFeatureEnabled = (flag: FeatureFlagKey): boolean => {
-  return !!featureFlags[flag];
+  const envValue = process.env[flag];
+
+  // لو فيه override في env
+  if (envValue !== undefined) {
+    return envValue === 'true';
+  }
+
+  // fallback للـ default
+  return featureFlags[flag];
 };
