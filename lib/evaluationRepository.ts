@@ -1,6 +1,6 @@
 import { supabaseServer } from './supabaseServer'
 import { logger } from './logger'
-import { TurnRiskScore } from './riskScoringEngine'
+import { TurnRiskScore } from './riskTypes'
 
 export type PersistedTurnRiskScore = TurnRiskScore & {
   signature: string

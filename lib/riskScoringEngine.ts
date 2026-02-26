@@ -1,14 +1,4 @@
-export interface RiskFactor {
-  type: 'hallucination' | 'boundary' | 'tone'
-  weight: number
-}
-
-export interface TurnRiskScore {
-  total_risk: number
-  factors: RiskFactor[]
-  confidence: string
-  timestamp: string
-}
+import { TurnRiskScore } from './riskTypes'
 
 export class RiskScoringEngine {
   static evaluateTurn(
@@ -16,39 +6,19 @@ export class RiskScoringEngine {
     interactionId: string,
     payload: any
   ): TurnRiskScore {
-    if (!orgId || !interactionId || !payload) {
-      throw new Error('SCORING_CONTEXT_MISSING')
-    }
 
-    const factors: RiskFactor[] = []
+    const hallucinationDetected =
+      payload?.metadata?.hallucination_detected === true
 
-    if (payload?.metadata?.hallucination_detected) {
-      factors.push({ type: 'hallucination', weight: 0.32 })
-    }
-
-    if (payload?.metadata?.boundary_warning) {
-      factors.push({ type: 'boundary', weight: 0.21 })
-    }
-
-    if (payload?.metadata?.tone_variance) {
-      factors.push({ type: 'tone', weight: 0.11 })
-    }
-
-    if (factors.length === 0) {
-      factors.push({ type: 'hallucination', weight: 0.02 })
-      factors.push({ type: 'boundary', weight: 0.01 })
-      factors.push({ type: 'tone', weight: 0.01 })
-    }
-
-    const totalRisk = Math.min(
-      factors.reduce((acc, f) => acc + f.weight, 0),
-      1.0
-    )
+    const totalRisk = hallucinationDetected ? 0.8 : 0.2
+    const confidence = 0.95
 
     return {
-      total_risk: parseFloat(totalRisk.toFixed(4)),
-      factors,
-      confidence: 'DETERMINISTIC',
+      total_risk: Number(totalRisk),
+      factors: {
+        hallucination: hallucinationDetected ? 1 : 0,
+      },
+      confidence: Number(confidence),
       timestamp: new Date().toISOString(),
     }
   }

@@ -51,15 +51,18 @@ export async function POST(req: Request) {
       )
     }
 
+    // 🔐 Rebuild canonical payload EXACTLY like evaluate
+    const canonicalPayload = {
+      total_risk: Number(data.total_risk),
+      factors: data.factors,
+      confidence: Number(data.confidence),
+      timestamp: new Date(data.created_at).toISOString(),
+    }
+
     const recalculatedSignature = IntegrityService.sign(
       orgId,
       interaction_id,
-      {
-        total_risk: data.total_risk,
-        factors: data.factors,
-        confidence: data.confidence,
-        timestamp: data.created_at,
-      }
+      canonicalPayload
     )
 
     const isValid = recalculatedSignature === data.signature
