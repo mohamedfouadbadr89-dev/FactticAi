@@ -1,41 +1,57 @@
-import { NextResponse } from 'next/server';
-import { InstitutionalBenchmarkIndex } from '@/core/governance/institutionalBenchmarkIndex';
-import { ExecutiveComplianceSummary } from '@/core/governance/executiveComplianceSummary';
-import { CURRENT_REGION } from '@/config/regions';
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { CURRENT_REGION } from '@/config/regions'
+import { InstitutionalBenchmarkIndex } from '@/core/governance/institutionalBenchmarkIndex'
+import { ExecutiveComplianceSummary } from '@/core/governance/executiveComplianceSummary'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 /**
- * Strategic Risk Projection API (v6.2)
- * 
- * CORE PRINCIPLE: Forward-Looking Transparency.
- * Surfaces non-sensitive risk projections and benchmarks for strategic review.
+ * Strategic Risk Projection API (Phase 4 – Predictive Layer)
  */
 export async function GET() {
   try {
-    const benchmarks = InstitutionalBenchmarkIndex.getBenchmarks();
-    const summary = ExecutiveComplianceSummary.generateSummary();
+    // ⚠️ مؤقتًا نحط org ثابت للتست
+    const orgId = 'c345de67-f89a-401b-c234-56789012cdef'
 
-    const projection = {
-      status: 'FORWARD_STABLE',
-      region: CURRENT_REGION,
-      benchmarking: benchmarks,
-      governanceProjection: {
-        q3TargetCoverage: '99.5%',
-        integrityConfidence: 0.98
+    const { data, error } = await supabase
+      .rpc('compute_risk_projection', { p_org_id: orgId })
+
+    if (error) {
+      console.error('RISK_PROJECTION_RPC_ERROR', error)
+      return NextResponse.json(
+        { error: 'RISK_PROJECTION_FAILED' },
+        { status: 500 }
+      )
+    }
+
+    const benchmarks = InstitutionalBenchmarkIndex.getBenchmarks()
+    const summary = ExecutiveComplianceSummary.generateSummary()
+
+    return NextResponse.json(
+      {
+        status: 'PREDICTIVE_ACTIVE',
+        region: CURRENT_REGION,
+        predictive: data,
+        benchmarking: benchmarks,
+        integritySeal: summary.signature.substring(0, 16)
       },
-      scalingReadiness: {
-         loadResilience: 'VERIFIED',
-         auditContinuity: 'ACTIVE'
+      {
+        headers: {
+          'X-Strategic-Projection': 'v7.0',
+          'X-Predictive-Layer': 'ENABLED'
+        }
       }
-    };
+    )
 
-    return NextResponse.json(projection, {
-      headers: {
-        'X-Strategic-Projection': 'v6.2',
-        'X-Institutional-Seal': summary.signature.substring(0, 16)
-      }
-    });
-
-  } catch (error: any) {
-    return NextResponse.json({ error: 'STRATEGIC_PROJECTION_UNAVAILABLE' }, { status: 503 });
+  } catch (err) {
+    console.error('STRATEGIC_PROJECTION_FATAL', err)
+    return NextResponse.json(
+      { error: 'STRATEGIC_PROJECTION_UNAVAILABLE' },
+      { status: 503 }
+    )
   }
 }
