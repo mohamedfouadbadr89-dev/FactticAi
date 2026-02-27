@@ -1,20 +1,7 @@
 'use client'
+
 import type { ExecutiveState } from '@/core/contracts/executive'
 import { useEffect, useState } from 'react'
-
-type ExecutiveData = {
-  org_id: string
-  generated_at: string
-  metrics: {
-    governance_score: number
-    drift: number
-    sessions_30d: number
-    active_alerts: number
-  }
-  risk_state: string
-  isolation_state: string
-  integrity_ok: boolean
-}
 
 export function useExecutive() {
   const [data, setData] = useState<ExecutiveState | null>(null)
@@ -29,19 +16,26 @@ export function useExecutive() {
 
         const res = await fetch('/api/governance/executive-state', {
           method: 'GET',
-          credentials: 'include'
+          credentials: 'include',
+          cache: 'no-store' // 🔥 مهم جداً عشان ميبقاش فيه cached contract قديم
         })
+
+        if (!res.ok) {
+          throw new Error(`HTTP_${res.status}`)
+        }
 
         const json = await res.json()
 
+        // 🔒 Contract Lock
         if (
-  !res.ok ||
-  !json.success ||
-  json.contract !== 'EXECUTIVE_STATE_V1' ||
-  json.version !== '1.0.0'
-) {
-  throw new Error('EXECUTIVE_CONTRACT_MISMATCH')
-}
+          json.contract !== 'EXECUTIVE_STATE_V1' ||
+          json.version !== '1.0.0' ||
+          !json.success ||
+          !json.data
+        ) {
+          console.error('CONTRACT_DEBUG', json)
+          throw new Error('EXECUTIVE_CONTRACT_MISMATCH')
+        }
 
         setData(json.data)
       } catch (err: any) {
