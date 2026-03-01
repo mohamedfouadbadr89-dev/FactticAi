@@ -1,28 +1,26 @@
+import DashboardSidebar from "@/components/layout/DashboardSidebar";
+import EnterpriseTopbar from "@/components/layout/EnterpriseTopbar";
+
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex">
+    <div className="flex min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      {/* Persistent Sidebar */}
+      <DashboardSidebar />
 
-      {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 border-r border-slate-800 p-6">
-        <div className="text-lg font-semibold mb-8">
-          Facttic
-        </div>
+      {/* Main Column */}
+      <div className="flex-1 flex flex-col">
+        {/* Persistent Topbar */}
+        <EnterpriseTopbar />
 
-        <nav className="space-y-4 text-sm">
-          <a href="/dashboard/executive" className="block opacity-70 hover:opacity-100">
-            Executive
-          </a>
-        </nav>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 p-10">
-        {children}
-      </main>
+        {/* Dynamic Content with fade transition */}
+        <main className="flex-1 animate-[fadeIn_.15s_ease-in-out]">
+          {children}
+        </main>
+      </div>
     </div>
-  )
+  );
 }

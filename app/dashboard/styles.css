@@ -1,32 +1,27 @@
 /**
- * Dashboard Surface Lock: Design System Tokens (v4.8.1)
- * Institutional Aesthetic: Grayscale base with status-driven accents.
+ * Dashboard Surface Lock: Dir4 Finance Design System (v5.0)
  */
 
 :root {
-  /* Typography Scale */
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.25rem;
-  --text-2xl: 1.5rem;
+  /* Aligned with Dir4 Finance Reference */
+  --bg-primary: var(--background);
+  --bg-secondary: var(--surface);
+  --border-subtle: #E2E8F0;
+  --text-main: var(--text-primary);
+  --text-muted: var(--text-secondary);
   
-  /* Color Tokens: Core */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
-  --border-subtle: #e5e7eb;
-  --text-main: #111827;
-  --text-muted: #6b7280;
+  /* Status Colors */
+  --status-stable: var(--success);
+  --status-warning: var(--warning);
+  --status-critical: var(--danger);
+  --status-neutral: var(--primary);
   
-  /* Color Tokens: Status */
-  --status-stable: #10b981;    /* Emerald 500 */
-  --status-warning: #f59e0b;   /* Amber 500 */
-  --status-critical: #ef4444;  /* Red 500 */
-  --status-neutral: #3b82f6;   /* Blue 500 */
+  /* Radii & Shadows */
+  --radius-sm: 4px;
+  --radius-md: var(--radius-card);
+  --radius-lg: var(--radius-container);
+  --shadow-base: var(--shadow-soft);
   
-  /* Layout Grid */
   --grid-columns: 12;
   --grid-gutter: 1.5rem;
   --max-width: 1440px;
@@ -69,8 +64,8 @@
 }
 
 .dark .system-status-strip {
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .panel-base {
@@ -131,17 +126,44 @@
   .grid-span-6, .grid-span-4, .grid-span-3 { grid-column: span 12; }
 }
 
+.page-content-container {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+}
+
+.section-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.section-card:hover { border-color: #D1D5DB; }
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-indicator.success { background: #10B981; }
+.status-indicator.warning { background: #F59E0B; }
+.status-indicator.danger { background: #EF4444; }
+
 .status-pill {
   display: inline-flex;
   align-items: center;
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
-  font-size: var(--text-xs);
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
-.status-pill.stable { background: #d1fae5; color: #065f46; }
-.status-pill.warning { background: #fef3c7; color: #92400e; }
-.status-pill.critical { background: #fee2e2; color: #991b1b; }
-.status-pill.sovereign { background: #dbeafe; color: #1e40af; }
+.status-pill.stable { background: #D1FAE5; color: #064E3B; }
+.status-pill.warning { background: #FEF3C7; color: #78350F; }
+.status-pill.critical { background: #FEE2E2; color: #7F1D1D; }
+.status-pill.sovereign { background: #DBEAFE; color: #1E40AF; }

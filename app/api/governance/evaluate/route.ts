@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     logger.info('TURN_EVALUATED', { orgId, interaction_id })
 
     // 3️⃣ Persist
-    await EvaluationRepository.persist(
+    const severityLevel = await EvaluationRepository.persist(
       orgId,
       interaction_id,
       evaluationWithSignature
@@ -75,6 +75,7 @@ export async function POST(req: Request) {
       type: 'TURN_RISK_UPDATE',
       interaction_id,
       ...evaluationWithSignature,
+      severity_level: severityLevel,
     })
 
     if (
@@ -99,7 +100,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      data: evaluationWithSignature,
+      data: {
+        ...evaluationWithSignature,
+        severity_level: severityLevel,
+      },
     })
   } catch (error: any) {
     logger.error('EVALUATION_API_ERROR', {

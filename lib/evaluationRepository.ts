@@ -13,22 +13,22 @@ export class EvaluationRepository {
     score: PersistedTurnRiskScore
   ) {
     try {
-      const { error } = await supabaseServer
-        .from('evaluations')
-        .insert({
-          org_id: orgId,
-          interaction_id: interactionId,
-          total_risk: score.total_risk,
-          factors: score.factors,
-          confidence: score.confidence,
-          created_at: score.timestamp,
-          signature: score.signature,
+      const { data, error } = await supabaseServer
+        .rpc('score_evaluation', {
+          p_org_id: orgId,
+          p_interaction_id: interactionId,
+          p_total_risk: score.total_risk,
+          p_factors: score.factors,
+          p_confidence: score.confidence,
+          p_signature: score.signature,
         })
 
       if (error) {
         console.error('EVALUATION_PERSIST_SUPABASE_ERROR:', error)
         throw error
       }
+
+      return data as string
     } catch (err: any) {
       console.error('EVALUATION_PERSIST_FULL_ERROR:', err)
       logger.error('EVALUATION_PERSIST_FAILED', {

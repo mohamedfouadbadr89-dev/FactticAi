@@ -8,8 +8,47 @@ import { logger } from '@/lib/logger';
 /**
  * API: /api/sessions
  * 
- * Creates a new risk-monitored session.
+ * GET: Lists latest 50 sessions for the organization.
+ * POST: Creates a new risk-monitored session.
  */
+
+export async function GET(req: Request) {
+  try {
+    const supabase = await createServerAuthClient();
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
+
+    if (authError || !session) {
+      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+    }
+
+    const { org_id: orgId } = await resolveOrgContext(session.user.id);
+    if (!orgId) {
+      return NextResponse.json({ error: 'ORG_CONTEXT_MISSING' }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('org_id', orgId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      logger.error('SESSIONS_FETCH_FAILED', { orgId, error: error.message });
+      return NextResponse.json({ error: 'Failed to fetch sessions' }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: data ?? []
+    });
+
+  } catch (error: any) {
+    logger.error('SESSIONS_LIST_API_ERROR', { error: error.message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();

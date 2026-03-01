@@ -1,86 +1,59 @@
-import { NextResponse } from 'next/server'
-import { createServerAuthClient } from '@/lib/supabaseAuth'
-import { resolveOrgContext } from '@/lib/orgResolver'
-import { supabaseServer } from '@/lib/supabaseServer'
-import { IntegrityService } from '@/lib/integrityService'
-import { logger } from '@/lib/logger'
+import { NextResponse } from 'next/server';
+import { createServerAuthClient } from '@/lib/supabaseAuth';
+import { resolveOrgContext } from '@/lib/orgResolver';
+import { logger } from '@/lib/logger';
+import { supabaseServer } from '@/lib/supabaseServer';
 
+/**
+ * POST /api/governance/verify
+ * 
+ * Executes a deterministic validation check for an agent version.
+ * Wraps: public.compute_agent_version_determinism_check
+ */
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    const supabase = await createServerAuthClient()
+    const body = await req.json();
+    const { agent_id, agent_version } = body;
 
-    const {
-      data: { session },
-      error: authError,
-    } = await supabase.auth.getSession()
+    if (!agent_id || !agent_version) {
+      return NextResponse.json({ error: 'Missing agent_id or agent_version' }, { status: 400 });
+    }
+
+    const supabase = await createServerAuthClient();
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
 
     if (authError || !session) {
-      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })
+      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
     }
 
-    const { org_id: orgId } = await resolveOrgContext(session.user.id)
-
+    const { org_id: orgId } = await resolveOrgContext(session.user.id);
     if (!orgId) {
-      return NextResponse.json(
-        { error: 'ORG_CONTEXT_MISSING' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'ORG_CONTEXT_MISSING' }, { status: 400 });
     }
 
-    const { interaction_id } = body
+    // Call deterministic verification RPC
+    const { data: isDeterministic, error: rpcError } = await supabaseServer.rpc('compute_agent_version_determinism_check', {
+      p_org_id: orgId,
+      p_agent_id: agent_id,
+      p_agent_version: agent_version
+    });
 
-    if (!interaction_id) {
-      return NextResponse.json(
-        { error: 'interaction_id required' },
-        { status: 400 }
-      )
+    if (rpcError) {
+      logger.error('DETERMINISM_VERIFY_FAILED', { orgId, agent_id, agent_version, error: rpcError.message });
+      return NextResponse.json({ error: 'DETERMINISM_VERIFICATION_FAILED' }, { status: 500 });
     }
-
-    const { data, error } = await supabaseServer
-      .from('evaluations')
-      .select('*')
-      .eq('org_id', orgId)
-      .eq('interaction_id', interaction_id)
-      .single()
-
-    if (error || !data) {
-      return NextResponse.json(
-        { error: 'Evaluation not found' },
-        { status: 404 }
-      )
-    }
-
-    // 🔐 Rebuild canonical payload EXACTLY like evaluate
-    const canonicalPayload = {
-      total_risk: Number(data.total_risk),
-      factors: data.factors,
-      confidence: Number(data.confidence),
-      timestamp: new Date(data.created_at).toISOString(),
-    }
-
-    const recalculatedSignature = IntegrityService.sign(
-      orgId,
-      interaction_id,
-      canonicalPayload
-    )
-
-    const isValid = recalculatedSignature === data.signature
 
     return NextResponse.json({
       success: true,
-      valid: isValid,
-      stored_signature: data.signature,
-      recalculated_signature: recalculatedSignature,
-    })
-  } catch (error: any) {
-    logger.error('VERIFY_API_ERROR', {
-      error: error?.message,
-    })
+      data: {
+        agent_id,
+        agent_version,
+        is_deterministic: isDeterministic
+      }
+    });
 
-    return NextResponse.json(
-      { error: 'Verification failed' },
-      { status: 500 }
-    )
+  } catch (error: any) {
+    logger.error('GOVERNANCE_VERIFY_API_ERROR', { error: error.message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
