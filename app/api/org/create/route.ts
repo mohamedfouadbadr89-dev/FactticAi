@@ -1,5 +1,8 @@
 import { supabaseServer } from '@/lib/supabaseServer';
 import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/authGuard';
+import { resolveOrgContext } from '@/lib/orgResolver';
+import { authorize, type Role } from '@/lib/rbac';
 
 /**
  * API Org Create
@@ -9,6 +12,19 @@ import { NextResponse } from 'next/server';
  */
 export async function POST(req: Request) {
   try {
+    // Auth + RBAC — only owners can create new organizations
+    const auth = await withAuth(req);
+    if (auth.error || !auth.user) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
+    }
+
+    const orgContext = await resolveOrgContext(auth.user.id);
+    try {
+      authorize(orgContext.role as Role, 'owner');
+    } catch {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
+
     const body = await req.json();
     const { name } = body;
 

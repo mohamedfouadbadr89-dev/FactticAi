@@ -16,8 +16,8 @@ export default function BillingPage() {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6 md:p-8">
-      <h1 className="text-2xl font-bold mb-4">Billing & Forecast</h1>
-      <p className="text-neutral-500 text-sm">Institutional quota management and consumption forecasting.</p>
+      <h1 className="text-2xl font-bold mb-4 text-[var(--text-primary)]">Billing & Forecast</h1>
+      <p className="text-[var(--text-secondary)] text-sm">Institutional quota management and consumption forecasting.</p>
     </div>
   )
 }

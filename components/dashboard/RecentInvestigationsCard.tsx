@@ -1,14 +1,15 @@
 import React from "react";
 import type { InvestigationRow } from "@/lib/dashboard/types";
+import { CountUp } from "@/components/ui/CountUp";
 
 interface Props {
   data?: InvestigationRow[] | undefined;
 }
 
 const statusClass: Record<string, string> = {
-  Open: "bg-red-100 text-red-600",
-  Review: "bg-amber-100 text-amber-600",
-  Closed: "bg-emerald-100 text-emerald-600",
+  Open: "bg-[var(--danger-bg)] text-[var(--danger)] animate-breathe",
+  Review: "bg-[var(--warning-bg)] text-[var(--warning)]",
+  Closed: "bg-[var(--success-bg)] text-[var(--success)]",
 };
 
 const defaultRows: InvestigationRow[] = [
@@ -23,15 +24,15 @@ export default function RecentInvestigationsCard({ data }: Props) {
   const rows = data ?? defaultRows;
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 animate-[fadeIn_.4s_ease-in-out]">
+    <div className="card overflow-hidden animate-[fadeIn_.4s_ease-in-out]">
 
       {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+      <div className="card-header flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-bold text-slate-900">Recent Investigations</h3>
-          <p className="text-xs text-gray-400 mt-0.5">{rows.filter(r => r.status === "Open").length} Active · {rows.length} Total (30d)</p>
+          <h3 className="card-title">Recent Investigations</h3>
+          <p className="text-xs text-[var(--text-secondary)] mt-0.5">{rows.filter(r => r.status === "Open").length} Active · {rows.length} Total (30d)</p>
         </div>
-        <a href="/dashboard/investigations" className="text-blue-600 text-sm font-medium hover:underline">
+        <a href="/dashboard/investigations" className="text-[var(--accent)] text-sm font-medium hover:underline">
           View all →
         </a>
       </div>
@@ -39,36 +40,36 @@ export default function RecentInvestigationsCard({ data }: Props) {
       {/* Table */}
       <div className="inv-table">
         {rows.length === 0 ? (
-          <div className="py-8 text-center text-sm text-gray-400">No investigations found</div>
+          <div className="py-8 text-center text-sm text-[var(--text-secondary)]">No investigations found</div>
         ) : (
           <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50">
-                <th className="px-6 py-3 text-xs uppercase text-gray-400 tracking-wider font-semibold">ID</th>
-                <th className="px-6 py-3 text-xs uppercase text-gray-400 tracking-wider font-semibold">Investigation Name</th>
-                <th className="px-6 py-3 text-xs uppercase text-gray-400 tracking-wider font-semibold">Channel</th>
-                <th className="px-6 py-3 text-xs uppercase text-gray-400 tracking-wider font-semibold">Phase</th>
-                <th className="px-6 py-3 text-xs uppercase text-gray-400 tracking-wider font-semibold">Status</th>
-                <th className="px-6 py-3 text-xs uppercase text-gray-400 tracking-wider font-semibold">RCA Conf.</th>
-                <th className="px-6 py-3 text-xs uppercase text-gray-400 tracking-wider font-semibold">Assigned</th>
-                <th className="px-6 py-3 text-xs uppercase text-gray-400 tracking-wider font-semibold text-right">Last Updated</th>
+            <thead className="sticky top-0 z-10 bg-[var(--bg-primary)]">
+              <tr className="border-b border-[var(--border-color)]">
+                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">ID</th>
+                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">Investigation Name</th>
+                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">Channel</th>
+                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">Phase</th>
+                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">Status</th>
+                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">RCA Conf.</th>
+                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">Assigned</th>
+                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold text-right">Last Updated</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
+            <tbody className="divide-y divide-[var(--border-color)] text-[13px] text-[var(--text-secondary)]">
               {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-gray-50 transition-colors duration-150">
-                  <td className="px-6 py-4 font-mono font-bold text-slate-900">{row.id}</td>
-                  <td className="px-6 py-4 font-medium text-slate-700">{row.name}</td>
-                  <td className="px-6 py-4 text-gray-500">{row.channel}</td>
-                  <td className="px-6 py-4 text-gray-500">{row.phase}</td>
+                <tr key={row.id} className="hover:bg-[#FAFBFC] transition-colors duration-150">
+                  <td className="px-6 py-4 font-mono font-medium text-[var(--text-primary)]">{row.id}</td>
+                  <td className="px-6 py-4 font-medium text-[var(--text-primary)]">{row.name}</td>
+                  <td className="px-6 py-4">{row.channel}</td>
+                  <td className="px-6 py-4">{row.phase}</td>
                   <td className="px-6 py-4">
-                    <span className={`${statusClass[row.status] ?? "bg-gray-100 text-gray-600"} text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full`}>
+                    <span className={`${statusClass[row.status] ?? "bg-[var(--bg-secondary)] text-[var(--text-secondary)]"} text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-[20px]`}>
                       {row.status}
                     </span>
                   </td>
-                  <td className={`px-6 py-4 font-mono font-bold ${row.rcaColor}`}>{row.rca}</td>
-                  <td className="px-6 py-4 text-gray-600">{row.assigned}</td>
-                  <td className="px-6 py-4 text-gray-400 font-mono text-xs text-right">{row.updated}</td>
+                  <td className={`px-6 py-4 font-mono font-medium ${row.rcaColor}`}><CountUp value={parseFloat(row.rca)} />%</td>
+                  <td className="px-6 py-4 text-[var(--text-primary)]">{row.assigned}</td>
+                  <td className="px-6 py-4 font-mono text-right">{row.updated}</td>
                 </tr>
               ))}
             </tbody>

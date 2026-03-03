@@ -1,22 +1,28 @@
-import { createServerAuthClient } from './supabaseAuth';
+import { createServerAuthClient } from '@/lib/supabaseAuth'
 
-/**
- * Auth Guard (v5.0.0)
- * 
- * Refactored to use modern Supabase SSR session handling.
- * Returns authenticated user context or error.
- */
-export const withAuth = async (req: Request) => {
+export interface AuthResult {
+  user: { id: string; email?: string } | null
+  error: string | null
+  status: number
+}
+
+export async function withAuth(_req?: Request): Promise<AuthResult> {
   try {
-    const supabase = await createServerAuthClient();
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const supabase = await createServerAuthClient()
+    const { data: { session }, error } = await supabase.auth.getSession()
 
-    if (error || !session) {
-      return { error: 'Unauthorized', status: 401 };
+    if (error || !session?.user) {
+      return { user: null, error: 'UNAUTHORIZED', status: 401 }
     }
 
-    return { user: session.user };
-  } catch (err: any) {
-    return { error: err.message, status: 401 };
+    return { user: session.user, error: null, status: 200 }
+  } catch {
+    return { user: null, error: 'AUTH_ERROR', status: 500 }
   }
-};
+}
+
+export async function logout() {
+  const supabase = await createServerAuthClient()
+  await supabase.auth.signOut()
+  return true
+}

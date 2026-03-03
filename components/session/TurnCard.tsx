@@ -29,15 +29,15 @@ export const TurnCard: React.FC<TurnCardProps> = ({ turn, onInspect }) => {
  <motion.div 
  initial={{ opacity: 0, x: -20 }}
  animate={{ opacity: 1, x: 0 }}
- className={`border-l-2 pl-6 py-4 relative transition-colors duration-300 ${isAssistant ?'border-[var(--navy)]' :'border-neutral-100'}`}
+ className={`border-l-2 pl-6 py-4 relative transition-colors duration-300 ${isAssistant ?'border-[var(--navy)]' :'border-[var(--border-primary)]'}`}
  >
  {/* Turn Index Bubble */}
- <div className="absolute -left-[9px] top-6 w-4 h-4 rounded-full bg-white border-2 border-neutral-200 flex items-center justify-center text-[10px] font-mono">
+ <div className="absolute -left-[9px] top-6 w-4 h-4 rounded-full bg-[var(--card-bg)] border-2 border-[var(--border-primary)] flex items-center justify-center text-[10px] font-mono">
  {turn.turn_index}
  </div>
 
  <div className="flex justify-between items-start mb-2">
- <span className={`text-xs font-bold uppercase tracking-widest font-mono transition-colors duration-300 ${isAssistant ?'text-[var(--navy)]' :'text-neutral-400'}`}>
+ <span className={`text-xs font-bold uppercase tracking-widest font-mono transition-colors duration-300 ${isAssistant ?'text-[var(--navy)]' :'text-[var(--text-secondary)]'}`}>
  {turn.role}
  </span>
  <div className="flex items-center gap-3">

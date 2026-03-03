@@ -1,0 +1,692 @@
+/* =============================================
+   FACTTIC — MARKETING LANDING PAGE STYLES
+   Landing-specific section styles extracted from
+   marketing/index.html and component inline styles.
+   ============================================= */
+
+/* ---------- Layout Primitives ---------- */
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+section {
+  padding: 96px 0;
+  border-top: 1px solid var(--border);
+}
+
+.grid {
+  display: grid;
+  gap: 40px;
+}
+
+/* ---------- Navigation ---------- */
+/* Legacy nav/logo/cta-button styles removed — now handled by MarketingNav.tsx */
+
+.nav-link {
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ---------- Hero Section ---------- */
+
+.hero {
+  background: var(--surface-0);
+  color: white;
+  border-top: none;
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.hero-grid {
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+}
+
+.hero h1 {
+  font-size: 64px;
+  line-height: 1.1;
+  margin: 24px 0;
+  letter-spacing: -0.03em;
+}
+
+.hero p {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 540px;
+  margin-bottom: 48px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 10px;
+  color: var(--accent-gold);
+  letter-spacing: 0.2em;
+  font-weight: 700;
+}
+
+/* ---------- Dashboard Mockup ---------- */
+
+.dashboard-mockup {
+  background: var(--surface-1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 32px;
+  position: relative;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+}
+
+.governance-health {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+}
+
+.health-score {
+  font-size: 72px;
+  color: var(--accent-gold);
+  font-weight: 500;
+  font-family: 'IBM Plex Serif', serif;
+}
+
+/* ---------- Layer Grid ---------- */
+
+.layer-grid {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.layer-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  padding: 32px;
+  border-top: 4px solid var(--text-primary);
+  transition: 0.3s ease;
+}
+
+.layer-card:hover {
+  border-color: var(--accent-gold);
+  transform: translateY(-4px);
+}
+
+.layer-card h3 {
+  font-size: 18px;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.layer-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* ---------- Stakeholder Perspectives ---------- */
+
+.perspectives {
+  display: flex;
+  padding: 0;
+  min-height: 600px;
+  border-top: none;
+}
+
+.p-left {
+  flex: 1;
+  background: var(--surface-0);
+  color: white;
+  padding: 80px;
+}
+
+.p-right {
+  flex: 1;
+  background: var(--surface-2);
+  color: var(--text-primary);
+  padding: 80px;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.perspective-inner {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.p-left .perspective-inner {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.p-right .perspective-inner {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+/* ---------- Pricing ---------- */
+
+.pricing-grid {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.pricing-card {
+  border: 1px solid var(--border);
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pricing-card.featured {
+  border: 2px solid var(--gold);
+  background: #fffcf8;
+}
+
+.pricing-header h3 {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.price-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  color: var(--gold);
+  margin-bottom: 32px;
+  display: block;
+}
+
+.features-list {
+  list-style: none;
+  margin-bottom: 48px;
+  flex: 1;
+}
+
+.features-list li {
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.features-list li::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  border-radius: 50%;
+}
+
+/* ---------- Footer ---------- */
+
+footer {
+  padding: 48px 0;
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+}
+
+.footer-links {
+  display: flex;
+  gap: 32px;
+}
+
+/* =============================================
+   MICRO-INTERACTIONS — Motion & Hover Polish
+   ============================================= */
+
+/* ---------- Hover Elevation ---------- */
+
+.hover-lift {
+  transition: transform var(--motion-fast) var(--ease-out),
+              box-shadow var(--motion-fast) var(--ease-out),
+              border-color var(--motion-fast) var(--ease-out);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ---------- Button Press Depth ---------- */
+
+.press-depth {
+  transition: transform 100ms var(--ease-out);
+}
+
+.press-depth:active {
+  transform: scale(0.98);
+}
+
+/* ---------- Nav Link Gold Underline ---------- */
+
+.nav-link {
+  position: relative;
+  transition: color var(--motion-fast) var(--ease-out);
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--gold);
+  transition: width 250ms var(--ease-out);
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* ---------- Card Hover States ---------- */
+
+.card.hover-lift:hover {
+  border-color: var(--border-secondary);
+  box-shadow: var(--shadow-md);
+}
+
+/* Feature row hover */
+.feature-row {
+  transition: background-color var(--motion-fast) var(--ease-out);
+}
+
+.feature-row:hover {
+  background-color: var(--bg-secondary);
+}
+
+/* ---------- Footer Link Hover ---------- */
+
+.footer-link {
+  position: relative;
+  transition: color var(--motion-fast) var(--ease-out);
+}
+
+.footer-link:hover {
+  color: var(--text-primary);
+}
+
+.footer-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--gold);
+  transition: width 200ms var(--ease-out);
+}
+
+.footer-link:hover::after {
+  width: 100%;
+}
+
+/* ---------- Scroll Reveal ---------- */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 500ms var(--ease-out),
+              transform 500ms var(--ease-out);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Staggered children */
+.reveal-delay-1 { transition-delay: 50ms; }
+.reveal-delay-2 { transition-delay: 100ms; }
+.reveal-delay-3 { transition-delay: 150ms; }
+.reveal-delay-4 { transition-delay: 200ms; }
+
+/* ---------- Reduced Motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-lift,
+  .hover-lift:hover,
+  .press-depth,
+  .press-depth:active,
+  .reveal {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
+  .reveal {
+    opacity: 1 !important;
+  }
+}
+
+/* ---------- Scrollbar Utility ---------- */
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* =============================================
+   RESPONSIVE — PRODUCTION BREAKPOINTS
+   1440px+ | 1024px | 768px | 480px | 390px
+   ============================================= */
+
+/* ---------- 1440px+: Desktop Wide ---------- */
+/* Base styles already handle this. No overrides needed. */
+
+/* ---------- ≤1200px: Large Tablet / Narrow Desktop ---------- */
+@media (max-width: 1200px) {
+  /* Reduce section container padding */
+  .container { padding: 0 32px; }
+
+  /* Layer grid: 4 → 2 columns */
+  .layer-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Pricing: 3 → 2 columns */
+  .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ---------- ≤1024px: Tablet ---------- */
+@media (max-width: 1024px) {
+  /* Static HTML grids collapse */
+  .hero-grid { grid-template-columns: 1fr; }
+  .layer-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .pricing-grid { grid-template-columns: 1fr; gap: 24px; }
+
+  /* Perspectives split → stack */
+  .perspectives { flex-direction: column; min-height: auto; }
+  .p-left, .p-right { padding: 48px 32px; }
+  .p-right { border-left: none; border-top: 1px solid var(--border); }
+  .p-left .perspective-inner,
+  .p-right .perspective-inner { margin: 0 auto; }
+
+  /* Hero title scaling */
+  .hero h1 { font-size: 48px; }
+  .hero { min-height: auto; padding: 64px 0; }
+
+  /* Dashboard mockup padding reduction */
+  .dashboard-mockup { padding: 24px; }
+  .health-score { font-size: 56px; }
+
+  /* Section padding reduction */
+  section { padding: 64px 0; }
+
+  /* Footer links wrap */
+  .footer-content { flex-wrap: wrap; gap: 24px; }
+  .footer-links { flex-wrap: wrap; gap: 16px; }
+
+  /* ---- React Component Overrides ---- */
+
+  /* SectionWrapper: reduce horizontal padding */
+  [class*="max-w-[1400px]"] { padding-left: 24px !important; padding-right: 24px !important; }
+
+  /* Hero: Remove left border on right panel at tablet */
+  [class*="border-l"][class*="pl-16"] {
+    border-left: none !important;
+    padding-left: 0 !important;
+    margin-top: 48px;
+  }
+
+  /* Executive Dashboard: 12-col → single column */
+  [class*="lg:col-span-8"] { grid-column: 1 / -1 !important; }
+  [class*="lg:col-span-4"] { grid-column: 1 / -1 !important; }
+
+  /* Health score: scale down the 120px giant */
+  [class*="text-\\[120px\\]"] { font-size: 80px !important; }
+
+  /* Security section: reduce gap-20 → gap-10 */
+  [class*="gap-20"] { gap: 40px !important; }
+
+  /* Compliance snapshot: remove left border on right col */
+  [class*="lg:border-l"] { border-left: none !important; padding-left: 0 !important; }
+}
+
+/* ---------- ≤768px: Small Tablet / Large Phone ---------- */
+@media (max-width: 768px) {
+  .container { padding: 0 24px; }
+  section { padding: 48px 0; }
+
+  /* Layer grid → single column */
+  .layer-grid { grid-template-columns: 1fr; }
+  .layer-card { padding: 24px; }
+
+  /* Perspectives padding */
+  .p-left, .p-right { padding: 32px 24px; }
+
+  /* Pricing card padding reduction */
+  .pricing-card { padding: 32px; }
+  .pricing-header h3 { font-size: 22px; }
+
+  /* Hero refinement */
+  .hero h1 { font-size: 36px; }
+  .hero p { font-size: 16px; margin-bottom: 32px; }
+  .hero { padding: 48px 0; }
+
+  /* Dashboard mockup */
+  .dashboard-mockup { padding: 16px; }
+  .health-score { font-size: 48px; }
+
+  /* Navigation compact */
+  .nav-links { gap: 16px; }
+  .nav-link { font-size: 10px; letter-spacing: 0.06em; }
+  .cta-button { padding: 10px 16px; font-size: 10px; }
+
+  /* Footer stacking */
+  .footer-content { flex-direction: column; text-align: center; gap: 16px; }
+  .footer-links { justify-content: center; gap: 12px; flex-wrap: wrap; }
+
+  /* ---- React Component Overrides ---- */
+
+  /* Section container padding */
+  [class*="max-w-[1400px]"] { padding-left: 20px !important; padding-right: 20px !important; }
+
+  /* Health score: desktop text-7xl → smaller */
+  [class*="text-7xl"] { font-size: 48px !important; }
+
+  /* Health score: 120px → 64px */
+  [class*="text-\\[120px\\]"] { font-size: 64px !important; }
+
+  /* Section titles: text-5xl → text-3xl equivalent */
+  [class*="md:text-5xl"] { font-size: 28px !important; }
+
+  /* Card padding reduction */
+  [class*="p-10"] { padding: 24px !important; }
+  [class*="p-12"] { padding: 24px !important; }
+
+  /* Grid gap compression */
+  [class*="gap-16"] { gap: 32px !important; }
+  [class*="gap-20"] { gap: 24px !important; }
+
+  /* Architecture matrix card padding */
+  [class*="gap-px"][class*="border"] [class*="p-12"] { padding: 20px !important; }
+
+  /* Metrics bar 4-col → 2-col handled by Tailwind md: prefix */
+
+  /* Truncate hash text to prevent overflow */
+  [class*="tracking-tighter"][class*="font-mono"][class*="text-\\[11px\\]"] {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Sovereign badge repositioning */
+  [class*="absolute"][class*="-top-4"][class*="-right-4"] {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    margin-top: 16px;
+  }
+}
+
+/* ---------- ≤480px: Mobile ---------- */
+@media (max-width: 480px) {
+  .container { padding: 0 16px; }
+  section { padding: 40px 0; }
+
+  /* Hero */
+  .hero h1 { font-size: 28px; letter-spacing: -0.02em; }
+  .hero p { font-size: 14px; }
+
+  /* Perspectives: minimal padding */
+  .p-left, .p-right { padding: 24px 16px; }
+
+  /* Pricing */
+  .pricing-card { padding: 24px; }
+  .pricing-header h3 { font-size: 20px; }
+
+  /* Navigation: hide links, keep CTA */
+  .nav-links .nav-link { display: none; }
+  .nav-links { gap: 0; }
+
+  /* Layer card */
+  .layer-card { padding: 20px; }
+  .layer-card h3 { font-size: 16px; }
+
+  /* Footer */
+  footer { padding: 32px 0; }
+  .footer-links { gap: 8px; }
+
+  /* ---- React Component Overrides ---- */
+
+  /* Section wrapper */
+  [class*="max-w-[1400px]"] { padding-left: 16px !important; padding-right: 16px !important; }
+
+  /* Hero title: text-5xl → mobile friendly */
+  [class*="text-5xl"] { font-size: 28px !important; }
+
+  /* Health score: full mobile scale */
+  [class*="text-\\[120px\\]"] { font-size: 48px !important; }
+  [class*="text-7xl"] { font-size: 36px !important; }
+
+  /* Section titles */
+  [class*="md:text-5xl"] { font-size: 24px !important; }
+  [class*="text-4xl"] { font-size: 22px !important; }
+
+  /* Metric numbers */
+  [class*="text-2xl"] { font-size: 18px !important; }
+
+  /* Card body padding */
+  [class*="p-10"] { padding: 16px !important; }
+  [class*="p-8"] { padding: 16px !important; }
+
+  /* Grid gaps */
+  [class*="gap-16"] { gap: 20px !important; }
+  [class*="gap-12"] { gap: 16px !important; }
+  [class*="gap-10"] { gap: 16px !important; }
+  [class*="gap-8"] { gap: 12px !important; }
+
+  /* Compliance bar: stack vertically */
+  [class*="md:flex-row"][class*="gap-8"] { gap: 12px !important; }
+
+  /* Buttons: full width */
+  [class*="sm:w-auto"] { width: 100% !important; }
+
+  /* CTA form: stack */
+  [class*="sm:flex-row"] { flex-direction: column !important; }
+
+  /* Executive dashboard header: stack */
+  [class*="md:flex-row"][class*="md:items-end"] {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  /* Dashboard metrics: 2-col still OK, reduce padding */
+  [class*="grid-cols-2"][class*="md:grid-cols-4"] [class*="p-6"] {
+    padding: 12px !important;
+  }
+
+  /* Compliance framework badges wrap tighter */
+  [class*="flex-wrap"][class*="gap-2"] { gap: 4px !important; }
+}
+
+/* ---------- ≤390px: iPhone Standard / Compact ---------- */
+@media (max-width: 390px) {
+  .container { padding: 0 12px; }
+  section { padding: 32px 0; }
+
+  /* Hero extreme compact */
+  .hero h1 { font-size: 24px; }
+  .hero p { font-size: 13px; }
+
+  .nav-links { gap: 0; }
+  .cta-button { padding: 8px 12px; font-size: 9px; letter-spacing: 0.12em; }
+
+  /* Health score at minimum */
+  .health-score { font-size: 36px; }
+
+  /* Layer card compact */
+  .layer-card { padding: 16px; }
+  .layer-card h3 { font-size: 14px; }
+
+  .pricing-card { padding: 20px; }
+  .pricing-header h3 { font-size: 18px; }
+  .price-tag { font-size: 11px; }
+
+  .p-left, .p-right { padding: 20px 12px; }
+
+  footer { padding: 24px 0; }
+
+  /* ---- React Component Overrides ---- */
+
+  [class*="max-w-[1400px]"] { padding-left: 12px !important; padding-right: 12px !important; }
+
+  /* Titles at minimum */
+  [class*="text-5xl"] { font-size: 24px !important; }
+  [class*="text-\\[120px\\]"] { font-size: 40px !important; }
+  [class*="text-7xl"] { font-size: 32px !important; }
+  [class*="md:text-5xl"] { font-size: 22px !important; }
+  [class*="text-4xl"] { font-size: 20px !important; }
+
+  /* Card body */
+  [class*="p-10"],
+  [class*="p-8"],
+  [class*="p-6"] { padding: 12px !important; }
+
+  /* All grids → single column */
+  [class*="grid-cols-2"] { grid-template-columns: 1fr !important; }
+
+  /* Truncate all mono hash text */
+  [class*="font-mono"][class*="tracking-tighter"] {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Footer links: 2-col grid on tiny */
+  .footer-links {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+    text-align: center;
+  }
+}

@@ -71,7 +71,7 @@ export function AlertsClient() {
  key={s}
  onClick={() => setFilter(s)}
  className={`px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
- filter === s ?'bg-[var(--white)] text-[var(--navy)] shadow-sm' :'text-[var(--ink-soft)] hover:text-[var(--navy)]'
+ filter === s ?'bg-[var(--card-bg)] text-[var(--accent)] shadow-sm' :'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
  }`}
  >
  {s}
@@ -108,9 +108,9 @@ export function AlertsClient() {
  </div>
  </td>
  <td className="px-6 py-6">
- <div className="text-sm font-bold text-[var(--navy)] mb-1 leading-tight transition-colors duration-300">{alert.escalation_reason}</div>
- <div className="text-[10px] text-[var(--ink-soft)] font-bold uppercase tracking-tight transition-colors duration-300">
- Logic Transition: <span className="text-[var(--ink-soft)] opacity-80">{alert.previous_severity ||'null'}</span> → <span className="text-[var(--navy)] font-black">{alert.new_severity}</span>
+ <div className="text-sm font-bold text-[var(--accent)] mb-1 leading-tight transition-colors duration-300">{alert.escalation_reason}</div>
+ <div className="text-[10px] text-[var(--text-secondary)] font-bold uppercase tracking-tight transition-colors duration-300">
+ Logic Transition: <span className="text-[var(--text-secondary)] opacity-80">{alert.previous_severity ||'null'}</span> → <span className="text-[var(--accent)] font-black">{alert.new_severity}</span>
  </div>
  </td>
  <td className="px-6 py-6">
@@ -124,7 +124,7 @@ export function AlertsClient() {
  <td className="px-6 py-6 text-right">
  <button 
  onClick={() => router.push(`/dashboard/executive?investigate=${alert.interaction_id}`)}
- className="bg-[var(--white)] border border-[var(--rule)] text-[var(--navy)] px-4 py-2 rounded text-[10px] font-black uppercase tracking-widest hover:border-[var(--navy)] transition-all shadow-sm"
+ className="bg-[var(--bg-primary)] border border-[var(--border-primary)] text-[var(--accent)] px-4 py-2 rounded text-[10px] font-black uppercase tracking-widest hover:border-[var(--accent)] transition-all shadow-sm"
  >
  Verify
  </button>

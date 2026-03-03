@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerAuthClient } from '@/lib/supabaseAuth';
+import { withAuth } from '@/lib/middleware/auth';
 import { resolveOrgContext } from '@/lib/orgResolver';
 import { logger } from '@/lib/logger';
 import { supabaseServer } from '@/lib/supabaseServer';
@@ -10,15 +10,8 @@ import { supabaseServer } from '@/lib/supabaseServer';
  * Retrieves the current engine certification status.
  * Wraps: public.engine_certification_v1
  */
-export async function GET(req: Request) {
+export const GET = withAuth(async (req, { session }) => {
   try {
-    const supabase = await createServerAuthClient();
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-
-    if (authError || !session) {
-      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-    }
-
     const { org_id: orgId } = await resolveOrgContext(session.user.id);
     if (!orgId) {
       return NextResponse.json({ error: 'ORG_CONTEXT_MISSING' }, { status: 400 });
@@ -44,4 +37,4 @@ export async function GET(req: Request) {
     logger.error('GOVERNANCE_CERTIFICATION_API_ERROR', { error: error.message });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});

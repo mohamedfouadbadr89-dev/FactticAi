@@ -7,6 +7,16 @@ import { resolveOrgContext } from '@/lib/orgResolver';
 import { cache } from '@/lib/redis';
 import { logger } from '@/lib/logger';
 
+// ---- Auth Route Protection ----
+const PROTECTED_PATHS: string[] = [];
+const AUTH_PATHS = ['/login', '/register'];
+
+// if (isProtected && !session) {
+//   const loginUrl = new URL('/login', request.url);
+//   loginUrl.searchParams.set('redirect', path);
+//   return NextResponse.redirect(loginUrl);
+// 
+
 // In-memory clones removed per Phase 4 constitutional directive.
 // Reliance shifted to centralized Redis instance.
 
@@ -15,6 +25,30 @@ const MAX_REQUESTS_AUTH = 5;
 const MAX_REQUESTS_WEBHOOK = 100;
 
 export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+
+  // ---- Auth Route Protection ----
+  const isProtected = PROTECTED_PATHS.some(
+    (p) => path === p || path.startsWith(`${p}/`)
+  );
+  const isAuthPage = AUTH_PATHS.some(
+    (p) => path === p || path.startsWith(`${p}/`)
+  );
+
+  // TODO: Replace with real session validation (Supabase cookie, JWT, etc.)
+  const session = request.cookies.get('facttic-session')?.value;
+
+  if (isProtected && !session) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', path);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (isAuthPage && session) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  // ---- Rate Limiting (API routes only) ----
   const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
   let orgId = 'anonymous';
   let plan = 'starter';
@@ -29,7 +63,6 @@ export async function proxy(request: NextRequest) {
   } catch (e) {
     // Ignore invalid tokens here for rate limiting fallback; downstream will block unauthorized requests
   }
-  const path = request.nextUrl.pathname;
 
   let limit = 0;
 
@@ -86,5 +119,12 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/auth/:path*', '/api/org/create', '/api/webhooks/:path*'],
+  matcher: [
+    '/api/auth/:path*',
+    '/api/org/create',
+    '/api/webhooks/:path*',
+    '/dashboard/:path*',
+    '/login',
+    '/register',
+  ],
 };

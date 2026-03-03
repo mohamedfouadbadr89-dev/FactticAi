@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/authGuard';
 import { resolveOrgContext } from '@/lib/orgResolver';
+import { authorize, type Role } from '@/lib/rbac';
 
 /**
  * API: /api/internal/test-org
@@ -18,6 +19,13 @@ export async function GET(req: Request) {
 
     // Resolve context ONLY from DB
     const context = await resolveOrgContext(auth.user.id);
+
+    // Internal endpoints require at minimum 'admin' role
+    try {
+      authorize(context.role as Role, 'admin');
+    } catch {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
 
     return NextResponse.json({
       success: true,

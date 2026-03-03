@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerAuthClient } from '@/lib/supabaseAuth';
+import { withAuth } from '@/lib/middleware/auth';
 import { resolveOrgContext } from '@/lib/orgResolver';
 import { logger } from '@/lib/logger';
 import { supabaseServer } from '@/lib/supabaseServer';
@@ -8,7 +8,7 @@ import { supabaseServer } from '@/lib/supabaseServer';
  * GET /api/governance/timeseries
  * Wraps: public.governance_timeseries_v1
  */
-export async function GET(req: Request) {
+export const GET = withAuth(async (req, { session }) => {
   try {
     const { searchParams } = new URL(req.url);
 
@@ -17,20 +17,6 @@ export async function GET(req: Request) {
 
     const agent_version: string | undefined =
       searchParams.get('agent_version') ?? undefined;
-
-    const supabase = await createServerAuthClient();
-
-    const {
-      data: { session },
-      error: authError,
-    } = await supabase.auth.getSession();
-
-    if (authError || !session) {
-      return NextResponse.json(
-        { error: 'UNAUTHORIZED' },
-        { status: 401 }
-      );
-    }
 
     const { org_id } = await resolveOrgContext(session.user.id);
 
@@ -85,4 +71,4 @@ export async function GET(req: Request) {
       { status: 500 }
     );
   }
-}
+});

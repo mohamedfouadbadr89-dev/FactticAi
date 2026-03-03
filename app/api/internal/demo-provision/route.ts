@@ -3,6 +3,9 @@ import { isFeatureEnabled } from '@/config/featureFlags';
 import { supabaseServer } from '@/lib/supabaseServer';
 import { PilotManager } from '@/lib/pilotManager';
 import { logger } from '@/lib/logger';
+import { withAuth } from '@/lib/authGuard';
+import { resolveOrgContext } from '@/lib/orgResolver';
+import { authorize, type Role } from '@/lib/rbac';
 
 /**
  * Internal API: /api/internal/demo-provision
@@ -12,7 +15,20 @@ import { logger } from '@/lib/logger';
  */
 export async function POST(req: Request) {
   try {
-    // 1. Feature Flag Guard
+    // 1. Auth + RBAC — admin or owner only
+    const auth = await withAuth(req);
+    if (auth.error || !auth.user) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
+    }
+
+    const orgContext = await resolveOrgContext(auth.user.id);
+    try {
+      authorize(orgContext.role as Role, 'admin');
+    } catch {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
+
+    // 2. Feature Flag Guard
     if (!isFeatureEnabled('DEMO_AUTO_PROVISION_ENABLED')) {
       return NextResponse.json({ error: "Demo provisioning disabled" }, { status: 403 });
     }

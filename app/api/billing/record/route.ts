@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/authGuard';
 import { resolveOrgContext } from '@/lib/orgResolver';
 import { recordBillingEvent } from '@/lib/billingResolver';
+import { authorize, type Role } from '@/lib/rbac';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/logger';
 
@@ -18,7 +19,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
     }
 
-    const { org_id } = await resolveOrgContext(auth.user.id);
+    const { org_id, role } = await resolveOrgContext(auth.user.id);
+
+    // Billing requires at minimum 'member' role
+    try {
+      authorize(role as Role, 'member');
+    } catch {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
+
     const body = await req.json();
     const { type, units, metadata } = body;
 

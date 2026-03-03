@@ -21,7 +21,7 @@ export function SettingsClient() {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
  <div className="space-y-6">
  <div className="section-card p-8 transition-colors duration-300">
- <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--ink-soft)] mb-6 border-l-2 border-[var(--navy)] px-3 transition-colors duration-300">Access Control</h3>
+ <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-6 border-l-2 border-[var(--accent)] px-3 transition-colors duration-300">Access Control</h3>
  <div className="space-y-6">
  <div>
  <label className="block text-[10px] font-black uppercase tracking-widest mb-1.5">Institutional Key</label>
@@ -32,19 +32,19 @@ export function SettingsClient() {
  readOnly
  className="w-full border p-3 rounded-lg text-sm font-mono focus:outline-none"
  />
- <div className="absolute right-3 top-3 px-2 py-0.5 bg-white border rounded text-[8px] font-black uppercase tracking-widest">
+ <div className="absolute right-3 top-3 px-2 py-0.5 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded text-[8px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
  Encrypted
  </div>
  </div>
  </div>
- <button className="bg-[var(--navy)] text-[var(--white)] font-black uppercase tracking-widest text-[10px] px-6 py-3 rounded-lg hover:opacity-90 transition-colors shadow-lg">
+ <button className="bg-[var(--accent)] text-[var(--bg-primary)] font-black uppercase tracking-widest text-[10px] px-6 py-3 rounded-lg hover:opacity-90 transition-colors shadow-lg">
  Rotate Credentials
  </button>
  </div>
  </div>
 
  <div className="section-card p-8 transition-colors duration-300">
- <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--ink-soft)] mb-6 border-l-2 border-[var(--navy)] px-3 transition-colors duration-300">Telemetry Calibration</h3>
+ <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-6 border-l-2 border-[var(--accent)] px-3 transition-colors duration-300">Telemetry Calibration</h3>
  <div className="space-y-4">
  {[
  { label:'Drift Sensitivity', val: 0.85 },
@@ -53,11 +53,11 @@ export function SettingsClient() {
  ].map((item) => (
  <div key={item.label}>
  <div className="flex justify-between items-center mb-1.5">
- <span className="text-[10px] font-black text-[var(--ink-soft)] uppercase tracking-widest">{item.label}</span>
- <span className="text-[10px] font-black text-[var(--navy)] font-mono transition-colors duration-300">{(item.val * 100).toFixed(0)}%</span>
+ <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest">{item.label}</span>
+ <span className="text-[10px] font-black text-[var(--accent)] font-mono transition-colors duration-300">{(item.val * 100).toFixed(0)}%</span>
  </div>
- <div className="h-2 w-full bg-[var(--parch-2)] rounded-full overflow-hidden border border-[var(--rule)] transition-colors duration-300">
- <div className="h-full bg-[var(--navy)] transition-colors duration-300" style={{ width:`${item.val * 100}%` }} />
+ <div className="h-2 w-full bg-[var(--bg-secondary)] rounded-full overflow-hidden border border-[var(--border-primary)] transition-colors duration-300">
+ <div className="h-full bg-[var(--accent)] transition-colors duration-300" style={{ width:`${item.val * 100}%` }} />
  </div>
  </div>
  ))}

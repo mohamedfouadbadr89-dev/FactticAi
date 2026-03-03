@@ -15,3 +15,10 @@ Most SaaS architectures rely on weak application-layer multi-tenancy. Forged hea
 ## Slide 4: Institutional Deployment
 - **Single-Tenant VPC**: Isolated DB, Redis, and Object Storage.
 - **BYOK (Bring Your Own Key)**: Institutional clients retain physical control of encryption keys.
+
+## Slide 5: Enterprise Licensing Models
+- **Facttic Core (Self-Hosted Hybrid)** 
+  - Starting at $1,200/mo. Limited to 5 compute nodes securely tethered to localized Cloud footprints via Docker Compose.
+- **Facttic Enterprise (Full BYOC)** 
+  - Volume scaling based on raw compute consumption. Fully isolated AWS/Azure VPC deployment templates via Terraform. Full SSO (SAML & OIDC) domain enforcement included.
+  - Dedicated Solutions Architect & Platinum 24/7 Support SLAs.

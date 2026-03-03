@@ -69,7 +69,7 @@ export function ChatClient() {
  {/* Session List - Standardized to Section Card */}
  <div className="w-80 section-card flex flex-col overflow-hidden">
  <div className="p-4 border-b /50 transition-colors duration-300">
- <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--ink-soft)] px-1 border-l-2 border-[var(--navy)] transition-colors duration-300">Archived Sessions</h2>
+ <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] px-1 border-l-2 border-[var(--accent)] transition-colors duration-300">Archived Sessions</h2>
  </div>
  <div className="flex-1 overflow-y-auto p-2 space-y-1">
  {loadingList ? (
@@ -82,19 +82,19 @@ export function ChatClient() {
  key={s.id}
  onClick={() => setSelectedSessionId(s.id)}
  className={`w-full text-left p-4 rounded-lg transition-all group ${
- selectedSessionId === s.id ?'bg-[var(--navy)] text-[var(--white)] shadow-md' :'bg-transparent hover: hover:'
+ selectedSessionId === s.id ?'bg-[var(--accent)] text-[var(--bg-primary)] shadow-md' :'bg-transparent hover: hover:'
  }`}
  >
  <div className="flex justify-between items-start mb-1">
- <span className={`text-xs font-bold font-mono ${selectedSessionId === s.id ?'text-[var(--white)]' :''}`}>
+ <span className={`text-xs font-bold font-mono ${selectedSessionId === s.id ?'text-[var(--bg-primary)]' :''}`}>
  {s.id.substring(0, 12)}
  </span>
- <span className={`text-[9px] font-bold ${selectedSessionId === s.id ?'text-[var(--parch)]' :''}`}>
+ <span className={`text-[9px] font-bold ${selectedSessionId === s.id ?'text-[var(--bg-secondary)]' :''}`}>
  {new Date(s.created_at).toLocaleDateString()}
  </span>
  </div>
- <div className={`text-[9px] uppercase font-black tracking-tight ${selectedSessionId === s.id ?'text-[var(--gold)]' :''}`}>
- ID SOURCE: <span className={selectedSessionId === s.id ?'text-[var(--white)]' :''}>{s.agent_id}</span>
+ <div className={`text-[9px] uppercase font-black tracking-tight ${selectedSessionId === s.id ?'text-[var(--warning)]' :''}`}>
+ ID SOURCE: <span className={selectedSessionId === s.id ?'text-[var(--bg-primary)]' :''}>{s.agent_id}</span>
  </div>
  </button>
  ))
@@ -110,8 +110,8 @@ export function ChatClient() {
  <div className="flex-1 section-card flex flex-col overflow-hidden relative">
  {!selectedSessionId ? (
  <div className="flex-1 flex flex-col items-center justify-center p-12 text-center /20">
- <div className="w-16 h-16 rounded-full bg-[var(--navy)]/5 flex items-center justify-center mb-6 border border-[var(--rule)] transition-colors duration-300">
- <svg className="w-6 h-6 text-[var(--navy)] transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+ <div className="w-16 h-16 rounded-full bg-[var(--accent)]/5 flex items-center justify-center mb-6 border border-[var(--border-primary)] transition-colors duration-300">
+ <svg className="w-6 h-6 text-[var(--accent)] transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
  </div>
  <h3 className="font-black uppercase tracking-[0.1em] text-sm mb-2">Institutional Replay Engine</h3>
  <p className="text-[10px] font-bold uppercase tracking-widest max-w-xs leading-relaxed">
@@ -120,10 +120,10 @@ export function ChatClient() {
  </div>
  ) : (
  <>
- <div className="px-8 py-6 border-b flex justify-between items-center bg-white z-10">
+ <div className="px-8 py-6 border-b flex justify-between items-center bg-[var(--card-bg)] z-10">
  <div className="flex items-center gap-4">
  <div className="flex flex-col">
- <span className="text-[10px] font-black uppercase tracking-[0.2em] px-1 border-l-2 border-[var(--navy)] transition-colors duration-300">Interactive Audit</span>
+ <span className="text-[10px] font-black uppercase tracking-[0.2em] px-1 border-l-2 border-[var(--accent)] transition-colors duration-300">Interactive Audit</span>
  <span className="text-[11px] font-bold font-mono mt-1">
  {selectedSessionId}
  </span>
@@ -134,7 +134,7 @@ export function ChatClient() {
  <div className="flex items-center gap-4">
  <div className="text-right">
  <div className="text-[9px] font-black uppercase tracking-widest">Aggregate Risk</div>
- <div className="text-2xl font-black text-[var(--navy)] leading-none tracking-tighter transition-colors duration-300">
+ <div className="text-2xl font-black text-[var(--accent)] leading-none tracking-tighter transition-colors duration-300">
  {((selectedSession.turns?.reduce((acc: number, t: Turn) => acc + (t.risk_score || 0), 0) / (selectedSession.turns?.length || 1) || 0) * 100).toFixed(1)}
  </div>
  </div>
@@ -145,12 +145,12 @@ export function ChatClient() {
  )}
  </div>
 
- <div className="flex-1 overflow-y-auto p-8 space-y-10 bg-white">
+ <div className="flex-1 overflow-y-auto p-8 space-y-10 bg-[var(--card-bg)]">
  {loadingDetail ? (
  <div className="flex justify-center py-20">
- <div className="w-2 h-2 bg-[var(--navy)] rounded-full animate-bounce [animation-delay:-0.3s] transition-colors duration-300" />
- <div className="w-2 h-2 bg-[var(--navy)] rounded-full animate-bounce [animation-delay:-0.15s] mx-2 transition-colors duration-300" />
- <div className="w-2 h-2 bg-[var(--navy)] rounded-full animate-bounce transition-colors duration-300" />
+ <div className="w-2 h-2 bg-[var(--accent)] rounded-full animate-bounce [animation-delay:-0.3s] transition-colors duration-300" />
+ <div className="w-2 h-2 bg-[var(--accent)] rounded-full animate-bounce [animation-delay:-0.15s] mx-2 transition-colors duration-300" />
+ <div className="w-2 h-2 bg-[var(--accent)] rounded-full animate-bounce transition-colors duration-300" />
  </div>
  ) : selectedSession?.turns && selectedSession.turns.length > 0 ? (
  selectedSession.turns.map((turn) => (
@@ -161,7 +161,7 @@ export function ChatClient() {
  }`}
  >
  <div className="flex items-center gap-2 mb-2">
- <span className={`text-[9px] font-black uppercase tracking-widest ${turn.role ==='assistant' ?'text-[var(--navy)]' :''}`}>
+ <span className={`text-[9px] font-black uppercase tracking-widest ${turn.role ==='assistant' ?'text-[var(--accent)]' :''}`}>
  {turn.role}
  </span>
  {turn.risk_score !== undefined && (
@@ -174,8 +174,8 @@ export function ChatClient() {
  </div>
  <div className={`p-6 rounded-2xl text-[13px] leading-relaxed transition-colors duration-300 ${
  turn.role ==='assistant' 
- ?'bg-[var(--white)] border border-[var(--rule)] text-[var(--ink)] rounded-bl-none' 
- :'bg-[var(--navy)] text-[var(--white)] font-medium rounded-br-none shadow-lg shadow-[var(--navy)]/10'
+ ?'bg-[var(--bg-primary)] border border-[var(--border-primary)] text-[var(--text-primary)] rounded-bl-none' 
+ :'bg-[var(--accent)] text-[var(--bg-primary)] font-medium rounded-br-none shadow-lg shadow-[var(--accent)]/10'
  }`}>
  {turn.content}
  </div>

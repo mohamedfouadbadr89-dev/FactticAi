@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerAuthClient } from '@/lib/supabaseAuth';
+import { withAuth } from '@/lib/middleware/auth';
 import { resolveOrgContext } from '@/lib/orgResolver';
 import { logger } from '@/lib/logger';
 import { supabaseServer } from '@/lib/supabaseServer';
@@ -9,24 +9,13 @@ import { supabaseServer } from '@/lib/supabaseServer';
  * 
  * Computes deterministic Risk Momentum scoring at Agent Version level.
  */
-export async function POST(req: Request) {
+export const POST = withAuth(async (req, { session }) => {
   try {
     const body = await req.json();
     const { agent_id, agent_version } = body;
 
     if (!agent_id || !agent_version) {
       return NextResponse.json({ error: 'Missing agent_id or agent_version' }, { status: 400 });
-    }
-
-    const supabase = await createServerAuthClient();
-
-    const {
-      data: { session },
-      error: authError,
-    } = await supabase.auth.getSession();
-
-    if (authError || !session) {
-      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
     }
 
     const { org_id: orgId } = await resolveOrgContext(session.user.id);
@@ -62,4 +51,4 @@ export async function POST(req: Request) {
     logger.error('MOMENTUM_API_ERROR', { error: error.message });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});

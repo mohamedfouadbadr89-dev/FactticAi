@@ -10,9 +10,9 @@ export const DriftIndicator: React.FC<DriftIndicatorProps> = ({ drift }) => {
  const isPositive = drift > 0;
  
  return (
- <div className="flex items-center gap-4 bg-neutral-50/50 border border-neutral-100 p-4 rounded-lg">
+ <div className="flex items-center gap-4 bg-[var(--bg-primary)]/50 border border-[var(--border-primary)] p-4 rounded-lg">
  <div className="flex-1">
- <h4 className="text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-widest mb-1">Session Drift</h4>
+ <h4 className="text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-1">Session Drift</h4>
  <div className="flex items-baseline gap-2">
  <span className={`text-2xl font-mono font-bold ${drift > 0.2 ?'text-red-400' :''}`}>
  {drift.toFixed(2)}

@@ -90,13 +90,13 @@ export default function SandboxPage() {
  <div className="px-6 py-4 border-b flex justify-between items-center /50">
  <div className="flex gap-2">
  <button 
- className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors ${mode ==='chat' ?'bg-[var(--navy)] text-[var(--white)]' :'bg-[var(--white)] text-[var(--ink-soft)] border border-[var(--rule)]'}`}
+ className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors ${mode ==='chat' ?'bg-[var(--accent)] text-[var(--bg-primary)]' :'bg-[var(--bg-primary)] text-[var(--text-secondary)] border border-[var(--border-primary)]'}`}
  onClick={() => setMode('chat')}
  >
  Chat Sandbox
  </button>
  <button 
- className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors ${mode ==='voice' ?'bg-[var(--navy)] text-[var(--white)]' :'bg-[var(--white)] text-[var(--ink-soft)] border border-[var(--rule)]'}`}
+ className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors ${mode ==='voice' ?'bg-[var(--accent)] text-[var(--bg-primary)]' :'bg-[var(--bg-primary)] text-[var(--text-secondary)] border border-[var(--border-primary)]'}`}
  onClick={() => setMode('voice')}
  >
  Voice Sandbox
@@ -118,7 +118,7 @@ export default function SandboxPage() {
 
  <div className="p-4 border-t transition-colors duration-300">
  <button 
- className="w-full bg-[var(--navy)] text-[var(--white)] font-black uppercase tracking-widest text-[10px] py-4 rounded-xl hover:opacity-90 transition-colors shadow-lg active:scale-[0.98] disabled:opacity-50" 
+ className="w-full bg-[var(--accent)] text-[var(--bg-primary)] font-black uppercase tracking-widest text-[10px] py-4 rounded-xl hover:opacity-90 transition-colors shadow-lg active:scale-[0.98] disabled:opacity-50" 
  onClick={runInteraction}
  disabled={isProcessing}
  >
@@ -129,7 +129,7 @@ export default function SandboxPage() {
 
  <div className="lg:col-span-4 space-y-6">
  <div className="section-card p-6 transition-colors duration-300">
- <h3 className="text-xs font-black text-[var(--ink-soft)] uppercase tracking-widest mb-6 border-l-2 border-[var(--navy)] px-3 transition-colors duration-300">Integrity Guard</h3>
+ <h3 className="text-xs font-black text-[var(--text-primary)] uppercase tracking-widest mb-6 border-l-2 border-[var(--accent)] px-3 transition-colors duration-300">Integrity Guard</h3>
  <div className="space-y-4">
  <div className="flex justify-between items-center">
  <span className="text-[10px] font-black uppercase tracking-widest">Telemetry Bonded</span>

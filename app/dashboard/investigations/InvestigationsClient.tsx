@@ -5,8 +5,10 @@ import React, { useState, useEffect } from'react'
 interface Investigation {
  id: string
  triggered_by: string
- lifecycle_status: string
- drift_score: number
+ status: string
+ severity: string
+ description: string
+ drift_score?: number
  created_at: string
  governance_root_cause_reports?: any[]
 }
@@ -42,8 +44,8 @@ export function InvestigationsClient() {
  if (loading) {
  return (
  <div className="w-full max-w-7xl mx-auto p-6 md:p-8 space-y-4 animate-pulse">
- <div className="h-8 w-48 rounded" />
- <div className="h-64 w-full rounded-xl" />
+ <div className="h-8 w-48 rounded-[var(--radius)]" />
+ <div className="h-64 w-full rounded-[var(--radius)]" />
  </div>
  )
  }
@@ -79,19 +81,19 @@ export function InvestigationsClient() {
  <div className="text-[10px] uppercase font-black mt-1 tracking-widest">ID: {inv.id.substring(0, 8)}</div>
  </td>
  <td className="px-6 py-6">
- <span className="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[9px] font-black uppercase border border-blue-100 tracking-widest">
- {inv.lifecycle_status}
+ <span className="bg-[var(--accent-soft)] text-[var(--accent)] px-2.5 py-1 rounded text-[9px] font-black uppercase border border-blue-100 tracking-widest">
+ {inv.status}
  </span>
  </td>
  <td className="px-6 py-6 font-bold">
  <div className="flex items-center gap-2">
- <div className="w-16 h-1.5 bg-[var(--parch-2)] rounded-full overflow-hidden border border-[var(--rule)] transition-colors duration-300">
+ <div className="w-16 h-1.5 bg-[var(--bg-secondary)] rounded-full overflow-hidden border border-[var(--border-primary)] transition-colors duration-300">
  <div 
- className="h-full bg-[var(--navy)] transition-colors duration-300" 
+ className="h-full bg-[var(--accent)] transition-colors duration-300" 
  style={{ width:`${(inv.drift_score ?? 0.5) * 100}%` }}
  />
  </div>
- <span className="font-bold text-[var(--navy)] transition-colors duration-300">{((inv.drift_score ?? 0.5) * 100).toFixed(1)}%</span>
+ <span className="font-bold text-[var(--accent)] transition-colors duration-300">{((inv.drift_score ?? 0.5) * 100).toFixed(1)}%</span>
  </div>
  </td>
  <td className="px-6 py-6 font-black uppercase tracking-tight text-[10px]">
@@ -99,7 +101,7 @@ export function InvestigationsClient() {
  </td>
  <td className="px-6 py-6">
  <span className="text-[9px] font-black uppercase tracking-widest border px-2 py-1 rounded-sm">
- {getPhaseTag(inv.lifecycle_status)}
+ {getPhaseTag(inv.status)}
  </span>
  </td>
  <td className="px-6 py-6 font-bold text-[10px]">

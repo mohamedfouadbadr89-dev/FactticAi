@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerAuthClient } from '@/lib/supabaseAuth';
-import { resolveOrgContext } from '@/lib/orgResolver';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { logger } from '@/lib/logger';
 import { supabaseServer } from '@/lib/supabaseServer';
 
@@ -10,20 +9,8 @@ import { supabaseServer } from '@/lib/supabaseServer';
  * Retrieves the latest governance escalations and alerts.
  * Wraps: public.governance_escalation_log
  */
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
-    const supabase = await createServerAuthClient();
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-
-    if (authError || !session) {
-      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-    }
-
-    const { org_id: orgId } = await resolveOrgContext(session.user.id);
-    if (!orgId) {
-      return NextResponse.json({ error: 'ORG_CONTEXT_MISSING' }, { status: 400 });
-    }
-
     // Query escalation log with org isolation
     const { data, error } = await supabaseServer
       .from('governance_escalation_log')
@@ -46,4 +33,4 @@ export async function GET(req: Request) {
     logger.error('GOVERNANCE_ALERTS_API_ERROR', { error: error.message });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});

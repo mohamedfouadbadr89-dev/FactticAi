@@ -12,7 +12,7 @@ export const TurnTimeline: React.FC<TurnTimelineProps> = ({ turns, onInspect }) 
  return (
  <div className="space-y-6">
  {turns.length === 0 ? (
- <div className="py-12 text-center text-neutral-400 font-mono text-sm uppercase tracking-widest border border-dashed border-neutral-200 rounded-lg">
+ <div className="py-12 text-center text-[var(--text-secondary)] font-mono text-sm uppercase tracking-widest border border-dashed border-[var(--border-primary)] rounded-lg">
  No turns recorded for this session.
  </div>
  ) : (

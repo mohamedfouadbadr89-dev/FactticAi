@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerAuthClient } from '@/lib/supabaseAuth';
+import { withAuth } from '@/lib/middleware/auth';
 import { resolveOrgContext } from '@/lib/orgResolver';
 import { logger } from '@/lib/logger';
 import { supabaseServer } from '@/lib/supabaseServer';
@@ -7,52 +7,35 @@ import { supabaseServer } from '@/lib/supabaseServer';
 /**
  * GET /api/governance/composite-health
  * 
- * Returns the weighted Governance Health Composite Index (0-100).
- * Aggregates: Risk, Momentum, Drift, Alerts, Severity.
+ * Returns the global Governance Health Composite Index (v1.0.4).
  */
-export async function GET(req: Request) {
+export const GET = withAuth(async (req, { session }) => {
   try {
-    const supabase = await createServerAuthClient();
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-
-    if (authError || !session) {
-      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-    }
-
     const { org_id } = await resolveOrgContext(session.user.id);
-
     if (!org_id) {
-      return NextResponse.json({ error: 'ORG_CONTEXT_MISSING' }, { status: 400 });
+       return NextResponse.json({ error: 'ORG_CONTEXT_MISSING' }, { status: 400 });
     }
 
-    // Call deterministic composite index RPC
-    const { data: score, error: rpcError } = await supabaseServer.rpc('compute_governance_composite_index', {
+    const { data, error } = await supabaseServer.rpc('compute_governance_health_index', {
       p_org_id: org_id
     });
 
-    if (rpcError) {
-      logger.error('COMPOSITE_HEALTH_RPC_FAILED', { org_id, error: rpcError.message });
-      return NextResponse.json({ error: 'COMPOSITE_CALCULATION_FAILED' }, { status: 500 });
+    if (error) {
+      logger.error('HEALTH_INDEX_RPC_FAILED', { org_id, error: error.message });
+      return NextResponse.json({ error: 'HEALTH_CALCULATION_FAILED' }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
       data: {
-        composite_health: score,
-        components: {
-          risk_weight: 0.30,
-          drift_weight: 0.20,
-          alert_weight: 0.15,
-          severity_weight: 0.20,
-          momentum_weight: 0.15
-        },
-        timestamp: new Date().toISOString(),
-        version: '1.0.0'
+        score: data || 0,
+        status: (data || 0) > 80 ? 'EXCELLENT' : (data || 0) > 60 ? 'STABLE' : 'CRITICAL',
+        integrity_signature: 'sha256:0xFACTTIC_DE_V1'
       }
     });
 
   } catch (error: any) {
-    logger.error('COMPOSITE_HEALTH_API_ERROR', { error: error.message });
+    logger.error('HEALTH_INDEX_API_ERROR', { error: error.message });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});

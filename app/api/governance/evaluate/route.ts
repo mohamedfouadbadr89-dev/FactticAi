@@ -1,118 +1,60 @@
-import { NextResponse } from 'next/server'
-import { createServerAuthClient } from '@/lib/supabaseAuth'
-import { resolveOrgContext } from '@/lib/orgResolver'
-import { RiskScoringEngine } from '@/lib/riskScoringEngine'
-import { EvaluationRepository } from '@/lib/evaluationRepository'
-import { IntegrityService } from '@/lib/integrityService'
-import { isFeatureEnabled } from '@/config/featureFlags'
-import Redis from 'ioredis'
-import { signalBus } from '@/lib/signalBus'
-import { logger } from '@/lib/logger'
+import { NextResponse } from 'next/server';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
+import { GovernanceEvaluator, InteractionPayload } from '@/src/core/governance/evaluator';
+import { logger } from '@/lib/logger';
+import { supabaseServer } from '@/lib/supabaseServer';
 
-export async function POST(req: Request) {
+/**
+ * POST /api/governance/evaluate
+ * 
+ * Performs real-time governance evaluation for an interaction (Voice, Chat, etc.)
+ */
+export const POST = withAuth(async (req: Request, { orgId, userId }: AuthContext) => {
   try {
-    const body = await req.json()
-    const supabase = await createServerAuthClient()
+    const payload: InteractionPayload = await req.json();
 
-    const {
-      data: { session },
-      error: authError,
-    } = await supabase.auth.getSession()
-
-    if (authError || !session) {
-      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })
+    // 1. Audit & Integrity Check
+    if (!payload.session_id || !payload.content) {
+      return NextResponse.json({ error: 'INVALID_PAYLOAD' }, { status: 400 });
     }
 
-    const { org_id: orgId } = await resolveOrgContext(session.user.id)
+    // 2. Perform Evaluation
+    const result = await GovernanceEvaluator.evaluateInteraction({
+      ...payload,
+      org_id: orgId, // Enforce orgId from auth context
+      user_id: payload.user_id || userId
+    });
 
-    if (!orgId) {
-      return NextResponse.json(
-        { error: 'ORG_CONTEXT_MISSING' },
-        { status: 400 }
-      )
+    // 3. Persist Event to Database (Audit Trail)
+    const { error: dbError } = await supabaseServer
+      .from('session_turns')
+      .insert({
+        org_id: orgId,
+        session_id: payload.session_id,
+        role: 'user', // Assuming user for now, could be dynamic
+        content: payload.content,
+        incremental_risk: result.overall_risk,
+        factors: { 
+          ...result.voice_risks?.reduce((acc: any, risk: string) => ({ ...acc, [risk]: 1 }), {}),
+          total_risk: result.overall_risk
+        },
+        confidence: result.confidence.toString(),
+        created_at: result.timestamp
+      });
+
+    if (dbError) {
+      logger.error('GOVERNANCE_EVENT_PERSIST_FAILED', { error: dbError });
+      // We continue since the evaluation result is the priority for live mitigation
     }
 
-    const { interaction_id, payload } = body
-
-    if (!interaction_id || !payload) {
-      return NextResponse.json(
-        { error: 'Missing interaction_id or payload' },
-        { status: 400 }
-      )
-    }
-
-    // 1️⃣ Compute
-    const evaluation = RiskScoringEngine.evaluateTurn(
-      orgId,
-      interaction_id,
-      payload
-    )
-
-    // 2️⃣ Sign
-    const signature = IntegrityService.sign(
-      orgId,
-      interaction_id,
-      evaluation
-    )
-
-    const evaluationWithSignature = {
-      ...evaluation,
-      signature,
-    }
-
-    logger.info('TURN_EVALUATED', { orgId, interaction_id })
-
-    // 3️⃣ Persist
-    const severityLevel = await EvaluationRepository.persist(
-      orgId,
-      interaction_id,
-      evaluationWithSignature
-    )
-
-    // 4️⃣ Broadcast
-    const channel = `risk_stream:${orgId}`
-    const message = JSON.stringify({
-      type: 'TURN_RISK_UPDATE',
-      interaction_id,
-      ...evaluationWithSignature,
-      severity_level: severityLevel,
-    })
-
-    if (
-      isFeatureEnabled('REDIS_CACHE_LAYER') &&
-      process.env.REDIS_URL
-    ) {
-      try {
-        const redis = new Redis(process.env.REDIS_URL, {
-          maxRetriesPerRequest: 0,
-          connectTimeout: 1000,
-          retryStrategy: () => null,
-        })
-
-        await redis.publish(channel, message)
-        redis.disconnect()
-      } catch {
-        signalBus.emit(channel, message)
-      }
-    } else {
-      signalBus.emit(channel, message)
-    }
-
+    // 4. Return result for real-time mitigation
     return NextResponse.json({
       success: true,
-      data: {
-        ...evaluationWithSignature,
-        severity_level: severityLevel,
-      },
-    })
-  } catch (error: any) {
-    logger.error('EVALUATION_API_ERROR', {
-      error: error?.message,
-    })
+      data: result
+    });
 
-    return NextResponse.json(
-      { error: 'Evaluation failed' },
-      { status: 500 }
-    )
+  } catch (error: any) {
+    logger.error('GOVERNANCE_EVALUATION_ERROR', { error: error.message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});

@@ -16,8 +16,8 @@ export default function CompliancePage() {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6 md:p-8">
-      <h1 className="text-2xl font-bold mb-4">Compliance Layer</h1>
-      <p className="text-neutral-500 text-sm">Deterministic audit journals and institutional evidence locker.</p>
+      <h1 className="text-2xl font-bold mb-4 text-[var(--text-primary)]">Compliance Layer</h1>
+      <p className="text-[var(--text-secondary)] text-sm">Deterministic audit journals and institutional evidence locker.</p>
     </div>
   )
 }

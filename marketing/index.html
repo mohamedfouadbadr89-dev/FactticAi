@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facttic.ai | Sovereign AI Governance & Behavioral Control</title>
+    <meta name="description" content="Institutional-grade AI governance for regulated enterprises. Cryptographic audit chains, deterministic policy enforcement, and executive-ready risk indexing.">
+    
+    <!-- Typography: IBM Plex Suite -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Institutional Color Protocol */
+            --navy: #001220;
+            --navy-light: #001C31;
+            --gold: #B38B3F;
+            --gold-muted: rgba(179, 139, 63, 0.2);
+            --parch: #FDFBF7;
+            --ink: #000911;
+            --text-primary: #001220;
+            --text-secondary: rgba(0, 18, 32, 0.7);
+            --text-muted: rgba(0, 18, 32, 0.45);
+            --border: rgba(0, 18, 32, 0.1);
+            --success: #059669;
+            --risk: #DC2626;
+            
+            /* Structural Grid */
+            --max-width: 1400px;
+            --spacing-unit: 8px;
+            --radius: 0px; /* Regulatory-grade sharp corners */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: var(--parch); 
+            color: var(--text-primary); 
+            font-family: 'IBM Plex Sans', sans-serif; 
+            line-height: 1.5; 
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, .serif { font-family: 'IBM Plex Serif', serif; }
+        .mono { font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; font-weight: 700; letter-spacing: 0.15em; font-size: 10px; }
+        
+        .container { max-width: var(--max-width); margin: 0 auto; padding: 0 40px; }
+        section { padding: 96px 0; border-top: 1px solid var(--border); }
+        .grid { display: grid; gap: 40px; }
+
+        /* Navigation */
+        nav { 
+            padding: 24px 0; 
+            background: var(--parch); 
+            position: sticky; 
+            top: 0; 
+            z-index: 100;
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-content { display: flex; justify-content: space-between; items-center: center; }
+        .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; color: var(--navy); }
+        .nav-links { display: flex; gap: 32px; align-items: center; }
+        .nav-link { text-decoration: none; color: var(--text-secondary); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+        .cta-button { 
+            background: var(--navy); 
+            color: white; 
+            padding: 12px 24px; 
+            text-decoration: none; 
+            font-size: 11px; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 0.2em;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+        .cta-button:hover { background: var(--gold); }
+
+        /* Hero */
+        .hero { background: var(--navy); color: white; border-top: none; min-height: 80vh; display: flex; align-items: center; overflow: hidden; position: relative; }
+        .hero-grid { grid-template-columns: 1fr 1fr; align-items: center; }
+        .hero h1 { font-size: 64px; line-height: 1.1; margin: 24px 0; letter-spacing: -0.03em; }
+        .hero p { font-size: 20px; color: rgba(255,255,255,0.6); max-width: 540px; margin-bottom: 48px; }
+        .badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); font-size: 10px; color: var(--gold); letter-spacing: 0.2em; font-weight: 700; }
+        
+        /* Dashboard Preview */
+        .dashboard-mockup { 
+            background: var(--navy-light); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            padding: 32px; 
+            position: relative;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+        }
+        .governance-health { border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 24px; margin-bottom: 32px; }
+        .health-score { font-size: 72px; color: var(--gold); font-weight: 500; font-family: 'IBM Plex Serif', serif; }
+
+        /* Layer Grid */
+        .layer-grid { grid-template-columns: repeat(4, 1fr); gap: 24px; }
+        .layer-card { 
+            background: white; 
+            border: 1px solid var(--border); 
+            padding: 32px; 
+            border-top: 4px solid var(--navy);
+            transition: 0.3s ease;
+        }
+        .layer-card:hover { border-color: var(--gold); transform: translateY(-4px); }
+        .layer-card h3 { font-size: 18px; margin-bottom: 16px; color: var(--navy); }
+        .layer-num { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted); margin-bottom: 8px; display: block; }
+
+        /* Stakeholder Split */
+        .perspectives { display: flex; padding: 0; min-height: 600px; border-top: none; }
+        .p-left { flex: 1; background: var(--navy); color: white; padding: 80px; }
+        .p-right { flex: 1; background: var(--parch); color: var(--navy); padding: 80px; border-left: 1px solid var(--navy); }
+        .perspective-inner { max-width: 500px; margin: 0 auto; }
+        .p-left .perspective-inner { margin-left: auto; margin-right: 0; }
+        .p-right .perspective-inner { margin-right: auto; margin-left: 0; }
+
+        /* Pricing Tiers */
+        .pricing-grid { grid-template-columns: repeat(3, 1fr); gap: 32px; }
+        .pricing-card { border: 1px solid var(--border); padding: 48px; display: flex; flex-direction: column; }
+        .pricing-card.featured { border: 2px solid var(--gold); background: #fffcf8; }
+        .pricing-header h3 { font-size: 28px; margin-bottom: 8px; }
+        .price-tag { font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: var(--gold); margin-bottom: 32px; display: block; }
+        .features-list { list-style: none; margin-bottom: 48px; flex: 1; }
+        .features-list li { margin-bottom: 16px; font-size: 14px; font-weight: 600; display: flex; gap: 12px; align-items: center; }
+        .features-list li::before { content: ""; width: 6px; height: 6px; background: var(--gold); border-radius: 50%; }
+
+        /* Footer */
+        footer { padding: 48px 0; background: var(--navy); color: rgba(255,255,255,0.5); font-size: 11px; }
+        .footer-content { display: flex; justify-content: space-between; }
+        .footer-links { display: flex; gap: 32px; }
+
+        @media (max-width: 1024px) {
+            .hero-grid, .layer-grid, .pricing-grid { grid-template-columns: 1fr; }
+            .perspectives { flex-direction: column; }
+            .hero h1 { font-size: 48px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="container nav-content">
+            <div class="logo serif">Facttic.AI</div>
+            <div class="nav-links">
+                <a href="#layers" class="nav-link">Architecture</a>
+                <a href="#governance" class="nav-link">Governance</a>
+                <a href="#pricing" class="nav-link">Frameworks</a>
+                <button class="cta-button">Initialize Proof</button>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container grid hero-grid">
+            <div>
+                <div class="badge mono">ENTERPRISE CONTROL PLANE</div>
+                <h1>Sovereign AI Governance.</h1>
+                <p>Deterministic behavioral control and cryptographic audit chains for regulated enterprises. Designed for the institutional Boardroom.</p>
+                <div style="display: flex; gap: 20px;">
+                    <button class="cta-button" style="padding: 18px 40px; font-size: 12px; background: var(--gold);">Request Protocol Briefing</button>
+                </div>
+                <div style="margin-top: 64px; display: flex; gap: 40px; opacity: 0.5;">
+                    <span class="mono">SOC2 TYPE II</span>
+                    <span class="mono">GDPR COMPLIANT</span>
+                    <span class="mono">HIPAA READY</span>
+                </div>
+            </div>
+            <div>
+                <div class="dashboard-mockup">
+                    <div class="governance-health">
+                        <div class="mono" style="color: rgba(255,255,255,0.4); margin-bottom: 8px;">GOVERNANCE HEALTH INDEX</div>
+                        <div class="health-score">94.8</div>
+                    </div>
+                    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 24px;">
+                        <div style="border: 1px solid rgba(255,255,255,0.1); padding: 16px;">
+                            <div class="mono" style="margin-bottom: 4px;">SESSIONS MONITORED</div>
+                            <div style="font-size: 24px; font-family: 'IBM Plex Serif';">1.2M</div>
+                        </div>
+                        <div style="border: 1px solid rgba(255,255,255,0.1); padding: 16px;">
+                            <div class="mono" style="margin-bottom: 4px;">DRIFT DETECTED</div>
+                            <div style="font-size: 24px; font-family: 'IBM Plex Serif'; color: var(--gold);">0.04%</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 24px; border: 1px solid var(--gold); padding: 12px; text-align: center;">
+                       <span class="mono" style="color: var(--gold);">AUDIT LEDGER SEALED v4.28</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="layers">
+        <div class="container">
+            <div class="mono" style="color: var(--gold); margin-bottom: 16px;">SYSTEM ARCHITECTURE</div>
+            <h2 style="font-size: 40px; margin-bottom: 48px; max-width: 600px;">Every Intelligence Layer. One Platform.</h2>
+            <div class="grid layer-grid">
+                <div class="layer-card" style="border-top-color: #B38B3F;">
+                    <span class="layer-num">01 / CORE</span>
+                    <h3>Governance Intelligence</h3>
+                    <p style="font-size: 13px; color: var(--text-secondary);">Real-time deterministic policy enforcement and behavioral mapping.</p>
+                </div>
+                <div class="layer-card" style="border-top-color: #001220;">
+                    <span class="layer-num">02 / PROOF</span>
+                    <h3>Cryptographic Audit</h3>
+                    <p style="font-size: 13px; color: var(--text-secondary);">SHA-256 event hashing and immutable chain-of-custody logging.</p>
+                </div>
+                <div class="layer-card" style="border-top-color: #059669;">
+                    <span class="layer-num">03 / RISK</span>
+                    <h3>Drift Intelligence</h3>
+                    <p style="font-size: 13px; color: var(--text-secondary);">Advanced regression engine identifying session-level behavioral shifts.</p>
+                </div>
+                <div class="layer-card" style="border-top-color: #DC2626;">
+                    <span class="layer-num">04 / CONTROL</span>
+                    <h3>Economic Defense</h3>
+                    <p style="font-size: 13px; color: var(--text-secondary);">Automated billing isolation and resource expenditure governance.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="perspectives">
+        <div class="p-left">
+            <div class="perspective-inner">
+                <div class="mono" style="color: var(--gold); margin-bottom: 16px;">EXECUTIVE MODE</div>
+                <h2 style="font-size: 48px; margin-bottom: 24px;">Strategic Oversight.</h2>
+                <div class="mono" style="color: rgba(255,255,255,0.4); margin-bottom: 8px;">AUDIENCE: BOARD, CFO, CLO</div>
+                <p style="font-size: 18px; color: rgba(255,255,255,0.7); margin-bottom: 48px;">High-level risk aggregation, material impact analysis, and institutional health indexing.</p>
+                <div style="height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 48px;"></div>
+                <ul class="features-list" style="color: rgba(255,255,255,0.9);">
+                    <li>Governance Health Composite Index</li>
+                    <li>Materiality Risk Assessment</li>
+                    <li>Sovereign Regulatory Snapshot</li>
+                </ul>
+            </div>
+        </div>
+        <div class="p-right">
+            <div class="perspective-inner">
+                <div class="mono" style="color: var(--text-muted); margin-bottom: 16px;">ADVANCED MODE</div>
+                <h2 style="font-size: 48px; margin-bottom: 24px;">Technical Control.</h2>
+                <div class="mono" style="color: var(--text-muted); margin-bottom: 8px;">AUDIENCE: CTO, AI SYSTEMS ENG</div>
+                <p style="font-size: 18px; color: var(--text-secondary); margin-bottom: 48px;">Granular node telemetry, prompt-hashing integrity, and event trace validation.</p>
+                <div style="height: 1px; background: var(--navy); opacity: 0.1; margin-bottom: 48px;"></div>
+                <ul class="features-list">
+                    <li>Universal Event Telemetry</li>
+                    <li>Prompt Integrity Hashing</li>
+                    <li>Regression Engine Analysis</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section id="pricing" style="background: white;">
+        <div class="container">
+            <div class="text-center" style="text-align: center; margin-bottom: 64px;">
+                <div class="mono" style="color: var(--gold); margin-bottom: 16px;">GOVERNANCE FRAMEWORKS</div>
+                <h2 style="font-size: 40px;">Enterprise-Grade Tiers.</h2>
+            </div>
+            <div class="grid pricing-grid">
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <span class="mono" style="color: var(--gold);">STANDARD</span>
+                        <h3>Governance Foundation</h3>
+                        <span class="price-tag">ENTERPRISE ENTRY</span>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 32px;">Baseline deterministic oversight for emerging AI deployments.</p>
+                    </div>
+                    <ul class="features-list">
+                        <li>Control Plane Access</li>
+                        <li>Semantic Policy Enforcement</li>
+                        <li>Deterministic Audit Logs</li>
+                    </ul>
+                    <button class="cta-button" style="background: transparent; border: 1px solid var(--navy); color: var(--navy);">Request Evaluation</button>
+                </div>
+                <div class="pricing-card featured">
+                    <div class="pricing-header">
+                        <span class="mono" style="color: var(--gold);">RECOMMENDED</span>
+                        <h3>Enterprise Governance</h3>
+                        <span class="price-tag">MANAGED IMPLEMENTATION</span>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 32px;">Complete governance infrastructure for regulated institutions.</p>
+                    </div>
+                    <ul class="features-list">
+                        <li>Executive Health Indexing</li>
+                        <li>Behavioral Drift Alarms</li>
+                        <li>Enterprise SLA (99.99%)</li>
+                    </ul>
+                    <button class="cta-button">Initialize Implementation</button>
+                </div>
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <span class="mono" style="color: var(--gold);">MAXIMUM SECURITY</span>
+                        <h3>Sovereign Platform</h3>
+                        <span class="price-tag">CUSTOM PROTOCOL</span>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 32px;">Dedicated governance enclaves for air-gapped or critical state systems.</p>
+                    </div>
+                    <ul class="features-list">
+                        <li>Air-Gapped Audit Enclaves</li>
+                        <li>Hardware-Root Validation</li>
+                        <li>BYOK Encryption Support</li>
+                    </ul>
+                    <button class="cta-button" style="background: transparent; border: 1px solid var(--navy); color: var(--navy);">Contact Systems Eng</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container footer-content">
+            <div>Facttic.AI © 2026 · Institutional AI Governance</div>
+            <div class="footer-links">
+                <a href="#" style="color: inherit; text-decoration: none;" class="mono">Security Protocol</a>
+                <a href="#" style="color: inherit; text-decoration: none;" class="mono">Governance Registry</a>
+                <a href="#" style="color: inherit; text-decoration: none;" class="mono">Legal Terms</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
