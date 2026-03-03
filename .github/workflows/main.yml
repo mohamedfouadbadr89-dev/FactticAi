@@ -1,0 +1,73 @@
+name: Facttic Pre-Launch CI/CD
+
+on:
+  push:
+    branches: [ main, pre-launch-review ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run Unit Tests
+        run: npm run test
+      
+      - name: Run Lint
+        run: npm run lint
+
+  integration-e2e:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Cypress Install
+        run: npm ci
+      
+      - name: Run Cypress E2E
+        run: npx cypress run --spec "cypress/e2e/sso_login.cy.ts"
+
+  performance-k6:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run k6 Load Test
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: k6/load_test_webhooks.js
+        env:
+          FACTTIC_API_URL: ${{ secrets.FACTTIC_STAGING_API_URL }}
+          FACTTIC_WEBHOOK_SECRET: ${{ secrets.FACTTIC_WEBHOOK_SECRET }}
+
+  deploy-staging:
+    needs: [integration-e2e, performance-k6]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+      
+      - name: Terraform Init
+        run: terraform init
+        working-directory: deploy/terraform
+      
+      - name: Terraform Apply (Staging)
+        run: terraform apply -var-file="environments/staging.tfvars" -auto-approve
+        working-directory: deploy/terraform
