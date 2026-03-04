@@ -1,6 +1,7 @@
 import { supabaseServer } from '../lib/supabaseServer';
 import { ChatConversation } from '../models/ChatConversation';
 import { encryptData, decryptData } from '../lib/encryption';
+import { logger } from '@/lib/logger';
 
 /**
  * Saves an encrypted ChatConversation object into the database.
@@ -43,7 +44,7 @@ export async function saveChatConversation(conversation: ChatConversation, byokK
     .single();
 
   if (error) {
-    console.error('Failed to save ChatConversation:', error);
+    logger.error('Failed to save ChatConversation:', error);
     throw new Error(`Database error saving chat conversation: ${error.message}`);
   }
 
@@ -93,7 +94,7 @@ export async function getChatConversationById(id: string, orgId: string, byokKey
       encryptedData: data.encrypted_data,
     });
   } catch (decryptionError: any) {
-     console.error('[Chat Security] Failed to decrypt chat log using provided BYOK key', decryptionError);
+     logger.error('[Chat Security] Failed to decrypt chat log using provided BYOK key', decryptionError);
      throw new Error('BYOK Decryption Failed: Invalid key or corrupted ciphertext.');
   }
 }

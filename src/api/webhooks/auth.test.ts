@@ -3,7 +3,10 @@ import { supabaseServer } from '../../../lib/supabaseServer';
 
 // Mock the Next.js Request object and Supabase server client
 jest.mock('../../../lib/supabaseServer', () => ({
-  supabaseServer: jest.fn()
+  supabaseServer: {
+    from: jest.fn().mockReturnThis(),
+    upsert: jest.fn().mockResolvedValue({ error: null })
+  }
 }));
 
 describe('SSO Auth Webhook Interceptor', () => {
@@ -17,12 +20,9 @@ describe('SSO Auth Webhook Interceptor', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    mockSupabaseClient = {
-      from: jest.fn().mockReturnThis(),
-      upsert: jest.fn().mockResolvedValue({ error: null })
-    };
-
-    (supabaseServer as jest.Mock).mockReturnValue(mockSupabaseClient);
+    mockSupabaseClient = supabaseServer;
+    mockSupabaseClient.from.mockClear();
+    mockSupabaseClient.upsert.mockClear();
   });
 
   it('rejects requests with invalid signatures', async () => {
@@ -82,7 +82,7 @@ describe('SSO Auth Webhook Interceptor', () => {
         record: {
           id: 'user-999',
           email: 'intern@stark.com',
-          app_metadata: { provider: 'sso' },
+          app_metadata: { providers: ['sso'] },
           user_metadata: { organization_id: 'org-123', groups: ['All_Company'] }
         }
       })
@@ -93,7 +93,7 @@ describe('SSO Auth Webhook Interceptor', () => {
 
     expect(mockSupabaseClient.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        role: 'member'
+        role: 'analyst'
       }),
       expect.any(Object)
     );

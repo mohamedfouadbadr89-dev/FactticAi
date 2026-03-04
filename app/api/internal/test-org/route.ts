@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { withAuth } from '@/lib/authGuard';
-import { resolveOrgContext } from '@/lib/orgResolver';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { authorize, type Role } from '@/lib/rbac';
 
 /**
@@ -9,27 +8,18 @@ import { authorize, type Role } from '@/lib/rbac';
  * Core validation endpoint for Organization Foundation Lock.
  * Proves deterministic resolution and isolation.
  */
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: Request, { userId, orgId, role }: AuthContext) => {
   try {
-    const auth = await withAuth(req);
-
-    if (auth.error || !auth.user) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
-    }
-
-    // Resolve context ONLY from DB
-    const context = await resolveOrgContext(auth.user.id);
-
     // Internal endpoints require at minimum 'admin' role
     try {
-      authorize(context.role as Role, 'admin');
+      authorize(role as Role, 'admin');
     } catch {
       return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
     }
 
     return NextResponse.json({
       success: true,
-      context,
+      context: { userId, org_id: orgId, role },
       message: "ORGANIZATION FOUNDATION LOCKED."
     });
   } catch (error: any) {
@@ -38,4 +28,4 @@ export async function GET(req: Request) {
       { status: 403 }
     );
   }
-}
+});

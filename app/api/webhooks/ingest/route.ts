@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { withAuth } from '@/lib/authGuard';
-import { resolveOrgContext } from '@/lib/orgResolver';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { recordWebhookEvent } from '@/lib/idempotency';
 import { redactPII } from '@/lib/redactor';
 import * as Sentry from '@sentry/nextjs';
@@ -13,17 +12,8 @@ import { supabaseServer } from '@/lib/supabaseServer';
  * 
  * Core Ingestion Flow with strict idempotency.
  */
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
-    const auth = await withAuth(req);
-
-    if (auth.error || !auth.user) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
-    }
-
-    // Solve Org Context deterministically
-    const { org_id } = await resolveOrgContext(auth.user.id);
-
     const body = await req.json();
     const { provider, event_id, idempotency_key, payload } = body;
     const redactedPayload = typeof payload === 'object' ? redactPII(payload) : payload;
@@ -33,7 +23,7 @@ export async function POST(req: Request) {
     }
 
     const result = await recordWebhookEvent({
-      org_id,
+      org_id: orgId,
       provider,
       event_id,
       idempotency_key,
@@ -54,7 +44,7 @@ export async function POST(req: Request) {
       
       // 1. Evaluate Turn Risk (Deterministic)
       const { RiskScoringEngine } = await import('@/lib/riskScoringEngine');
-      const score = await RiskScoringEngine.evaluateTurn(org_id, event_id, redactedPayload);
+      const score = await RiskScoringEngine.evaluateTurn(orgId, event_id, redactedPayload);
 
       // 2. Persist Turn to session_turns
       const { error: turnError } = await supabaseServer
@@ -109,4 +99,4 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-}
+});

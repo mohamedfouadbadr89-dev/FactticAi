@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getRiskScoresByConversationId } from '@/database/voiceRiskScores';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: Request) {
   try {
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, riskScores: scores }, { status: 200 });
   } catch (error: any) {
-    console.error('API Error fetching risk scores:', error);
+    logger.error('API Error fetching risk scores:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

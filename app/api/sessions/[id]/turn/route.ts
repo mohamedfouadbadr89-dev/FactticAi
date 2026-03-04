@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerAuthClient } from '@/lib/supabaseAuth';
-import { withAuth } from '@/lib/authGuard';
-import { resolveOrgContext } from '@/lib/orgResolver';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { supabaseServer } from '@/lib/supabaseServer';
 import { RiskScoringEngine } from '@/lib/riskScoringEngine';
 import { logger } from '@/lib/logger';
@@ -11,26 +9,11 @@ import { logger } from '@/lib/logger';
  * 
  * Inserts a new turn into a session and triggers risk evaluation.
  */
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withAuth(async (req: Request, { orgId, params }: AuthContext & { params: { id: string } }) => {
   try {
-    const { id: sessionId } = await params;
-    const supabase = await createServerAuthClient();
+    const { id: sessionId } = params;
     const body = await req.json();
     
-    // 1. Auth & Session Extraction
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    
-    if (authError || !session) {
-      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-    }
-
-    const { org_id: orgId } = await resolveOrgContext(session.user.id);
-
-    if (!orgId) {
-      return NextResponse.json({ error: 'ORG_CONTEXT_MISSING' }, { status: 400 });
-    }
-
-
     const { turn_index, role, content, payload } = body;
 
     if (turn_index === undefined || !role || !content) {
@@ -57,7 +40,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: 'Failed to insert turn' }, { status: 500 });
     }
 
-
     return NextResponse.json({
       success: true,
       data: {
@@ -67,12 +49,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     });
 
   } catch (error: any) {
-    console.error('TURN_API_ERROR:', error);
-    logger.error('TURN_API_ERROR', { error: error.message, stack: error.stack });
-    return NextResponse.json({ 
-      error: 'Internal Server Error', 
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
-    }, { status: 500 });
+    logger.error('TURN_API_ERROR', { error: error.message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});

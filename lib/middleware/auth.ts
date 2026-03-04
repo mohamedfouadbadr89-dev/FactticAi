@@ -8,6 +8,7 @@ export type AuthContext = {
   orgId: string;
   role: string;
   session: any;
+  params: any;
 };
 
 export type AuthenticatedHandler = (
@@ -66,8 +67,8 @@ export function withAuth(handler: AuthenticatedHandler) {
         orgId: org_id,
         role,
         session,
-        ...(routeContext?.params ? { params: routeContext.params } : {})
-      } as any);
+        params: routeContext?.params || {}
+      });
     } catch (err: unknown) {
       logger.error('AUTH_MIDDLEWARE_ERROR', {
         error: err instanceof Error ? err.message : 'UNKNOWN_ERROR',

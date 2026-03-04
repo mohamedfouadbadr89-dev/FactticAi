@@ -5,24 +5,38 @@ import { usePathname } from "next/navigation";
 import { 
   BarChart3, 
   ShieldAlert, 
+  Shield,
   FileText, 
   Bell, 
   Search, 
   Settings, 
   User, 
-  TerminalSquare 
+  TerminalSquare,
+  Bot,
+  Zap,
+  LayoutGrid,
+  Activity,
+  BrainCircuit,
+  Network
 } from "lucide-react";
 import { createBrowserClient } from '@supabase/ssr';
 
 // Define the groups for the application sidebar
 const navGroups = [
   {
-    group: "Governance",
+    group: "Overview",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: BarChart3, id: "tour-nav-dashboard" },
-      { label: "Intelligence", href: "/dashboard/analysis", icon: ShieldAlert, id: "tour-nav-intelligence" },
-      { label: "Alerts", href: "/dashboard/alerts", icon: Bell, id: "tour-nav-alerts" },
-      { label: "Investigations", href: "/dashboard/investigations", icon: Search, id: "tour-nav-investigations" },
+      { label: "Home", href: "/dashboard/home", icon: LayoutGrid, id: "tour-nav-home" },
+    ]
+  },
+  {
+    group: "Pillars",
+    items: [
+      { label: "AI Gateway", href: "/dashboard/gateway", icon: Zap, id: "tour-nav-gateway" },
+      { label: "AI Governance", href: "/dashboard/governance", icon: Shield, id: "tour-nav-governance" },
+      { label: "AI Intelligence", href: "/dashboard/intelligence", icon: BrainCircuit, id: "tour-nav-intelligence" },
+      { label: "AI Agents", href: "/dashboard/agents", icon: Bot, id: "tour-nav-agents" },
     ]
   },
   {

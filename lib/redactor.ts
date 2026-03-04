@@ -9,8 +9,9 @@ const PII_PATTERNS = {
   email: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
   creditCard: /\b(?:\d[ -]*?){13,16}\b/g,
   ssn: /\b\d{3}-\d{2}-\d{4}\b/g,
-  phone: /\b(?:\+?1[-. ]?)?\(?([2-9][0-8][0-9])\)?[-. ]?([2-9][0-9]{2})[-. ]?([0-9]{4})\b/g,
+  phone: /(?:\B\+|\b)(?:\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}\b|(?:\B\+|\b)(?:\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]\d{4}\b/g,
   ipv4: /\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/g,
+  passport: /\b[A-Z][0-9]{7,8}\b/ig,
 };
 
 /**
@@ -26,6 +27,7 @@ export const redactPII = (input: any): any => {
     redacted = redacted.replace(PII_PATTERNS.ssn, '[SSN_REDACTED]');
     redacted = redacted.replace(PII_PATTERNS.phone, '[PHONE_REDACTED]');
     redacted = redacted.replace(PII_PATTERNS.ipv4, '[IP_REDACTED]');
+    redacted = redacted.replace(PII_PATTERNS.passport, '[PASSPORT_REDACTED]');
     return redacted;
   }
 

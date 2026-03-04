@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { ChatConversation } from '@/models/ChatConversation';
 import { saveChatConversation } from '@/database/chatConversations';
 import { analyzeChatConversation } from '@/analysis/chatRiskAnalysis';
+import { logger } from '@/lib/logger';
 
 /**
  * Validates the webhook signature or secret token
@@ -117,19 +118,19 @@ export async function POST(req: Request) {
     try {
       insertId = await saveChatConversation(conversation, byokKey);
     } catch (dbError: any) {
-      console.error('Database error saving chat conversation:', dbError);
+      logger.error('Database error saving chat conversation:', dbError);
       return NextResponse.json({ error: 'Failed to securely store conversation data' }, { status: 500 });
     }
 
     // 6. Async Governance triggering pipeline
     analyzeChatConversation(insertId, orgId, byokKey).catch((err: any) => {
-        console.error('[Chat Webhook] Async risk analysis failed:', err);
+        logger.error('[Chat Webhook] Async risk analysis failed:', err);
     });
 
     return NextResponse.json({ success: true, id: insertId }, { status: 200 });
 
   } catch (error: any) {
-    console.error('Chat Webhook processing error:', error);
+    logger.error('Chat Webhook processing error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

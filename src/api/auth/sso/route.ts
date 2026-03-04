@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { logger } from '@/lib/logger';
 
 /**
  * Handles SSO Initiation and Callback flows for Enterprise Organizations
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
     });
 
     if (error) {
-       console.error('[SSO Auth] Flow Initiation Failed:', error);
+       logger.error('[SSO Auth] Flow Initiation Failed:', error);
        return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
@@ -54,7 +55,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ error: 'SSO flow did not return a valid redirect URL.' }, { status: 500 });
   } catch (err: any) {
-    console.error('[SSO Auth] Internal Exception:', err);
+    logger.error('[SSO Auth] Internal Exception:', err);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

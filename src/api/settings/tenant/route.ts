@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '../../../../lib/supabaseServer';
+import { logger } from '@/lib/logger';
 
 /**
  * Handles operations against Enterprise Tenant configurations.
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
       .single();
 
     if (error && error.code !== 'PGRST116') {
-      console.error('[Tenant Config] GET failure:', error);
+      logger.error('[Tenant Config] GET failure:', error);
       return NextResponse.json({ error: 'Failed retrieving configurations.' }, { status: 500 });
     }
 
@@ -96,7 +97,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, version: result.version, data: result.settings }, { status: 200 });
     
   } catch (err: any) {
-     console.error('[Tenant Config] POST execution failure:', err);
+     logger.error('[Tenant Config] POST execution failure:', err);
      return NextResponse.json({ error: 'Internal Server Error processing override.' }, { status: 500 });
   }
 }

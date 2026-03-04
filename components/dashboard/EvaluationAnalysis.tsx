@@ -75,11 +75,11 @@ export default function EvaluationAnalysis({ filters }: Props) {
     // Global filter: Date Range
     if (filters?.startDate) {
       const start = new Date(filters.startDate).getTime();
-      items = items.filter(i => new Date(i.creation_date || "").getTime() >= start);
+      items = items.filter(i => new Date(i.creation_date || i.timestamp || "").getTime() >= start);
     }
     if (filters?.endDate) {
       const end = new Date(filters.endDate).getTime();
-      items = items.filter(i => new Date(i.creation_date || "").getTime() <= end);
+      items = items.filter(i => new Date(i.creation_date || i.timestamp || "").getTime() <= end);
     }
 
     // Global filter: Model Version
@@ -110,7 +110,7 @@ export default function EvaluationAnalysis({ filters }: Props) {
   }, [data, filter, sortConfig, filters]);
 
   const chartData = data.map(d => ({
-    name: new Date(d.creation_date || "").toLocaleDateString(),
+    name: new Date(d.creation_date || d.timestamp || "").toLocaleDateString(),
     risk: d.total_risk * 100,
     confidence: d.confidence * 100
   })).reverse();
@@ -232,7 +232,7 @@ export default function EvaluationAnalysis({ filters }: Props) {
                   </td>
                   <td className="px-6 py-4 text-xs font-mono">{(row.total_risk * 100).toFixed(1)}%</td>
                   <td className="px-6 py-4 text-xs font-mono">{(row.confidence * 100).toFixed(0)}%</td>
-                  <td className="px-6 py-4 text-xs text-[var(--text-secondary)]">{new Date(row.creation_date).toLocaleString()}</td>
+                  <td className="px-6 py-4 text-xs text-[var(--text-secondary)]">{new Date(row.creation_date || row.timestamp).toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>

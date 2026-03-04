@@ -9,10 +9,10 @@ ALTER TABLE public.org_members
 ADD CONSTRAINT org_members_role_check 
 CHECK (role IN ('admin', 'analyst', 'viewer', 'owner'));
 
--- 2. Migrate existing 'member' role to 'analyst'
+-- 2. Migrate existing 'analyst' role to 'analyst'
 UPDATE public.org_members
 SET role = 'analyst'
-WHERE role = 'member';
+WHERE role = 'analyst';
 
 -- 3. Create User Profiles Table (if not exists)
 -- FactticAI uses public.users for basic data, but profiles handles extended institutional metadata.

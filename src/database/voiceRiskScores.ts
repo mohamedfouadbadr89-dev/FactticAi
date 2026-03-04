@@ -1,4 +1,5 @@
 import { supabaseServer } from '@/lib/supabaseServer';
+import { logger } from '@/lib/logger';
 
 export interface RiskScoreRecord {
   id: string;
@@ -41,7 +42,7 @@ export async function saveRiskScore(input: RiskScoreInput): Promise<string> {
     .single();
 
   if (error) {
-    console.error('Failed to save RiskScore:', error);
+    logger.error('Failed to save RiskScore:', error);
     throw new Error(`Database error saving risk score: ${error.message}`);
   }
 
@@ -82,7 +83,7 @@ export async function getRiskScoresByConversationId(conversationId: string, orgI
     .eq('org_id', orgId);
 
   if (error) {
-    console.error('Failed to retrieve RiskScores:', error);
+    logger.error('Failed to retrieve RiskScores:', error);
     throw new Error(`Database error fetching risk scores: ${error.message}`);
   }
 

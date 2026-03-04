@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '../../../lib/supabaseServer';
+import { logger } from '@/lib/logger';
 
 /**
  * Supabase Auth Webhook Interceptor for Enterprise SSO Role Mapping
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
       // (SSO assertions inject `organization_id` if natively mapped or via claims)
       const mappedOrgId = userMetadata.organization_id || appMetadata.sso_org_id;
 
-      let rbacRole = 'member'; // Fallback
+      let rbacRole = 'analyst'; // Fallback
       
       // Map Okta/Azure AD 'groups' or 'roles' claims to Facttic boundaries
       const externalGroups = userMetadata.groups || appMetadata.custom_claims?.roles || [];
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
         });
 
       if (profileError) {
-         console.error('[SSO Auth Webhook] RBAC Profile sync failed:', profileError);
+         logger.error('[SSO Auth Webhook] RBAC Profile sync failed:', profileError);
          return NextResponse.json({ error: 'Database Sync Failure' }, { status: 500 });
       }
 
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true }, { status: 200 });
 
   } catch (error: any) {
-    console.error('[SSO Auth Webhook] Internal exception:', error.message);
+    logger.error('[SSO Auth Webhook] Internal exception:', error.message);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

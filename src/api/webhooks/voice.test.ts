@@ -1,15 +1,21 @@
-import { POST, normalizePayload } from './voice';
-import { supabaseServer } from '@/lib/supabaseServer';
+import { POST } from './voice';
+import { normalizeConversationData } from '../../utils/conversationUtils';
+import { supabaseServer } from '../../../lib/supabaseServer';
+import { analyzeVoiceConversation } from '../../analysis/voiceRiskAnalysis';
 
 // Mock the environment variable for testing
 process.env.VOICE_WEBHOOK_SECRET = 'test-secret-123';
 
 // Mock Supabase Server client
-jest.mock('@/lib/supabaseServer', () => ({
+jest.mock('../../../lib/supabaseServer', () => ({
   supabaseServer: {
     from: jest.fn().mockReturnThis(),
     insert: jest.fn(),
   },
+}));
+
+jest.mock('../../analysis/voiceRiskAnalysis', () => ({
+  analyzeVoiceConversation: jest.fn().mockResolvedValue(null),
 }));
 
 describe('Voice Webhook API Route', () => {
@@ -22,13 +28,14 @@ describe('Voice Webhook API Route', () => {
       method: 'POST',
       headers: new Headers({
         'Content-Type': 'application/json',
+        'x-byok-key': 'MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=',
         ...headers,
       }),
       body: JSON.stringify(payload),
     });
   };
 
-  describe('normalizePayload', () => {
+  describe('normalizeConversationData', () => {
     it('should normalize a Vapi payload correctly', () => {
       const vapiPayload = {
         message: {
@@ -43,7 +50,7 @@ describe('Voice Webhook API Route', () => {
         },
       };
 
-      const result = normalizePayload(vapiPayload, 'org-uuid-123');
+      const result = normalizeConversationData(vapiPayload, 'org-uuid-123');
 
       expect(result.orgId).toBe('org-uuid-123');
       expect(result.externalId).toBe('vapi-call-123');
@@ -65,7 +72,7 @@ describe('Voice Webhook API Route', () => {
         },
       };
 
-      const result = normalizePayload(retellPayload, 'org-uuid-456');
+      const result = normalizeConversationData(retellPayload, 'org-uuid-456');
 
       expect(result.orgId).toBe('org-uuid-456');
       expect(result.externalId).toBe('retell-call-456');
@@ -77,7 +84,43 @@ describe('Voice Webhook API Route', () => {
 
     it('should throw an error if call identifier is missing', () => {
       const invalidPayload = { something_else: 'no id here' };
-      expect(() => normalizePayload(invalidPayload, 'org-123')).toThrow('Unsupported payload format: missing call identifier');
+      expect(() => normalizeConversationData(invalidPayload, 'org-123')).toThrow('Unsupported payload format: missing call identifier');
+    });
+    it('should normalize an ElevenLabs payload correctly', () => {
+      const elevenlabsPayload = {
+        agent_id: 'agent-123',
+        call_id: 'elevenlabs-call-789',
+        start_timestamp: 1709491800000,
+        end_timestamp: 1709492100000,
+        transcript: 'Hello from ElevenLabs',
+        recording_url: 'https://elevenlabs.io/recording/789.wav',
+      };
+
+      const result = normalizeConversationData(elevenlabsPayload, 'org-uuid-789');
+
+      expect(result.orgId).toBe('org-uuid-789');
+      expect(result.externalId).toBe('elevenlabs-call-789');
+      expect(result.provider).toBe('elevenlabs');
+      expect(result.transcript).toBe('Hello from ElevenLabs');
+      expect(result.audio).toBe('https://elevenlabs.io/recording/789.wav');
+    });
+
+    it('should normalize a Pipecat payload correctly', () => {
+      const pipecatPayload = {
+        bot_id: 'bot-123',
+        session_id: 'pipecat-session-001',
+        timestamp: '2026-03-03T21:30:00.000Z',
+        transcript: 'Hello from Pipecat',
+        recording_url: 'https://storage.googleapis.com/pipecat/recording/001.wav',
+      };
+
+      const result = normalizeConversationData(pipecatPayload, 'org-uuid-001');
+
+      expect(result.orgId).toBe('org-uuid-001');
+      expect(result.externalId).toBe('pipecat-session-001');
+      expect(result.provider).toBe('pipecat');
+      expect(result.transcript).toBe('Hello from Pipecat');
+      expect(result.audio).toBe('https://storage.googleapis.com/pipecat/recording/001.wav');
     });
   });
 
@@ -100,12 +143,30 @@ describe('Voice Webhook API Route', () => {
       expect(data.error).toBe('Unauthorized');
     });
 
-    it('should return 400 if payload is not valid JSON', async () => {
+    it('should return 403 if required BYOK header is missing', async () => {
       const req = new Request('https://api.facttic.com/api/webhooks/voice?orgId=123e4567-e89b-12d3-a456-426614174000', {
         method: 'POST',
         headers: new Headers({
           'Content-Type': 'application/json',
           'authorization': 'Bearer test-secret-123'
+        }),
+        body: JSON.stringify({ message: { call: { id: 'ext-supertest-123' } } }),
+      });
+
+      const response = await POST(req);
+      const data = await response.json();
+
+      expect(response.status).toBe(403);
+      expect(data.error).toContain('Missing x-byok-key header');
+    });
+
+    it('should return 400 if payload is not valid JSON', async () => {
+      const req = new Request('https://api.facttic.com/api/webhooks/voice?orgId=123e4567-e89b-12d3-a456-426614174000', {
+        method: 'POST',
+        headers: new Headers({
+          'Content-Type': 'application/json',
+          'authorization': 'Bearer test-secret-123',
+          'x-byok-key': 'MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI='
         }),
         body: 'invalid-json',
       });
@@ -132,7 +193,8 @@ describe('Voice Webhook API Route', () => {
         method: 'POST',
         headers: new Headers({
           'Content-Type': 'application/json',
-          'authorization': 'Bearer test-secret-123'
+          'authorization': 'Bearer test-secret-123',
+          'x-byok-key': 'MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI='
         }),
         body: JSON.stringify({ invalid: 'data' }),
       });
@@ -144,7 +206,7 @@ describe('Voice Webhook API Route', () => {
     });
 
     it('should process and store valid voice conversation successfully and extract orgId from query params', async () => {
-      (supabaseServer.insert as jest.Mock).mockResolvedValue({ error: null });
+      (supabaseServer.insert as jest.Mock).mockReturnValue({ select: jest.fn().mockReturnValue({ single: jest.fn().mockResolvedValue({ data: { id: 'test-insert-id' }, error: null }) }) });
 
       const vapiPayload = {
         message: {
@@ -157,7 +219,8 @@ describe('Voice Webhook API Route', () => {
         method: 'POST',
         headers: new Headers({
           'Content-Type': 'application/json',
-          'authorization': 'Bearer test-secret-123'
+          'authorization': 'Bearer test-secret-123',
+          'x-byok-key': 'MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI='
         }),
         body: JSON.stringify(vapiPayload),
       });
@@ -173,13 +236,22 @@ describe('Voice Webhook API Route', () => {
           org_id: '123e4567-e89b-12d3-a456-426614174000',
           provider_call_id: 'vapi-123',
           provider: 'vapi',
+          raw_data: expect.any(String),
+        })
+      );
+
+      expect(analyzeVoiceConversation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orgId: '123e4567-e89b-12d3-a456-426614174000',
+          externalId: 'vapi-123',
+          provider: 'vapi',
           transcript: 'Success test transcript',
         })
       );
     });
     
     it('should successfully extract orgId from headers', async () => {
-      (supabaseServer.insert as jest.Mock).mockResolvedValue({ error: null });
+      (supabaseServer.insert as jest.Mock).mockReturnValue({ select: jest.fn().mockReturnValue({ single: jest.fn().mockResolvedValue({ data: { id: 'test-insert-id' }, error: null }) }) });
 
       const vapiPayload = {
         message: { call: { id: 'vapi-456' } },
@@ -202,7 +274,7 @@ describe('Voice Webhook API Route', () => {
     });
 
     it('should return 500 if database insert fails', async () => {
-      (supabaseServer.insert as jest.Mock).mockResolvedValue({ error: { message: 'DB Error' } });
+      (supabaseServer.insert as jest.Mock).mockReturnValue({ select: jest.fn().mockReturnValue({ single: jest.fn().mockResolvedValue({ error: { message: 'DB Error' } }) }) });
 
       const vapiPayload = {
         message: { call: { id: 'vapi-error-123' } },
@@ -216,7 +288,7 @@ describe('Voice Webhook API Route', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.error).toBe('Failed to store conversation data');
+      expect(data.error).toBe('Failed to securely store conversation data');
     });
   });
 });

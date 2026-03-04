@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 
 export abstract class BaseRESTConnector implements IRESTConnector {
   public abstract name: string;
-  protected config?: ConnectorConfig;
+  protected config: ConnectorConfig | undefined;
   protected isInitialized = false;
 
   async initialize(config: ConnectorConfig): Promise<void> {

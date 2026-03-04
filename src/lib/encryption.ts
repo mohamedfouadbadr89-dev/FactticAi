@@ -68,7 +68,7 @@ export function decryptData(cipherPayload: string, base64Key: string): string {
   const iv = Buffer.from(ivStr, 'base64');
   const authTag = Buffer.from(authTagStr, 'base64');
   
-  const decipher = crypto.createDecipheriv(ALGORITHM, keyBuffer, iv);
+  const decipher = crypto.createDecipheriv(ALGORITHM, keyBuffer, iv, { authTagLength: 16 });
   decipher.setAuthTag(authTag);
   
   let decrypted = decipher.update(encryptedStr, 'base64', 'utf8');

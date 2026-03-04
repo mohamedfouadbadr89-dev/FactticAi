@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerAuthClient } from '@/lib/supabaseAuth';
-import { withAuth } from '@/lib/authGuard';
-import { resolveOrgContext } from '@/lib/orgResolver';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { supabaseServer } from '@/lib/supabaseServer';
 import { logger } from '@/lib/logger';
 
@@ -12,20 +11,9 @@ import { logger } from '@/lib/logger';
  * POST: Creates a new risk-monitored session.
  */
 
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
     const supabase = await createServerAuthClient();
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-
-    if (authError || !session) {
-      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-    }
-
-    const { org_id: orgId } = await resolveOrgContext(session.user.id);
-    if (!orgId) {
-      return NextResponse.json({ error: 'ORG_CONTEXT_MISSING' }, { status: 400 });
-    }
-
     const { data, error } = await supabase
       .from('sessions')
       .select('*')
@@ -47,34 +35,18 @@ export async function GET(req: Request) {
     logger.error('SESSIONS_LIST_API_ERROR', { error: error.message });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
     const body = await req.json();
-    
-    const supabase = await createServerAuthClient();
-    
-    // 1. Auth & Session Extraction
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    
-    if (authError || !session) {
-      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-    }
-
-    const { org_id: orgId } = await resolveOrgContext(session.user.id);
-
-    if (!orgId) {
-      return NextResponse.json({ error: 'ORG_CONTEXT_MISSING' }, { status: 400 });
-    }
-
     const { agent_id } = body;
 
     if (!agent_id) {
       return NextResponse.json({ error: 'Missing agent_id' }, { status: 400 });
     }
 
-    // 1. Create Session via RPC
+    // Create Session via RPC
     const { data: sessionId, error } = await supabaseServer.rpc('create_session', {
       p_org_id: orgId,
       p_agent_id: agent_id
@@ -94,4 +66,4 @@ export async function POST(req: Request) {
     logger.error('SESSION_API_ERROR', { error: error.message });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});

@@ -30,9 +30,11 @@ export interface EvidencePackage {
 export class AdvancedIntelligence {
   private static PII_PATTERNS = {
     email: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
-    phone: /\b(?:\+?1[-. ]?)?\(?([2-9][0-8][0-9])\)?[-. ]?([2-9][0-9]{2})[-. ]?([0-9]{4})\b/g,
+    phone: /(?:\B\+|\b)(?:\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}\b|(?:\B\+|\b)(?:\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]\d{4}\b/g,
     ssn: /\b\d{3}-\d{2}-\d{4}\b/g,
     creditCard: /\b(?:\d[ -]*?){13,16}\b/g,
+    passport: /\b[A-Z][0-9]{7,8}\b/g,
+    ipv4: /\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/g,
   };
 
   /**
@@ -65,7 +67,7 @@ export class AdvancedIntelligence {
     
     // 1. Check for PII (High weight)
     const pii = this.detectPIIExposure(content);
-    if (pii.hasPII) score += 0.4;
+    if (pii.hasPII) score += 0.8;
 
     // 2. Check for sensitive keyword violations (Medium weight)
     const sensitiveKeywords = ['password', 'secret', 'key', 'token'];

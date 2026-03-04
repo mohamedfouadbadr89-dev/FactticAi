@@ -1,5 +1,6 @@
 import { getChatConversationById } from '@/database/chatConversations';
 import { saveRiskScore } from '@/database/voiceRiskScores'; // Reusing identical generic reporting structure for all conversations
+import { logger } from '@/lib/logger';
 
 // Simulated async LLM or Rules Engine evaluation for OpenAI and Anthropic outputs
 async function mockChatEngineEvaluation(text: string, provider: string) {
@@ -68,6 +69,6 @@ export async function analyzeChatConversation(conversationId: string, orgId: str
     });
 
   } catch (error) {
-    console.error(`[Chat Risk Analysis] Failed to analyze conversation ${conversationId}:`, error);
+    logger.error(`[Chat Risk Analysis] Failed to analyze conversation ${conversationId}:`, error);
   }
 }

@@ -1,5 +1,6 @@
-import { getVoiceConversationById } from '@/database/voiceConversations';
-import { saveRiskScore } from '@/database/voiceRiskScores';
+import { VoiceConversation } from '../models/VoiceConversation';
+import { saveRiskScore } from '../database/voiceRiskScores';
+import { logger } from '@/lib/logger';
 
 export interface RiskAnalysisResult {
   score: number;
@@ -9,49 +10,73 @@ export interface RiskAnalysisResult {
 /**
  * Analyzes a voice conversation for risk and policy violations
  * 
- * @param conversationId The ID of the conversation to analyze
- * @param orgId The organization ID owning the conversation (for data isolation)
+ * @param conversation The VoiceConversation object to analyze
  * @returns The resulting risk score and any recorded violations
  */
-export async function analyzeVoiceConversation(conversationId: string, orgId: string): Promise<RiskAnalysisResult | null> {
+export async function analyzeVoiceConversation(conversation: VoiceConversation): Promise<RiskAnalysisResult | null> {
   try {
-    const conversation = await getVoiceConversationById(conversationId, orgId);
-
     if (!conversation) {
-      console.warn(`[Risk Engine] Voice conversation ${conversationId} not found for org ${orgId}. Aborting analysis.`);
+      console.warn(`[Risk Engine] Voice conversation missing. Aborting analysis.`);
       return null;
     }
 
+    const conversationId = conversation.id;
+    const orgId = conversation.orgId;
+
     console.log(`[Risk Engine] Starting analysis for conversation ${conversationId}...`);
     
-    // Simulate Facttic Risk Engine Processing
-    // In a real implementation this would contact internal LLM routers or inference engines
-    const mockScore = Math.floor(Math.random() * 100);
-    const mockViolations = mockScore > 75 
-      ? ['High risk detection keyword matched', 'Potential SLA breach'] 
-      : [];
+    let score = 0;
+    const violations: string[] = [];
+
+    // Basic heuristic analysis for the payload
+    const transcript = (conversation.transcript || '').toLowerCase();
+    
+    // Analyze sentiment/topics
+    if (transcript.includes('angry') || transcript.includes('cancel') || transcript.includes('frustrat')) {
+      score += 30;
+      violations.push('Negative sentiment detected');
+    }
+    
+    if (transcript.includes('lawsuit') || transcript.includes('sue') || transcript.includes('lawyer')) {
+      score += 50;
+      violations.push('Legal threat detected');
+    }
+
+    // PII Detection (basic regex overlay)
+    const ssnRegex = /\b\d{3}-\d{2}-\d{4}\b/;
+    const creditCardRegex = /\b(?:\d[ -]*?){13,16}\b/;
+
+    if (ssnRegex.test(transcript) || creditCardRegex.test(transcript)) {
+      score += 40;
+      violations.push('Potential PII exposure (SSN/CC)');
+    }
+
+    if (score > 100) score = 100;
+
+    const result = {
+      score,
+      violations
+    };
 
     try {
       await saveRiskScore({
         conversationId: conversationId,
         orgId: orgId,
-        riskScore: mockScore,
-        flaggedPolicies: mockViolations,
+        riskScore: result.score,
+        flaggedPolicies: result.violations,
         createdAt: new Date().toISOString()
       });
     } catch (saveError: any) {
-      console.error(`[Risk Engine] Error persisting analysis results for ${conversationId}:`, saveError);
+      logger.error(`[Risk Engine] Error persisting analysis results for ${conversationId}:`, saveError);
       throw new Error(`Failed to update conversation with risk analysis: ${saveError.message}`);
     }
 
-    console.log(`[Risk Engine] Analysis complete for conversation ${conversationId}. Score: ${mockScore}`);
+    console.log(`[Risk Engine] Analysis complete for conversation ${conversationId}. Score: ${result.score}`);
     
-    return {
-      score: mockScore,
-      violations: mockViolations,
-    };
+    return result;
   } catch (err: any) {
-    console.error(`[Risk Engine] Analysis failed for conversation ${conversationId}:`, err);
+    logger.error(`[Risk Engine] Analysis failed for conversation ${conversation?.id}:`, err);
     throw err;
   }
 }
+

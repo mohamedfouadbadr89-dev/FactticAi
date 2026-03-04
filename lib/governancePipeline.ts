@@ -9,6 +9,11 @@ import { StartupManager } from './startupChecks';
 import { isFeatureEnabled } from '../config/featureFlags';
 import { CURRENT_REGION, type RegionID } from '../config/regions';
 import { ReplicationEngine } from './replicationEngine';
+import { GovernanceInterceptor } from './governance/interceptor';
+import { RuntimeInterceptor } from './governance/runtimeInterceptor';
+import { Anonymizer } from './network/anonymizer';
+import { IntelligenceNetwork } from './network/intelligenceNetwork';
+
 
 export interface GovernanceExecutionResult {
   success: boolean;
@@ -59,7 +64,7 @@ export class GovernancePipeline {
     try {
       // 1. JWT / Auth
       await this.stage(context, 'JWT', async () => {
-        authorize(context.userRole, 'member');
+        authorize(context.userRole, 'analyst');
       });
 
       // 2. Residency & Isolation
@@ -139,6 +144,60 @@ export class GovernancePipeline {
       await this.stage(context, 'POLICY', async () => {
         // Enforce structural RLS verification before state mutation
         // (Handled by Supabase backend, but we verify intent here)
+      });
+
+      // 7.5 Intercept — Phase 41: active runtime safety layer
+      await this.stage(context, 'INTERCEPT', async () => {
+        const responseText =
+          context.payload?.agent_response ??
+          context.payload?.response ??
+          JSON.stringify(context.payload ?? '');
+
+        const decision = await GovernanceInterceptor.evaluate({
+          org_id:         context.orgId,
+          session_id:     context.eventId,
+          agent_response: String(responseText).slice(0, 8000), // hard cap to stay within budget
+          metadata:       { provider: context.provider, userId: context.userId },
+        });
+
+        (context as any)._interceptDecision = decision;
+
+        if (decision.action === 'BLOCK') {
+          throw new Error(`GOVERNANCE_BLOCK: ${decision.reason}`);
+        }
+        if (decision.action === 'ESCALATE') {
+          logger.warn('GOVERNANCE_ESCALATE', { org: context.orgId, reason: decision.reason });
+        }
+      });
+
+      // 7.75 Runtime Interceptor — Phase 48: active runtime control
+      await this.stage(context, 'RUNTIME_INTERCEPT', async () => {
+        const responseText =
+          context.payload?.agent_response ??
+          context.payload?.response ??
+          JSON.stringify(context.payload ?? '');
+
+        const intercept = await RuntimeInterceptor.intercept({
+          org_id:         context.orgId,
+          session_id:     context.eventId,
+          model_name:     context.payload?.model ?? context.provider,
+          response_text:  String(responseText),
+        });
+
+        (context as any)._runtimeIntercept = intercept;
+
+        if (intercept.action === 'block') {
+          throw new Error(`RUNTIME_GOVERNANCE_BLOCK: ${intercept.reason}`);
+        }
+
+        if ((intercept.action === 'rewrite' || intercept.action === 'redact') && intercept.rewritten_text) {
+          // ACTIVE CONTROL: Mutate the payload before delivery/billing
+          if (context.payload?.agent_response) {
+            context.payload.agent_response = intercept.rewritten_text;
+          } else if (context.payload?.response) {
+            context.payload.response = intercept.rewritten_text;
+          }
+        }
       });
 
       // 8. Billing (Deterministic Deduction)
@@ -258,6 +317,21 @@ export class GovernancePipeline {
     setImmediate(async () => {
       try {
         await PredictiveEngine.recordPrediction(context.orgId, (context as any)._riskProfile);
+        
+        // 11. Network Intelligence Signal (Phase 53)
+        const intercept = (context as any)._runtimeIntercept;
+        if (intercept && intercept.risk_score > 20) {
+          const anonymized = Anonymizer.anonymize(
+            context.payload?.model || context.provider,
+            intercept.action === 'block' ? 'policy_bypass' : 'hallucination', // simplified mapping
+            intercept.risk_score,
+            intercept.reason
+          );
+          
+          await IntelligenceNetwork.ingestSignal(anonymized);
+          logger.debug('NETWORK_SIGNAL_EMITTED', { hash: anonymized.pattern_hash });
+        }
+
         logger.debug('PIPELINE_ARCHIVE_COMPLETE', { event_id: context.eventId });
       } catch (err: any) {
         logger.error('PIPELINE_ARCHIVE_ERROR', { error: err.message });

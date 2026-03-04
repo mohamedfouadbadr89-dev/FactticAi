@@ -1,61 +1,57 @@
 import { NextResponse } from 'next/server';
 import { isFeatureEnabled } from '@/config/featureFlags';
 import { PredictiveEngine } from '@/lib/predictiveEngine';
-import { withAuth } from '@/lib/authGuard';
-import { resolveOrgContext } from '@/lib/orgResolver';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 
-export async function GET(req: Request) {
-  const auth = await withAuth(req);
-  if (auth.error || !auth.user) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
+export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
+  try {
+    // Tier 2: Predictive Governance (v3.1)
+    let predictions = null;
+    if (isFeatureEnabled('PREDICTIVE_GOVERNANCE_ACTIVE')) {
+      predictions = await PredictiveEngine.calculateDrift(orgId);
+    }
+
+    // Real-time expansion and isolation metrics (Strategic Acceleration)
+    const activeEnterpriseClusters = 4; // Simulated number of active VPC endpoints
+    const byokFailoverActive = false; // Indicates if fallback AI models are engaging
+
+    const growthRate = '22.8%'; 
+    const billingEvents = 3120;
+    
+    const currentErrorRate = 0.02; // Structural compliance requires < 0.5%
+    const thresholdBreached = currentErrorRate > 0.5;
+
+    const monitorStats = {
+      mode: 'TIER2_PREDICTIVE_GOVERNANCE',
+      health: {
+        status: (predictions?.status === 'CRITICAL' || thresholdBreached) ? 'DEGRADED' : 'STABLE',
+        active_enterprise_clusters: activeEnterpriseClusters,
+        byok_status: byokFailoverActive ? 'FAILOVER' : 'OPTIMAL'
+      },
+      predictive: predictions ? {
+        risk_index: predictions.risk_index,
+        status: predictions.status,
+        drill_down: predictions.metrics
+      } : null,
+      acquisition: {
+        signup_growth_24h: growthRate,
+        billing_events_total: billingEvents,
+      },
+      anomalies: {
+        error_rate_percent: currentErrorRate,
+        threshold_breached: thresholdBreached,
+        intrusion_detected: false
+      },
+      integrity: {
+        rpc_mutation: false,
+        rls_intact: true,
+        sha256_verified: true
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    return NextResponse.json(monitorStats, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-
-  const { org_id } = await resolveOrgContext(auth.user.id);
-  
-  // Tier 2: Predictive Governance (v3.1)
-  let predictions = null;
-  if (isFeatureEnabled('PREDICTIVE_GOVERNANCE_ACTIVE')) {
-    predictions = await PredictiveEngine.calculateDrift(org_id);
-  }
-
-  // Real-time expansion and isolation metrics (Strategic Acceleration)
-  const activeEnterpriseClusters = 4; // Simulated number of active VPC endpoints
-  const byokFailoverActive = false; // Indicates if fallback AI models are engaging
-
-  const growthRate = '22.8%'; 
-  const billingEvents = 3120;
-  
-  const currentErrorRate = 0.02; // Structural compliance requires < 0.5%
-  const thresholdBreached = currentErrorRate > 0.5;
-
-  const monitorStats = {
-    mode: 'TIER2_PREDICTIVE_GOVERNANCE',
-    health: {
-      status: (predictions?.status === 'CRITICAL' || thresholdBreached) ? 'DEGRADED' : 'STABLE',
-      active_enterprise_clusters: activeEnterpriseClusters,
-      byok_status: byokFailoverActive ? 'FAILOVER' : 'OPTIMAL'
-    },
-    predictive: predictions ? {
-      risk_index: predictions.risk_index,
-      status: predictions.status,
-      drill_down: predictions.metrics
-    } : null,
-    acquisition: {
-      signup_growth_24h: growthRate,
-      billing_events_total: billingEvents,
-    },
-    anomalies: {
-      error_rate_percent: currentErrorRate,
-      threshold_breached: thresholdBreached,
-      intrusion_detected: false
-    },
-    integrity: {
-      rpc_mutation: false,
-      rls_intact: true,
-      sha256_verified: true
-    },
-    timestamp: new Date().toISOString()
-  };
-
-  return NextResponse.json(monitorStats, { status: 200 });
-}
+});

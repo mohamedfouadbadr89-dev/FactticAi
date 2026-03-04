@@ -1,6 +1,7 @@
 import { VoiceConversation } from '../models/VoiceConversation';
 import { encryptData, decryptData } from '../lib/encryption';
-import { supabaseServer } from '../lib/supabaseServer';
+import { supabaseServer } from '@/lib/supabaseServer';
+import { logger } from '@/lib/logger';
 
 /**
  * Saves a VoiceConversation to the database, ensuring orgId isolation.
@@ -45,7 +46,7 @@ export async function saveVoiceConversation(conversation: VoiceConversation, byo
     .single();
 
   if (error) {
-    console.error('Failed to save VoiceConversation:', error);
+    logger.error('Failed to save VoiceConversation:', error);
     throw new Error(`Database error saving voice conversation: ${error.message}`);
   }
 
@@ -81,7 +82,7 @@ export async function getVoiceConversationById(id: string, orgId: string, byokKe
       // Used by .single() when no rows are found
       return null;
     }
-    console.error('Failed to retrieve VoiceConversation:', error);
+    logger.error('Failed to retrieve VoiceConversation:', error);
     throw new Error(`Database error fetching voice conversation: ${error.message}`);
   }
 
@@ -118,7 +119,7 @@ export async function getVoiceConversationById(id: string, orgId: string, byokKe
       metadata: metadata || {}
     });
   } catch (decryptionError: any) {
-     console.error('[Voice Security] Failed to decrypt voice log using provided BYOK key', decryptionError);
+     logger.error('[Voice Security] Failed to decrypt voice log using provided BYOK key', decryptionError);
      throw new Error('BYOK Decryption Failed: Invalid key or corrupted ciphertext.');
   }
 }
