@@ -39,6 +39,7 @@ function DashboardLoadingSkeleton() {
 
 export default function DashboardPage() {
   const { data, loading, error } = useDashboardData("/api/dashboard/stats");
+
   const [filters, setFilters] = React.useState({
     startDate: "",
     endDate: "",
@@ -52,8 +53,8 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
-      
-      {/* Status Strip */}
+
+      {/* Governance Status Bar */}
       <div className="w-full h-8 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] flex items-center justify-center text-xs uppercase tracking-wider text-[var(--text-secondary)]">
         <div className="flex items-center gap-6">
           <span>Governance Mode: ACTIVE</span>
@@ -62,12 +63,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Page Content */}
+      {/* Dashboard Content */}
       <div className="max-w-[1400px] mx-auto px-8 py-10 space-y-10">
 
+        {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-semibold tracking-tight">
-            Executive Overview
+            Executive Risk Overview
           </h1>
 
           {error && (
@@ -77,23 +79,31 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* Filters */}
         <DashboardFilters onFilterChange={setFilters} />
 
+        {/* Executive Health */}
         <ExecutiveHealthCard data={data?.health} />
+
+        {/* Drift Monitoring */}
         <DriftTrendCard initialData={data?.drift} filters={filters} />
 
+        {/* Alerts + Risk */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <ActiveAlertsCard data={data?.alerts} />
           <RiskBreakdownCard data={data?.risks} />
         </div>
 
+        {/* Voice + Governance */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <VoiceDriftCard data={data?.voice_drift} />
           <GovernanceSnapshotCard />
         </div>
 
+        {/* Intelligence Layer */}
         <IntelligenceDashboard data={data?.intelligence} />
 
+        {/* Investigations */}
         <RecentInvestigationsCard data={data?.investigations} />
 
       </div>
