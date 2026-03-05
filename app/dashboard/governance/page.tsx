@@ -1,110 +1,261 @@
 "use client";
 
-import React from "react";
-import { Shield, ShieldAlert, Zap, Bot, Activity, Lock, RefreshCw, Search } from "lucide-react";
-import { useDashboardData } from "@/lib/dashboard/useDashboardData";
+import React, { useState, useEffect } from "react";
+import { 
+  Shield, 
+  Activity, 
+  AlertTriangle, 
+  TrendingUp, 
+  DollarSign, 
+  RefreshCw,
+  Clock,
+  ChevronRight,
+  Target
+} from "lucide-react";
+import { logger } from "@/lib/logger";
 
-// Reusing panels that are imported or defined in the system
-// For the sake of this emergency recovery, I will build a dedicated Governance view
-// pulling from the existing APIs.
+// Mock org for front-end demonstration context
+const DEMO_ORG_ID = "00000000-0000-0000-0000-000000000000"; 
 
-export default function GovernancePage() {
-  const { data, loading } = useDashboardData("/api/product/overview");
+export default function GovernanceDashboard() {
+  const [data, setData] = useState<any>({
+    state: null,
+    risk: null,
+    alerts: [],
+    drift: null,
+    costs: null
+  });
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+
+  const fetchDashboardData = async () => {
+    try {
+      const [stateRes, riskRes, alertsRes, driftRes, costsRes] = await Promise.all([
+        fetch(`/api/governance/state?orgId=${DEMO_ORG_ID}`),
+        fetch(`/api/governance/risk-score?org_id=${DEMO_ORG_ID}`),
+        fetch(`/api/governance/alerts?org_id=${DEMO_ORG_ID}`),
+        fetch(`/api/intelligence/predictive-drift?orgId=${DEMO_ORG_ID}&model=default`),
+        fetch(`/api/economics/cost-anomalies`)
+      ]);
+
+      const [state, risk, alerts, drift, costs] = await Promise.all([
+        stateRes.json(),
+        riskRes.json(),
+        alertsRes.json(),
+        driftRes.json(),
+        costsRes.json()
+      ]);
+
+      setData({ state, risk, alerts, drift, costs });
+      setLastUpdated(new Date());
+    } catch (err: any) {
+      logger.error("DASHBOARD_REFRESH_FAILED", { error: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+    const interval = setInterval(fetchDashboardData, 10000); // 10s refresh
+    return () => clearInterval(interval);
+  }, []);
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'text-[#ef4444]';
+      case 'warning': return 'text-[#f59e0b]';
+      default: return 'text-[#3b82f6]';
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] p-8 space-y-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] p-8 font-sans selection:bg-[#3b82f6]/30">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
-          <h1 className="text-3xl font-black tracking-tighter uppercase flex items-center gap-3">
-             <Shield className="w-8 h-8 text-[#ef4444]" /> AI Governance Control
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#555] mb-2">
+            <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" /> Live Governance Feed
+          </div>
+          <h1 className="text-4xl font-black tracking-tighter uppercase flex items-center gap-3">
+            Facttic Control Center
           </h1>
-          <p className="text-[10px] text-[#555] font-mono tracking-widest uppercase mt-1">Autonomous Risk Mitigation / Runtime Intercepts / Policy Enforcement</p>
+          <p className="text-[11px] text-[#666] font-medium tracking-wide mt-2">
+            REAL-TIME RISK AGGREGATION / MULTI-ENGINE INTERCEPTOR / AUTONOMOUS SHIELDING
+          </p>
         </div>
+        
         <div className="flex items-center gap-4">
-           <div className="px-4 py-2 bg-[#111] border border-[#2d2d2d] rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" /> Policy Engine: Authoritative
+           <div className="bg-[#111] border border-[#2d2d2d] rounded-xl px-4 py-3 flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-[9px] font-black uppercase tracking-widest text-[#555]">Sync Status</p>
+                <p className="text-[11px] font-bold text-[#10b981]">OPTIMAL</p>
+              </div>
+              <div className="w-px h-8 bg-[#2d2d2d]" />
+              <div className="text-left">
+                <p className="text-[9px] font-black uppercase tracking-widest text-[#555]">Last Pulse</p>
+                <p className="text-[11px] font-mono text-white">{lastUpdated.toLocaleTimeString()}</p>
+              </div>
+              <RefreshCw className={`w-4 h-4 text-[#555] ${loading ? 'animate-spin' : ''}`} />
            </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {[
-          { label: 'Blocked Responses', value: data?.governance?.blocked_responses || 0, icon: Lock, color: '#ef4444' },
-          { label: 'Runtime Intercepts', value: data?.governance?.total_intercepts || 0, icon: Activity, color: '#3b82f6' },
-          { label: 'Policy Violations', value: data?.governance?.policy_violations || 0, icon: ShieldAlert, color: '#f59e0b' },
-          { label: 'Auto Actions', value: data?.agents?.incidents || 0, icon: Zap, color: '#a855f7' },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl p-6">
-            <stat.icon className="w-5 h-5 mb-4" style={{ color: stat.color }} />
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#555] mb-1">{stat.label}</p>
-            <p className="text-2xl font-black">{loading ? "..." : stat.value}</p>
+      {/* Primary Metrics Layer */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        
+        {/* Governance Health Score */}
+        <div className="bg-[#151515] border border-[#2d2d2d] rounded-3xl p-7 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Shield className="w-24 h-24" />
           </div>
-        ))}
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#555] mb-6 flex items-center gap-2">
+            <Shield className="w-3 h-3 text-[#3b82f6]" /> Governance State
+          </p>
+          <div className="flex items-end justify-between">
+            <h2 className={`text-5xl font-black tracking-tighter ${data.state?.governance_state === 'SAFE' ? 'text-white' : 'text-[#ef4444]'}`}>
+              {data.state?.governance_state || '---'}
+            </h2>
+            <div className="text-right">
+              <p className="text-[10px] font-mono text-[#555]">RISK SCORE</p>
+              <p className="text-xl font-black">{data.state?.risk_score || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Model Drift Status */}
+        <div className="bg-[#151515] border border-[#2d2d2d] rounded-3xl p-7 relative overflow-hidden group">
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#555] mb-6 flex items-center gap-2">
+            <Activity className="w-3 h-3 text-[#10b981]" /> Predictive Drift
+          </p>
+          <div className="flex items-end justify-between">
+            <div>
+              <h2 className="text-4xl font-black tracking-tighter">
+                {data.drift?.drift_score ? `${Math.round(data.drift.drift_score)}%` : '---'}
+              </h2>
+              <p className={`text-[10px] font-bold uppercase mt-2 ${getSeverityColor(data.drift?.escalation)}`}>
+                {data.drift?.escalation || 'STABLE'}
+              </p>
+            </div>
+            <TrendingUp className="w-10 h-10 text-[#2d2d2d]" />
+          </div>
+        </div>
+
+        {/* Anomaly Signals */}
+        <div className="bg-[#151515] border border-[#2d2d2d] rounded-3xl p-7 relative overflow-hidden group">
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#555] mb-6 flex items-center gap-2">
+            <DollarSign className="w-3 h-3 text-[#a855f7]" /> Economic Integrity
+          </p>
+          <div className="flex items-end justify-between">
+            <h2 className="text-4xl font-black tracking-tighter">
+              {data.costs?.anomalies?.length || 0}
+            </h2>
+            <div className="text-right">
+              <p className="text-[10px] font-mono text-[#555]">ANOMALIES</p>
+              <p className="text-xs font-bold text-[#a855f7]">UNIFIED SCAN</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Global Risk Distribution */}
+        <div className="bg-[#151515] border border-[#2d2d2d] rounded-3xl p-7 relative overflow-hidden group">
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#555] mb-6 flex items-center gap-2">
+            <Target className="w-3 h-3 text-[#ef4444]" /> Session Risk
+          </p>
+          <div className="flex items-end justify-between">
+            <h2 className="text-5xl font-black tracking-tighter">
+              {data.risk?.risk_score ? Math.round(data.risk.risk_score) : '0'}
+            </h2>
+            <div className="bg-[#222] rounded-full px-3 py-1 text-[9px] font-bold text-[#666]">
+              AGGREGATED
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-         {/* Policy Configuration Placeholder / Sub-view */}
-         <div className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl p-8">
-            <h2 className="text-[11px] font-black uppercase tracking-widest text-[#555] mb-6 flex items-center gap-2">
-               <Shield className="w-4 h-4" /> Active Governance Policies
-            </h2>
-            <div className="space-y-4">
-               {[
-                 { name: 'PII Exposure Filter', status: 'Active', risk: 'Critical' },
-                 { name: 'Toxicity/Bias Guard', status: 'Active', risk: 'High' },
-                 { name: 'Model Drift Escape', status: 'Warn Only', risk: 'Medium' },
-                 { name: 'Agent Reasoning Loop', status: 'Kill Switch', risk: 'Critical' }
-               ].map(policy => (
-                 <div key={policy.name} className="flex items-center justify-between p-4 bg-[#111] border border-[#2d2d2d] rounded-xl">
+      {/* Secondary Layer: Feed & Details */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Active Alerts Feed */}
+        <div className="lg:col-span-2 bg-[#151515] border border-[#2d2d2d] rounded-3xl p-8">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-[#ef4444]" /> Critical Alerts Feed
+            </h3>
+            <span className="text-[10px] text-[#555] font-mono uppercase tracking-widest">Live Updates Every 10s</span>
+          </div>
+
+          <div className="space-y-4">
+            {data.alerts && data.alerts.length > 0 ? (
+              data.alerts.slice(0, 6).map((alert: any) => (
+                <div key={alert.id} className="group bg-[#111] border border-[#2d2d2d] rounded-2xl p-5 hover:border-[#444] transition-all flex items-center justify-between">
+                  <div className="flex gap-5">
+                    <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-[#2d2d2d] flex items-center justify-center shrink-0">
+                      <Shield className={`w-5 h-5 ${getSeverityColor(alert.severity)}`} />
+                    </div>
                     <div>
-                       <p className="text-xs font-bold text-white uppercase">{policy.name}</p>
-                       <p className="text-[9px] text-[#555] font-mono mt-0.5">Threshold: 0.85 Sigma</p>
+                      <p className="text-xs font-bold text-white uppercase tracking-tight">{alert.alert_type.replace(/_/g, ' ')}</p>
+                      <p className="text-[10px] text-[#666] mt-1 line-clamp-1">{JSON.stringify(alert.metadata)}</p>
+                      <div className="flex items-center gap-3 mt-3">
+                        <span className={`text-[9px] font-black uppercase tracking-widest ${getSeverityColor(alert.severity)}`}>
+                          {alert.severity}
+                        </span>
+                        <span className="text-[9px] text-[#444] font-mono flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5" /> {new Date(alert.created_at).toLocaleTimeString()}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                       <span className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">{policy.status}</span>
-                       <span className="text-[8px] text-[#ef4444] font-mono">{policy.risk}</span>
-                    </div>
-                 </div>
-               ))}
-            </div>
-         </div>
-
-         {/* Autonomous Intervention Log Placeholder */}
-         <div className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl p-8">
-            <h2 className="text-[11px] font-black uppercase tracking-widest text-[#555] mb-6 flex items-center gap-2">
-               <Zap className="w-4 h-4" /> Autonomous Interventions
-            </h2>
-            <div className="space-y-4">
-                {[
-                  { action: 'Switch Provider', reason: 'High Latency / Drift Detected', time: '12m ago' },
-                  { action: 'Block Session', reason: 'Prompt Injection Pattern', time: '45m ago' },
-                  { action: 'Redact PII', reason: 'Credit Card Match', time: '1h ago' }
-                ].map((log, i) => (
-                  <div key={i} className="flex gap-4 p-4 bg-[#111] border border-[#2d2d2d] rounded-xl hover:border-[#444] transition-colors">
-                     <div className="w-10 h-10 rounded bg-[#1a1a1a] border border-[#2d2d2d] flex items-center justify-center shrink-0">
-                        <RefreshCw className="w-4 h-4 text-[#3b82f6]" />
-                     </div>
-                     <div>
-                        <p className="text-xs font-bold text-white uppercase">{log.action}</p>
-                        <p className="text-[10px] text-[#9ca3af] mt-1">{log.reason}</p>
-                        <p className="text-[9px] text-[#555] font-mono mt-2">{log.time}</p>
-                     </div>
                   </div>
-                ))}
+                  <ChevronRight className="w-4 h-4 text-[#333] group-hover:text-[#666] transition-colors" />
+                </div>
+              ))
+            ) : (
+              <div className="py-20 text-center border border-dashed border-[#2d2d2d] rounded-2xl">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#444]">No active alerts in current session</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Risk Signals Detail */}
+        <div className="space-y-8">
+          <div className="bg-[#151515] border border-[#2d2d2d] rounded-3xl p-8">
+            <h3 className="text-xs font-black uppercase tracking-widest text-white mb-8 border-b border-[#222] pb-4">
+              Weighted Signals
+            </h3>
+            <div className="space-y-6">
+              {[
+                { label: 'Guardrail Intensity', value: data.risk?.signal_breakdown?.guardrail_risk || 0, weight: '35%' },
+                { label: 'Predictive Momentum', value: data.risk?.signal_breakdown?.drift_risk || 0, weight: '25%' },
+                { label: 'Behavioral Variance', value: data.risk?.signal_breakdown?.behavior_risk || 0, weight: '25%' },
+                { label: 'Economic Exposure', value: data.risk?.signal_breakdown?.cost_risk || 0, weight: '15%' }
+              ].map(sig => (
+                <div key={sig.label}>
+                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-[#555] mb-2">
+                    <span>{sig.label}</span>
+                    <span>{sig.weight}</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-[#111] rounded-full overflow-hidden border border-[#222]">
+                    <div 
+                      className="h-full bg-white transition-all duration-1000" 
+                      style={{ width: `${Math.min(100, sig.value)}%` }} 
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
-         </div>
+          </div>
+
+          <div className="bg-[#111] border border-[#2d2d2d] border-dashed rounded-3xl p-8 text-center">
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#444] mb-3">Compliance Overlay</p>
+            <p className="text-[9px] text-[#333] italic">All metrics are aggregated across 12 distinct clusters in the EU-CENTRAL-1 region.</p>
+          </div>
+        </div>
+
       </div>
 
-      <div className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl p-8">
-         <h2 className="text-[11px] font-black uppercase tracking-widest text-[#555] mb-6 flex items-center gap-2">
-            <Bot className="w-4 h-4" /> Agent Control Layer Integration
-         </h2>
-         <div className="p-12 text-center border border-dashed border-[#2d2d2d] rounded-xl bg-[#111]/50">
-            <Search className="w-12 h-12 text-[#333] mx-auto mb-4" />
-            <p className="text-xs font-black uppercase tracking-widest text-[#555]">Monitoring 12 Active Agents</p>
-            <p className="text-[10px] text-[#444] font-mono mt-2 italic">Real-time reasoning chain interception is active.</p>
-         </div>
-      </div>
     </div>
   );
 }

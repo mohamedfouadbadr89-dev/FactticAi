@@ -4,7 +4,7 @@ import React from'react'
 import { ComingSoonBlock } from'@/components/layout/ComingSoonBlock'
 
 export function SettingsClient() {
- // Thresholds based on PredictiveEngine weights and logic
+ // Thresholds based on PredictiveDriftEngine weights and logic
  const thresholds = [
  { label:'Error Rate Bias', value:'10%', weight:'0.50' },
  { label:'Billing Velocity', value:'25%', weight:'0.30' },

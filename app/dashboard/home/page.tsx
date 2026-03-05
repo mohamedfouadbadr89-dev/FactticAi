@@ -295,4 +295,95 @@ export default function HomePage() {
                   data={[
                     { time: '00:00', gateway: 45, governance: 30, intelligence: 20 },
                     { time: '04:00', gateway: 52, governance: 35, intelligence: 25 },
-                    { time: '08:00', gateway: 85, governance: 45
+                    { time: '08:00', gateway: 85, governance: 45, intelligence: 30 },
+                    { time: '12:00', gateway: 65, governance: 40, intelligence: 35 },
+                    { time: '16:00', gateway: 95, governance: 50, intelligence: 45 },
+                    { time: '20:00', gateway: 70, governance: 38, intelligence: 30 }
+                  ]}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                  <XAxis dataKey="time" stroke="#444" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis hide />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#111', border: '1px solid #2d2d2d', borderRadius: '8px' }}
+                    itemStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold' }}
+                    labelStyle={{ display: 'none' }}
+                  />
+                  <Area type="monotone" dataKey="gateway" stroke="#3b82f6" fillOpacity={1} fill="url(#colorGateway)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="governance" stroke="#10b981" fillOpacity={1} fill="url(#colorGovernance)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="intelligence" stroke="#a855f7" fillOpacity={1} fill="url(#colorIntelligence)" strokeWidth={2} />
+                  <defs>
+                    <linearGradient id="colorGateway" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorGovernance" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorIntelligence" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PillarCard({
+  icon,
+  title,
+  description,
+  metric,
+  label
+}: {
+  icon: React.ReactNode
+  title: string
+  description: string
+  metric: number
+  label: string
+}) {
+  return (
+    <div className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl p-6 hover:border-[#444] transition-all group">
+
+      <div className="flex items-center gap-3 mb-6">
+
+        <div className="p-2 bg-[#111] rounded-lg border border-[#2d2d2d]">
+          {icon}
+        </div>
+
+        <h2 className="text-xs font-black uppercase tracking-widest">
+          {title}
+        </h2>
+
+      </div>
+
+      <p className="text-[10px] text-[#555] font-mono leading-relaxed mb-4">
+        {description}
+      </p>
+
+      <div className="flex items-end justify-between border-t border-[#2d2d2d] pt-4">
+
+        <div>
+          <p className="text-[9px] font-black text-[#333] uppercase">
+            {label}
+          </p>
+
+          <p className="text-lg font-black">
+            {metric}
+          </p>
+        </div>
+
+        <ArrowRight className="w-4 h-4 text-[#333] group-hover:text-white transition-colors" />
+
+      </div>
+
+    </div>
+  )
+}

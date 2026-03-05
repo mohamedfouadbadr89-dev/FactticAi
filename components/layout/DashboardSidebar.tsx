@@ -43,6 +43,7 @@ const navGroups = [
     group: "Analytics",
     items: [
       { label: "Reports", href: "/dashboard/reports", icon: FileText, id: "tour-nav-reports" },
+      { label: "Forensics", href: "/dashboard/forensics", icon: Search, id: "tour-nav-forensics" },
       { label: "Advanced", href: "/dashboard/advanced", icon: TerminalSquare, id: "tour-nav-advanced" },
     ]
   },

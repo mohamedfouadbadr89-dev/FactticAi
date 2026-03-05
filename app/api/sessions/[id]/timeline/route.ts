@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
-import { TimelineBuilder } from '@/lib/replay/timelineBuilder';
+import { buildTimeline } from '@/lib/replay/timelineBuilder';
 
 export async function GET(
   req: NextRequest,
@@ -42,7 +42,7 @@ export async function GET(
     }
 
     // Execute Builder Sequence 
-    const timeline = await TimelineBuilder.reconstructSession(sessionId, sessionData.org_id);
+    const timeline = await buildTimeline(sessionId);
 
     return NextResponse.json({ timeline }, { status: 200 });
 

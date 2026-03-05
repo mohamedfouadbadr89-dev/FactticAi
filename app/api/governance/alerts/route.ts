@@ -1,36 +1,26 @@
 import { NextResponse } from 'next/server';
-import { withAuth, AuthContext } from '@/lib/middleware/auth';
-import { logger } from '@/lib/logger';
 import { supabaseServer } from '@/lib/supabaseServer';
 
-/**
- * GET /api/governance/alerts
- * 
- * Retrieves the latest governance escalations and alerts.
- * Wraps: public.governance_escalation_log
- */
-export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
+export async function GET(req: Request) {
   try {
-    // Query escalation log with org isolation
+    const { searchParams } = new URL(req.url);
+    const org_id = searchParams.get('org_id');
+
+    if (!org_id) {
+      return NextResponse.json({ error: 'org_id is required' }, { status: 400 });
+    }
+
     const { data, error } = await supabaseServer
-      .from('governance_escalation_log')
+      .from('governance_alerts')
       .select('*')
-      .eq('org_id', orgId)
+      .eq('org_id', org_id)
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (error) {
-      logger.error('GOVERNANCE_ALERTS_FETCH_FAILED', { orgId, error: error.message });
-      return NextResponse.json({ error: 'ALERTS_FETCH_FAILED' }, { status: 500 });
-    }
+    if (error) throw error;
 
-    return NextResponse.json({
-      success: true,
-      data
-    });
-
-  } catch (error: any) {
-    logger.error('GOVERNANCE_ALERTS_API_ERROR', { error: error.message });
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(data);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
-});
+}

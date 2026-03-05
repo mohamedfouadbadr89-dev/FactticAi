@@ -27,9 +27,6 @@ export async function GET(req: Request) {
     const url     = new URL(req.url)
     const seed    = url.searchParams.get('seed') === 'true'
 
-    if (seed) {
-      await ModelDriftEngine.seedDemoData(orgMember.org_id)
-    }
 
     const reports = await ModelDriftEngine.computeDriftReports(orgMember.org_id)
     return NextResponse.json({ reports })

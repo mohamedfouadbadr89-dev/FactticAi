@@ -1,111 +1,70 @@
-import { supabaseServer } from '@/lib/supabaseServer';
-import { logger } from '@/lib/logger';
-import { TurnRiskScore } from '@/lib/riskTypes';
+import { supabaseServer } from '../supabaseServer';
+import { logger } from '../logger';
 
-export interface AlertConfig {
-  id: string;
-  org_id: string;
-  name: string;
-  metric: 'total_risk' | 'confidence' | 'drift_pct';
-  condition: {
-    operator: '>' | '<' | '=';
-    threshold: number;
-    duration?: number; // Minutes
-  };
-  channels: string[]; // ['email', 'slack', 'pagerduty']
-  is_active: boolean;
-  snooze_until?: string;
+export type AlertSeverity = 'low' | 'medium' | 'critical';
+
+export interface AlertSignal {
+  orgId: string;
+  type: string;
+  severity?: AlertSeverity;
+  message: string;
+  risk_score?: number;
+  metadata?: any;
 }
 
+/**
+ * Alert Notification Engine
+ * 
+ * CORE PRINCIPLE: Classify and persist governance alerts for institutional visibility.
+ */
 export class AlertEngine {
   /**
-   * Evaluates a single evaluation result against all active alert configs for an organization.
+   * Triggers a new governance alert based on a risk signal.
    */
-  static async evaluateEvaluation(orgId: string, evaluation: TurnRiskScore) {
+  static async triggerAlert(signal: AlertSignal): Promise<void> {
     try {
-      const { data: configs, error } = await supabaseServer
-        .from('alert_configs')
-        .select('*')
-        .eq('org_id', orgId)
-        .eq('is_active', true);
+      const severity = signal.severity || this.classifySeverity(signal.risk_score || 0);
 
-      if (error) throw error;
-      if (!configs || configs.length === 0) return;
+      const { error } = await supabaseServer
+        .from('alerts')
+        .insert({
+          org_id: signal.orgId,
+          alert_type: signal.type,
+          severity: severity,
+          message: signal.message,
+          metadata: signal.metadata || {}
+        });
 
-      for (const config of (configs as AlertConfig[])) {
-        if (config.snooze_until && new Date(config.snooze_until) > new Date()) {
-          continue;
-        }
-
-        const value = evaluation[config.metric as keyof TurnRiskScore];
-        if (typeof value !== 'number') continue;
-
-        if (this.checkCondition(value, config.condition)) {
-          await this.triggerAlert(config, evaluation);
-        }
+      if (error) {
+        logger.error('ALERT_PERSISTENCE_FAILED', { orgId: signal.orgId, error: error.message });
+        return;
       }
+
+      logger.info('GOVERNANCE_ALERT_TRIGGERED', { orgId: signal.orgId, type: signal.type, severity });
+
+      // Automation: Critial alerts could trigger external webhooks or emails in a real system
+      if (severity === 'critical') {
+        this.escalateCriticalAlert(signal);
+      }
+
     } catch (err: any) {
-      logger.error('ALERT_EVALUATION_FAILED', { orgId, error: err.message });
+      logger.error('ALERT_ENGINE_ERROR', { error: err.message });
     }
   }
 
   /**
-   * Core logic for checking alert conditions.
+   * Helper to classify severity based on risk metrics.
    */
-  private static checkCondition(value: number, condition: AlertConfig['condition']): boolean {
-    const { operator, threshold } = condition;
-    switch (operator) {
-      case '>': return value > threshold;
-      case '<': return value < threshold;
-      case '=': return value === threshold;
-      default: return false;
-    }
+  private static classifySeverity(riskScore: number): AlertSeverity {
+    if (riskScore >= 0.7) return 'critical';
+    if (riskScore >= 0.3) return 'medium';
+    return 'low';
   }
 
-  /**
-   * Mock implementation for triggering notifications.
-   */
-  private static async triggerAlert(config: AlertConfig, evaluation: TurnRiskScore) {
-    logger.warn('ALERT_TRIGGERED', {
-      alert_id: config.id,
-      name: config.name,
-      org_id: config.org_id,
-      metric: config.metric,
-      channels: config.channels
+  private static escalateCriticalAlert(signal: AlertSignal) {
+    logger.warn('PRI_CRITICAL: Automated escalation triggered for governance breach.', { 
+      orgId: signal.orgId, 
+      type: signal.type 
     });
-
-    // In a production environment, this would call specialized notification microservices
-    for (const channel of config.channels) {
-      switch (channel) {
-        case 'email':
-          logger.info('EXTERNAL_NOTIFICATION_SENDING', { channel: 'email', to: 'admin@facttic.ai' });
-          break;
-        case 'slack':
-          logger.info('EXTERNAL_NOTIFICATION_SENDING', { channel: 'slack', webhook: 'https://hooks.slack.com/...' });
-          break;
-        case 'pagerduty':
-          logger.info('EXTERNAL_NOTIFICATION_SENDING', { channel: 'pagerduty', service_key: '...' });
-          break;
-      }
-    }
-
-    // Record the alert incident in the database
-    // For now, we reuse the drift_alerts table or create a dedicated incident log
-    const { error } = await supabaseServer
-      .from('drift_alerts')
-      .insert({
-        org_id: config.org_id,
-        severity: evaluation.total_risk > 0.8 ? 'critical' : 'elevated',
-        triggered_by: `Alert Rule: ${config.name}`,
-        description: `Threshold breached on ${config.metric}: ${evaluation[config.metric as keyof TurnRiskScore]} (Target: ${config.condition.operator}${config.condition.threshold})`,
-        metadata: {
-          alert_config_id: config.id,
-          evaluation_data: evaluation
-        }
-      });
-
-    if (error) {
-      logger.error('ALERT_INCIDENT_RECORDING_FAILED', { error: error.message });
-    }
   }
 }

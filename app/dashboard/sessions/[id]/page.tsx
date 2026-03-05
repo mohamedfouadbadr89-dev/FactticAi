@@ -172,7 +172,11 @@ export default function SessionDetailsPage() {
  </div>
  </main>
 
- <RcaDrawer turn={selectedTurn} onClose={() => setSelectedTurn(null)} />
+  <RcaDrawer 
+    sessionId={id}
+    turn={selectedTurn} 
+    onClose={() => setSelectedTurn(null)} 
+  />
  </div>
  );
 }

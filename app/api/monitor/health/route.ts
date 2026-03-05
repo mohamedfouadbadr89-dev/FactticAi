@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isFeatureEnabled } from '@/config/featureFlags';
-import { PredictiveEngine } from '@/lib/predictiveEngine';
+import { PredictiveDriftEngine } from '@/lib/intelligence/predictiveDriftEngine';
 import { withAuth, AuthContext } from '@/lib/middleware/auth';
 
 export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
@@ -8,7 +8,7 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
     // Tier 2: Predictive Governance (v3.1)
     let predictions = null;
     if (isFeatureEnabled('PREDICTIVE_GOVERNANCE_ACTIVE')) {
-      predictions = await PredictiveEngine.calculateDrift(orgId);
+      predictions = await PredictiveDriftEngine.computePredictiveDriftRisk(orgId, 'default');
     }
 
     // Real-time expansion and isolation metrics (Strategic Acceleration)
@@ -24,14 +24,17 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
     const monitorStats = {
       mode: 'TIER2_PREDICTIVE_GOVERNANCE',
       health: {
-        status: (predictions?.status === 'CRITICAL' || thresholdBreached) ? 'DEGRADED' : 'STABLE',
+        status: (predictions?.escalation === 'critical' || thresholdBreached) ? 'DEGRADED' : 'STABLE',
         active_enterprise_clusters: activeEnterpriseClusters,
         byok_status: byokFailoverActive ? 'FAILOVER' : 'OPTIMAL'
       },
       predictive: predictions ? {
-        risk_index: predictions.risk_index,
-        status: predictions.status,
-        drill_down: predictions.metrics
+        risk_index: Math.round(predictions.drift_score),
+        status: predictions.escalation.toUpperCase(),
+        drill_down: {
+          momentum: predictions.momentum,
+          predicted_hours: predictions.predicted_threshold_hours
+        }
       } : null,
       acquisition: {
         signup_growth_24h: growthRate,

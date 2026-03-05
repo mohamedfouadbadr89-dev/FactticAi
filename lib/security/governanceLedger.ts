@@ -44,7 +44,21 @@ export class GovernanceLedger {
       const payloadString = JSON.stringify(event.event_payload);
 
       // 3. Compute Structural Integrity Hash (SHA-256)
-      const hashInput = `${previousHash}:${payloadString}:${timestamp}`;
+      // Check for sensitive fields that require encryption
+      let finalPayload = event.event_payload;
+      if (event.event_payload?.__sensitive) {
+        const { EncryptionVault } = await import('./encryptionVault');
+        finalPayload = { ...event.event_payload };
+        for (const field of event.event_payload.__sensitive) {
+           if (finalPayload[field]) {
+             finalPayload[field] = await EncryptionVault.encryptField(finalPayload[field], event.org_id);
+           }
+        }
+        delete finalPayload.__sensitive;
+      }
+
+      const finalPayloadString = JSON.stringify(finalPayload);
+      const hashInput = `${previousHash}:${finalPayloadString}:${timestamp}`;
       const currentHash = crypto.createHash('sha256').update(hashInput).digest('hex');
 
       // 4. Generate Authenticity Signature (HMAC)
@@ -55,7 +69,7 @@ export class GovernanceLedger {
       const newBlock = {
         org_id: event.org_id,
         event_type: event.event_type,
-        event_payload: event.event_payload,
+        event_payload: finalPayload,
         previous_hash: previousHash,
         current_hash: currentHash,
         signature: signature,

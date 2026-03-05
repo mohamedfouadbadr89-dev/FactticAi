@@ -3,7 +3,7 @@ import { supabaseServer } from './supabaseServer';
 import { logger } from './logger';
 import { authorize, type Role } from './rbac';
 import { recordWebhookEvent } from './idempotency';
-import { PredictiveEngine } from './predictiveEngine';
+import { PredictiveDriftEngine } from './intelligence/predictiveDriftEngine';
 import { recordBillingEvent, type BillingEventType } from './billingResolver';
 import { StartupManager } from './startupChecks';
 import { isFeatureEnabled } from '../config/featureFlags';
@@ -13,6 +13,13 @@ import { GovernanceInterceptor } from './governance/interceptor';
 import { RuntimeInterceptor } from './governance/runtimeInterceptor';
 import { Anonymizer } from './network/anonymizer';
 import { IntelligenceNetwork } from './network/intelligenceNetwork';
+import { AiInterceptorKernel } from './gateway/aiInterceptorKernel';
+import { PolicyEngine } from './governance/policyEngine';
+import { GuardrailEngine } from './governance/guardrailEngine';
+import { RiskMetricsEngine } from './intelligence/riskMetricsEngine';
+import { GovernanceStateEngine } from './governance/governanceStateEngine';
+import { GovernanceAlertEngine } from './governance/alertEngine';
+import { ComplianceIntelligenceEngine } from './compliance/complianceIntelligenceEngine';
 
 
 export interface GovernanceExecutionResult {
@@ -48,6 +55,110 @@ export class GovernancePipeline {
   private static THROTTLE_MS = 120;
   private static CANARY_WEIGHT = 0.1; // 10% Canary by default
   private static latencyHistory: number[] = [];
+
+  /**
+   * Orchestrates a unified governance evaluation flow (v1.0)
+   * Centralizes engine calls previously handled in the API layer.
+   */
+  static async execute(params: { 
+    org_id: string, 
+    session_id?: string | undefined, 
+    prompt?: string | undefined, 
+    response?: string | undefined 
+  }) {
+    const { org_id, session_id, prompt, response } = params;
+    const t0 = Date.now();
+
+    try {
+      // 1. Interceptor Layer (Prompt)
+      const promptIntercept = prompt 
+        ? await AiInterceptorKernel.interceptPrompt(org_id, prompt)
+        : { action: 'proceed', content: prompt };
+
+      if (promptIntercept.action === 'blocked') {
+        return {
+          decision: 'BLOCK',
+          risk_score: 100,
+          violations: [{ policy_name: 'Kernel Protection', rule_type: 'prompt_injection', action: 'block' }],
+          signals: { prompt_intercept: promptIntercept },
+          latency_ms: Date.now() - t0
+        };
+      }
+
+      // 2. Guardrail Layer (Response Analysis)
+      const guardrail = response 
+        ? await GuardrailEngine.evaluateResponse({ org_id, response_text: response })
+        : { signals: [], metrics: { hallucination_risk: 0, policy_risk: 0, tone_risk: 0, safety_risk: 0 } };
+
+      // 3. Policy Layer (Rule Execution)
+      const policies = await PolicyEngine.loadOrganizationPolicies(org_id);
+      const policyEval = PolicyEngine.evaluateSignals(policies, guardrail.signals);
+
+      // 4. Compliance Intelligence (Async Analysis) - NEW HOOK
+      setImmediate(() => {
+        ComplianceIntelligenceEngine.analyze({
+          org_id,
+          session_id,
+          response
+        }).catch(err => logger.error('COMPLIANCE_PIPELINE_ERROR', { org_id, error: err.message }));
+      });
+
+      // 5. Response Sanitization (Kernel)
+      const responseIntercept = response
+        ? await AiInterceptorKernel.interceptResponse(org_id, response)
+        : { action: 'proceed', content: response };
+
+      // 5. Risk Aggregation (Distributed Metrics)
+      const riskMetrics = await RiskMetricsEngine.calculateRiskScore(org_id, session_id);
+
+      // 6. Governance State (Stability)
+      const govState = await GovernanceStateEngine.getGovernanceState(org_id);
+
+      // 7. Alert Generation (Async Breach Handling)
+      GovernanceAlertEngine.evaluate({
+        org_id,
+        session_id,
+        risk_score: riskMetrics.risk_score,
+        policy_action: policyEval.highest_action || undefined,
+        drift_score: riskMetrics.breakdown.drift_risk,
+        cost_spike_ratio: riskMetrics.breakdown.cost_risk / 20 // Reverse calculation for ratio audit
+      });
+
+      const latency = Date.now() - t0;
+
+      // Determine final decision hierarchy
+      let decision = 'ALLOW';
+      if (policyEval.highest_action === 'block' || guardrail.metrics.safety_risk > 0.8) {
+        decision = 'BLOCK';
+      } else if (policyEval.highest_action === 'warn' || riskMetrics.risk_score > 50) {
+        decision = 'WARN';
+      }
+
+      return {
+        decision,
+        risk_score: riskMetrics.risk_score,
+        governance_state: govState.governance_state,
+        violations: policyEval.violations,
+        signals: {
+          guardrail: guardrail.metrics,
+          risk_breakdown: riskMetrics.breakdown,
+          state_factors: govState.contributing_factors,
+          interceptor: {
+            prompt: promptIntercept.action,
+            response: responseIntercept.action
+          }
+        },
+        metadata: {
+          latency_ms: latency,
+          session_id: session_id || null
+        }
+      };
+
+    } catch (err: any) {
+      logger.error('PIPELINE_EXECUTION_FAILURE', { orgId: org_id, error: err.message });
+      throw err;
+    }
+  }
 
   static async boot() {
     await StartupManager.runAll();
@@ -132,9 +243,9 @@ export class GovernancePipeline {
       // 5. Drift
       // 6. Risk Scoring
       await this.stage(context, 'DRIFT_RISK', async () => {
-        const profile = await PredictiveEngine.calculateDrift(context.orgId);
-        if (profile.status === 'CRITICAL') {
-          logger.warn('PIPELINE_PRI_HIGH', { orgId: context.orgId, risk: profile.risk_index });
+        const profile = await PredictiveDriftEngine.computePredictiveDriftRisk(context.orgId, 'default');
+        if (profile?.escalation === 'critical') {
+          logger.warn('PIPELINE_PRI_HIGH', { orgId: context.orgId, risk: profile.drift_score });
         }
         // Attach profile to telemetry, but don't mutate core context
         (context as any)._riskProfile = profile; 
@@ -316,7 +427,6 @@ export class GovernancePipeline {
   private static archiveAsync(context: PipelineContext) {
     setImmediate(async () => {
       try {
-        await PredictiveEngine.recordPrediction(context.orgId, (context as any)._riskProfile);
         
         // 11. Network Intelligence Signal (Phase 53)
         const intercept = (context as any)._runtimeIntercept;

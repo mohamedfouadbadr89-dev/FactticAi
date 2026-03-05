@@ -23,7 +23,7 @@ The project follows a modern, serverless, edge-ready architecture.
 - **Architectural patterns used:**
   - **Pipeline Pattern:** Centralized data flow via `GovernancePipeline.ts` passing `PipelineContext`.
   - **Controllers:** Standalone Next.js Route Handlers in `app/api/*` acting as REST endpoints.
-  - **Services / Engines:** Heavily encapsulated domain logic classes (`PredictiveEngine`, `RiskScoringEngine`).
+  - **Services / Engines:** Heavily encapsulated domain logic classes (`PredictiveDriftEngine`, `RiskScoringEngine`).
   - **Higher-Order Components (HOC) / Middleware:** Next.js native Route Middlewares & explicit `authorize()` RBAC decorators.
 
 ---

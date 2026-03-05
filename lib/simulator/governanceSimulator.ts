@@ -43,8 +43,8 @@ export class GovernanceSimulator {
     
     return {
       risk_score,
-      blocked: evaluation.action === 'block' || evaluation.action === 'escalate',
-      triggered_rules: evaluation.reason ? [evaluation.reason] : [],
+      blocked: evaluation.metrics.safety_risk > 0.8,
+      triggered_rules: [],
       synthetic_payload: syntheticPayload
     };
   }

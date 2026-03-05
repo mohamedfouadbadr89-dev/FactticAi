@@ -6,6 +6,7 @@ import ActiveAlertsCard from "@/components/dashboard/ActiveAlertsCard";
 import RiskBreakdownCard from "@/components/dashboard/RiskBreakdownCard";
 import RecentInvestigationsCard from "@/components/dashboard/RecentInvestigationsCard";
 import GovernanceSnapshotCard from "@/components/dashboard/GovernanceSnapshotCard";
+import GovernanceStateCard from "@/components/dashboard/GovernanceStateCard";
 import VoiceDriftCard from "@/components/dashboard/VoiceDriftCard";
 import IntelligenceDashboard from "@/components/dashboard/IntelligenceDashboard";
 import DashboardFilters from "@/components/dashboard/DashboardFilters";
@@ -96,7 +97,7 @@ export default function DashboardPage() {
 
         {/* Voice + Governance */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <VoiceDriftCard data={data?.voice_drift} />
+          <GovernanceStateCard orgId="demo-org-123" />
           <GovernanceSnapshotCard />
         </div>
 

@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     })
 
     // If fully blocked, trigger immediate logging hooks upstream asynchronously here
-    if (!evaluation.allowed) {
+    if (evaluation.metrics.safety_risk > 0.8) {
         // Async Dispatch to Audit Ledger (no await to preserve latency)
         // ... (telemetry push logic)
     }

@@ -52,7 +52,13 @@ export async function POST(req: Request) {
     const evaluation = await RiskScoringEngine.evaluateTurn(orgId, interaction_id, payload);
 
     // 4. Trigger Alerts (Fire-and-forget)
-    AlertEngine.evaluateEvaluation(orgId, evaluation).catch(err => {
+    AlertEngine.triggerAlert({
+      orgId,
+      type: 'PUBLIC_API_EVALUATION',
+      message: `Evaluation completed for interaction ${interaction_id}`,
+      risk_score: evaluation.total_risk,
+      metadata: { interaction_id, evaluation }
+    }).catch(err => {
       logger.error('PUBLIC_API_ALERT_FAILED', { orgId, error: err.message });
     });
 

@@ -1,5 +1,6 @@
 import { supabaseServer } from '../supabaseServer';
 import { logger } from '../logger';
+import { generateFingerprint } from './responseFingerprint';
 
 export interface CrossSessionPattern {
   id?: string;
@@ -11,6 +12,9 @@ export interface CrossSessionPattern {
   risk_weight: number;
   first_detected_at: string;
   last_detected_at: string;
+  fingerprint?: string;
+  prompt_hash?: string;
+  model?: string;
 }
 
 /**
@@ -34,7 +38,7 @@ export class CrossSessionEngine {
     // We fetch critical and high severity evaluations for deep analysis
     const { data: evaluations, error } = await supabaseServer
       .from('evaluations')
-      .select('id, interaction_id, total_risk, severity_level, confidence, factors, created_at')
+      .select('id, interaction_id, total_risk, severity_level, confidence, factors, created_at, metadata, content')
       .eq('org_id', orgId)
       .gte('created_at', timeFilter)
       .in('severity_level', ['critical', 'high']);
@@ -86,15 +90,32 @@ export class CrossSessionEngine {
     const patterns: CrossSessionPattern[] = [];
     
     if (hallucinationHits >= 3) {
+      // Hallucination cluster uses deterministic fingerprint from the most recent evaluation
+      const latestHallucination = evaluations.find(ev => {
+        const f = typeof ev.factors === 'string' ? JSON.parse(ev.factors) : (ev.factors || {});
+        return f.hallucination && f.hallucination >= 0.8;
+      });
+
+      const meta = latestHallucination?.metadata || {};
+      const { fingerprint, promptHash, model } = generateFingerprint(
+        latestHallucination?.content || meta?.content || '', 
+        meta?.prompt_hash || 'UNKNOWN_PROMPT',
+        meta?.model_id || 'UNKNOWN_MODEL',
+        meta?.temperature || 0
+      );
+
       patterns.push({
         org_id: orgId,
         pattern_type: 'hallucination_cluster',
-        pattern_signature: `SYS-HAL-${Date.now().toString(16).toUpperCase().substring(0,8)}`,
+        pattern_signature: `HAL-${fingerprint.substring(0, 12).toUpperCase()}`,
         pattern_confidence: Math.min(0.99, 0.5 + (hallucinationHits * 0.05)),
         occurrence_count: hallucinationHits,
         risk_weight: 0.85,
         first_detected_at: earliest,
-        last_detected_at: latest
+        last_detected_at: latest,
+        fingerprint,
+        prompt_hash: promptHash,
+        model
       });
     }
 
@@ -150,7 +171,10 @@ export class CrossSessionEngine {
           occurrence_count: p.occurrence_count,
           risk_weight: p.risk_weight,
           first_detected_at: p.first_detected_at,
-          last_detected_at: p.last_detected_at
+          last_detected_at: p.last_detected_at,
+          fingerprint: p.fingerprint,
+          prompt_hash: p.prompt_hash,
+          model: p.model
         })), { onConflict: 'org_id, pattern_signature' });
 
       if (insertError) {
