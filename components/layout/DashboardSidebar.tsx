@@ -2,59 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  BarChart3, 
-  ShieldAlert, 
-  Shield,
-  FileText, 
-  Bell, 
-  Search, 
-  Settings, 
-  User, 
-  TerminalSquare,
-  Bot,
-  Zap,
-  LayoutGrid,
-  Activity,
-  BrainCircuit,
-  Network
-} from "lucide-react";
+import { navGroups } from "@/config/navigation";
 import { createBrowserClient } from '@supabase/ssr';
-
-// Define the groups for the application sidebar
-const navGroups = [
-  {
-    group: "Overview",
-    items: [
-      { label: "Dashboard", href: "/dashboard", icon: BarChart3, id: "tour-nav-dashboard" },
-      { label: "Home", href: "/dashboard/home", icon: LayoutGrid, id: "tour-nav-home" },
-    ]
-  },
-  {
-    group: "Pillars",
-    items: [
-      { label: "AI Gateway", href: "/dashboard/gateway", icon: Zap, id: "tour-nav-gateway" },
-      { label: "AI Governance", href: "/dashboard/governance", icon: Shield, id: "tour-nav-governance" },
-      { label: "AI Intelligence", href: "/dashboard/intelligence", icon: BrainCircuit, id: "tour-nav-intelligence" },
-      { label: "AI Agents", href: "/dashboard/agents", icon: Bot, id: "tour-nav-agents" },
-    ]
-  },
-  {
-    group: "Analytics",
-    items: [
-      { label: "Reports", href: "/dashboard/reports", icon: FileText, id: "tour-nav-reports" },
-      { label: "Forensics", href: "/dashboard/forensics", icon: Search, id: "tour-nav-forensics" },
-      { label: "Advanced", href: "/dashboard/advanced", icon: TerminalSquare, id: "tour-nav-advanced" },
-    ]
-  },
-  {
-    group: "System",
-    items: [
-      { label: "Settings", href: "/dashboard/settings", icon: Settings, id: "tour-nav-settings" },
-      { label: "Profile", href: "/dashboard/profile", icon: User, id: "tour-profile" },
-    ]
-  }
-];
 
 export default function DashboardSidebar({ isOpen = false, close }: { isOpen?: boolean; close?: () => void }) {
   const pathname = usePathname();

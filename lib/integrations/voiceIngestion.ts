@@ -191,7 +191,7 @@ export async function ingestConversation(
   // 3. Forward to governance evaluation pipeline (fire-and-forget)
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    void fetch(`${baseUrl}/api/governance/evaluate`, {
+    void fetch(`${baseUrl}/api/governance/execute`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-internal-key': process.env.INTERNAL_API_KEY ?? '' },
       body: JSON.stringify({ session_id: internalSessionId, org_id: orgId }),

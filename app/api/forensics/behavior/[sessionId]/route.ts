@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BehaviorForensicsEngine } from '@/lib/forensics/behaviorForensicsEngine';
 import { logger } from '@/lib/logger';
+import { verifyApiKey } from '@/lib/security/verifyApiKey';
 
 /**
  * Session Behavior Forensics API
@@ -12,6 +13,14 @@ export async function GET(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    const authResult = await verifyApiKey(req);
+    if (authResult.error) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+    const verifiedOrgId = authResult.org_id;
     const { sessionId } = await params;
 
     if (!sessionId) {

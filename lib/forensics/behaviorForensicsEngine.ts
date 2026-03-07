@@ -1,6 +1,7 @@
 import { supabaseServer } from '../supabaseServer';
 import { logger } from '../logger';
 import { buildTimeline } from '../replay/timelineBuilder';
+import { BehavioralEngine } from '../intelligence/behavioralEngine';
 
 export interface BehaviorAnalysisResult {
   session_id: string;
@@ -28,13 +29,17 @@ export class BehaviorForensicsEngine {
       const timelineResult = await buildTimeline(sessionId);
       if (!timelineResult || timelineResult.timeline.length === 0) return null;
 
-      const { data: session } = await supabaseServer
-        .from('sessions')
-        .select('org_id, model_version_id')
-        .eq('id', sessionId)
-        .single();
+      // Resolve org_id from the evidence ledger (governance sessions are NOT in `sessions` table)
+      const { data: eventMeta } = await supabaseServer
+        .from('facttic_governance_events')
+        .select('org_id')
+        .eq('session_id', sessionId)
+        .limit(1)
+        .maybeSingle();
 
-      if (!session) return null;
+      if (!eventMeta) return null;
+
+      const session = { org_id: eventMeta.org_id };
 
       // 1. Load baseline (model_behavior)
       const { data: baseline } = await supabaseServer
@@ -43,7 +48,7 @@ export class BehaviorForensicsEngine {
         .eq('org_id', session.org_id)
         .order('timestamp', { ascending: false })
         .limit(10);
-      
+
       const avgBaselineRisk = baseline && baseline.length > 0
         ? baseline.reduce((sum, b) => sum + Number(b.risk_score), 0) / baseline.length
         : 50;
@@ -65,15 +70,16 @@ export class BehaviorForensicsEngine {
       const hasOverride = timelineResult.timeline.some(t => overridePatterns.some(p => p.test(t.content)));
 
       // 4. Estimate Confidence
-      // Logic: Average confidence from raw telemetry (mapping low/med/high to numerical)
+      // Logic: Derive from session risk data; session_turns table is optional
       const { data: turns } = await supabaseServer
-        .from('session_turns')
-        .select('confidence')
+        .from('facttic_governance_events')
+        .select('risk_score')
         .eq('session_id', sessionId);
-      
-      const confidenceMap: Record<string, number> = { 'low': 30, 'medium': 70, 'high': 95 };
+
       const avgConfidence = turns && turns.length > 0
-        ? turns.reduce((sum, t) => sum + (confidenceMap[t.confidence] || 50), 0) / turns.length
+        ? Math.min(100, Math.round(
+            turns.reduce((sum, t) => sum + Number(t.risk_score), 0) / turns.length
+          ))
         : 70;
 
       // 5. Context Saturation
@@ -86,14 +92,27 @@ export class BehaviorForensicsEngine {
       if (hasOverride) signals.push('PROMPT_OVERRIDE_ALERT');
       if (avgConfidence < 60) signals.push('CONFIDENCE_DROP');
 
+      // 7. Behavioral Engine — augment scores with evidence-ledger signals
+      const behavioralScores = await BehavioralEngine.scoreSession(sessionId);
+      if (behavioralScores) {
+        if (behavioralScores.intent_drift > 0) signals.push('INTENT_DRIFT_ALERT');
+        if (behavioralScores.saturation > 0) signals.push('SATURATION_ALERT');
+      }
+
       const result: BehaviorAnalysisResult = {
         session_id: sessionId,
         org_id: session.org_id,
-        intent_drift_score: Math.round(intentDriftScore),
+        intent_drift_score: behavioralScores
+          ? Math.max(Math.round(intentDriftScore), behavioralScores.intent_drift)
+          : Math.round(intentDriftScore),
         instruction_override: hasOverride,
-        confidence_score: Math.round(avgConfidence),
-        context_saturation: Math.round(contextSaturation),
-        signals
+        confidence_score: behavioralScores
+          ? Math.round(behavioralScores.confidence)
+          : Math.round(avgConfidence),
+        context_saturation: behavioralScores
+          ? Math.max(Math.round(contextSaturation), behavioralScores.saturation)
+          : Math.round(contextSaturation),
+        signals: [...new Set(signals)]
       };
 
       // 7. Persist Result

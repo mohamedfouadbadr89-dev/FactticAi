@@ -7,10 +7,11 @@ import { CountUp } from "@/components/ui/CountUp";
 import { AuditModeOverlay } from "@/components/ui/AuditModeOverlay";
 import { useSimulation } from "@/lib/dashboard/SimulationContext";
 import GlobalSearch from "@/components/ui/GlobalSearch";
+import { useInteractionMode } from "@/store/interactionMode";
 import { Menu, HelpCircle } from "lucide-react";
 
 export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
-  const [channel, setChannel] = useState<"chat" | "voice">("chat");
+  const { mode: channel, setMode: setChannel } = useInteractionMode();
   const [mode, setMode] = useState<"executive" | "advanced">("executive");
   const [auditMode, setAuditMode] = useState(false);
   const { isSimulating, simulationStep, startSimulation, resetSimulation } = useSimulation();

@@ -1,3 +1,4 @@
+import { verifyApiKey } from '@/lib/security/verifyApiKey';
 import { NextResponse } from 'next/server'
 import { GuardrailEngine } from '@/lib/governance/guardrailEngine'
 
@@ -6,6 +7,16 @@ import { GuardrailEngine } from '@/lib/governance/guardrailEngine'
 // but for standard Dashboard API parity we check auth.
 
 export async function POST(req: Request) {
+  const authResult = await verifyApiKey(req);
+  if (authResult.error) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.status }
+    );
+  }
+  // Override org_id from the verified API key
+  const verifiedOrgId = authResult.org_id;
+
   try {
     // Extract Body
     const body = await req.json()

@@ -26,7 +26,7 @@ export class RcaEngine {
    * Deprecated RCA entrypoint
    * Redirects analysis to RCA Graph Engine v2
    */
-  static async analyzeIncident(sessionId: string): Promise<RcaReport | null> {
+  static async analyzeIncident(sessionId: string, orgId: string): Promise<RcaReport | null> {
 
     logger.warn('RCA_ENGINE_V1_DEPRECATED', {
       sessionId,
@@ -35,7 +35,7 @@ export class RcaEngine {
 
     try {
 
-      const graphResult = await RcaGraphEngine.analyzeSession(sessionId)
+      const graphResult = await RcaGraphEngine.analyzeSession(sessionId, orgId)
 
       if (!graphResult) return null
 

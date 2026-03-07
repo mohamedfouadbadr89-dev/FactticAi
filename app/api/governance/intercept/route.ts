@@ -1,3 +1,4 @@
+import { verifyApiKey } from '@/lib/security/verifyApiKey';
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
@@ -14,6 +15,16 @@ const InterceptSchema = z.object({
 })
 
 export async function POST(req: Request) {
+  const authResult = await verifyApiKey(req);
+  if (authResult.error) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.status }
+    );
+  }
+  // Override org_id from the verified API key
+  const verifiedOrgId = authResult.org_id;
+
   try {
     // Rate limit under governance prefix (50/min)
     const ip = req.headers.get('x-forwarded-for') ?? 'unknown'

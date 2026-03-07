@@ -1,5 +1,6 @@
 import { supabaseServer } from '../supabaseServer';
 import { logger } from '../logger';
+import { GovernanceEvent } from '../evidence/evidenceLedger';
 
 export type AlertSeverity = 'low' | 'medium' | 'critical';
 
@@ -18,6 +19,46 @@ export interface AlertSignal {
  * CORE PRINCIPLE: Classify and persist governance alerts for institutional visibility.
  */
 export class AlertEngine {
+  /**
+   * Evaluates a governance event and creates an incident if thresholds are breached.
+   */
+  static async evaluate(event: GovernanceEvent): Promise<void> {
+    try {
+      const { risk_score, violations, session_id } = event;
+      let incidentSeverity = null;
+      let violationType = 'General Risk';
+
+      if (risk_score >= 80) {
+        incidentSeverity = 'CRITICAL';
+      } else if (risk_score >= 60) {
+        incidentSeverity = 'HIGH';
+      } else if (violations && violations.length > 0) {
+        incidentSeverity = 'POLICY';
+        violationType = 'Policy Violation';
+      }
+
+      if (incidentSeverity) {
+        const { error } = await supabaseServer
+          .from('facttic_incidents')
+          .insert({
+            incident_id: crypto.randomUUID(),
+            session_id: session_id,
+            org_id: event.org_id,
+            risk_score: risk_score,
+            violation_type: violationType,
+            status: 'ACTIVE',
+            timestamp: new Date().toISOString()
+          });
+
+        if (error) throw error;
+
+        logger.info('INCIDENT_CREATED', { session_id, severity: incidentSeverity, risk_score });
+      }
+    } catch (err: any) {
+      logger.error('ALERT_EVALUATE_ERROR', { error: err.message });
+    }
+  }
+
   /**
    * Triggers a new governance alert based on a risk signal.
    */

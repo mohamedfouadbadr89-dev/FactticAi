@@ -3,18 +3,19 @@
 import { useState, useEffect, useMemo } from "react";
 import type { DashboardData } from "./types";
 import { useSimulation } from "./SimulationContext";
+import { demoSignals } from "../demo/demoSignals";
 
 /* ─── Default fallback data (matches current static UI) ─── */
 const FALLBACK: DashboardData = {
   health: {
     governance_score: 84,
-    sessions_today: 428,
+    sessions_today: demoSignals.interactions,
     voice_calls: 87,
     drift_freq: "2.4%",
     rca_confidence: "91%",
     policy_adherence: "96.2% compliant",
     behavioral_drift: "Monitor",
-    open_alerts: 3,
+    open_alerts: demoSignals.alerts,
     tamper_integrity: "Verified",
   },
   drift: {
@@ -42,6 +43,15 @@ const FALLBACK: DashboardData = {
     { id: "INV-437", name: "Policy Override Detected", channel: "Chat", phase: "Phase 6", status: "Open", rca: "67%", rcaColor: "text-amber-600", assigned: "A. Torres", updated: "3h ago" },
     { id: "INV-435", name: "Compliance Drift — SOC2", channel: "Voice", phase: "Phase 4", status: "Closed", rca: "99%", rcaColor: "text-emerald-600", assigned: "J. Liu", updated: "1d ago" },
   ],
+  intelligence: {
+    pii_exposed_today: demoSignals.violations,
+    compliance_drift_score: 0.18,
+    recent_violations: [
+      { id: "V-001", type: "EMAIL_EXPOSURE", timestamp: "10:45 AM" },
+      { id: "V-002", type: "SSN_DETECTED", timestamp: "09:12 AM" }
+    ],
+    pii_trend: [4, 6, 3, 8, 12, 10, 14, 12, 11, 13, 15, 12, 11, 10, 12]
+  }
 };
 
 interface UseDashboardResult {

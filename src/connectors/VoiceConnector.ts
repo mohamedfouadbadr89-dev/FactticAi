@@ -61,9 +61,9 @@ export class VoiceConnector extends BaseWebhookConnector {
       }
     };
 
-    // 4. Sends the transformed data to the /api/governance/evaluate endpoint
+    // 4. Sends the transformed data to the /api/governance/execute endpoint
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/governance/evaluate`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/governance/execute`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

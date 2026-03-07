@@ -42,9 +42,12 @@ const AGENT_STATS = [
   { name: 'Avg Risk Score', value: 12.4, icon: ShieldAlert, color: '#f59e0b' },
 ]
 
+import { useInteractionMode } from '@/store/interactionMode';
+
 // ── Components ──────────────────────────────────────────────────────────
 
 export default function AgentsPage() {
+  const { mode } = useInteractionMode();
   const [sessions, setSessions] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
   const [seeding, setSeeding] = React.useState(false)
@@ -84,9 +87,12 @@ export default function AgentsPage() {
             <Bot className="w-6 h-6 text-[#3b82f6]" />
           </div>
           <div>
-            <h1 className="text-2xl font-black tracking-tighter uppercase">AI Agent Control</h1>
+            <h1 className="text-2xl font-black tracking-tighter uppercase">
+              {mode === 'voice' ? 'Voice Agent Orchestration' : 'AI Agent Control'}
+            </h1>
             <p className="text-[10px] text-[#555] font-mono tracking-widest uppercase mt-1 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" /> Real-time monitoring / Tool Usage Guardrails Active
+              <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" /> 
+              {mode === 'voice' ? 'Audio Protocol Guardrails Active' : 'Real-time monitoring / Tool Usage Guardrails Active'}
             </p>
           </div>
         </div>

@@ -12,10 +12,11 @@ CREATE TABLE public.governance_policies (
     
     -- Ensure exact rule domains match Facttic design constraints
     CONSTRAINT valid_rule_type CHECK (rule_type IN (
-        'hallucination_rate', 
-        'tone_violation', 
-        'pii_exposure', 
-        'instruction_override'
+        'hallucination_rate',
+        'tone_violation',
+        'pii_exposure',
+        'instruction_override',
+        'safety_violation'
     )),
     
     -- Ensure exact bound behaviors

@@ -223,11 +223,20 @@ export function AlertsClient() {
  const verifyLedgerIntegrity = async () => {
    setLedgerChecking(true);
    try {
-     const res = await fetch('/api/governance/ledger/verify');
+     const res = await fetch('/api/ledger/verify');
      const json = await res.json();
-     setLedgerVerification(json.verification);
+     setLedgerVerification({
+       totalBlocks: json.events_checked || 0,
+       isValid: json.verified,
+       failurePoint: json.message || null
+     });
    } catch(e) {
      console.error(e);
+     setLedgerVerification({
+       totalBlocks: 0,
+       isValid: false,
+       failurePoint: 'Network Error'
+     });
    } finally {
      setLedgerChecking(false);
    }

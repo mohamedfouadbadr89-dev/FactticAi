@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { CountUp } from "@/components/ui/CountUp";
 import { logger } from "@/lib/logger";
+import { demoSignals } from "@/lib/demo/demoSignals";
 
 interface IntelligenceData {
   pii_exposed_today: number;
@@ -17,7 +18,7 @@ interface Props {
 
 export default function IntelligenceDashboard({ data }: Props) {
   const d = data ?? {
-    pii_exposed_today: 12,
+    pii_exposed_today: demoSignals.violations,
     compliance_drift_score: 0.18,
     recent_violations: [
       { id: "V-001", type: "EMAIL_EXPOSURE", timestamp: "10:45 AM" },

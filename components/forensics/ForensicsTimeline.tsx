@@ -5,7 +5,10 @@ import {
   ShieldAlert, 
   Activity, 
   History, 
-  AlertTriangle 
+  AlertTriangle,
+  MessageSquare,
+  Scale,
+  Calculator
 } from "lucide-react";
 
 interface TimelineEvent {
@@ -26,9 +29,12 @@ export default function ForensicsTimeline({ events }: { events: TimelineEvent[] 
 
   const getEventIcon = (type: string) => {
     switch (type) {
+      case 'prompt_submitted': return <MessageSquare className="w-4 h-4 text-blue-500" />;
+      case 'governance_decision': return <Scale className="w-4 h-4 text-emerald-500" />;
       case 'policy_violation': return <ShieldAlert className="w-4 h-4 text-red-500" />;
       case 'drift_detected': return <Activity className="w-4 h-4 text-amber-500" />;
       case 'governance_escalation': return <AlertTriangle className="w-4 h-4 text-purple-500" />;
+      case 'risk_score_calculated': return <Calculator className="w-4 h-4 text-indigo-500" />;
       default: return <FileText className="w-4 h-4 text-[var(--text-secondary)]" />;
     }
   };
@@ -43,7 +49,10 @@ export default function ForensicsTimeline({ events }: { events: TimelineEvent[] 
           <div key={idx} className="relative">
             {/* Timeline Dot */}
             <div className={`absolute -left-[22px] top-1 w-2.5 h-2.5 rounded-full border-2 border-[var(--bg-primary)] ${
+              event.event_type === 'prompt_submitted' ? 'bg-blue-500' :
+              event.event_type === 'governance_decision' ? 'bg-emerald-500' :
               event.event_type === 'policy_violation' ? 'bg-red-500' :
+              event.event_type === 'risk_score_calculated' ? 'bg-indigo-500' :
               event.event_type === 'drift_detected' ? 'bg-amber-500' :
               'bg-[var(--border-secondary)]'
             }`} />

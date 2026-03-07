@@ -10,8 +10,13 @@ import {
   RefreshCw,
   Clock,
   ChevronRight,
-  Target
+  Target,
+  Terminal,
+  PlayCircle
 } from "lucide-react";
+import SimulationWidget from "@/components/dashboard/SimulationWidget";
+import RiskTrendChart from "@/components/dashboard/RiskTrendChart";
+import GovernanceHealthTimeline from "@/components/dashboard/GovernanceHealthTimeline";
 import { logger } from "@/lib/logger";
 
 // Mock org for front-end demonstration context
@@ -23,30 +28,55 @@ export default function GovernanceDashboard() {
     risk: null,
     alerts: [],
     drift: null,
-    costs: null
+    costs: null,
+    simulation: null,
+    playground: null,
+    trend: []
   });
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const fetchDashboardData = async () => {
     try {
-      const [stateRes, riskRes, alertsRes, driftRes, costsRes] = await Promise.all([
+      const [
+        stateRes, 
+        metricsRes,
+        alertsRes, 
+        driftRes, 
+        costsRes, 
+        playRes, 
+        trendRes
+      ] = await Promise.all([
         fetch(`/api/governance/state?orgId=${DEMO_ORG_ID}`),
-        fetch(`/api/governance/risk-score?org_id=${DEMO_ORG_ID}`),
+        fetch(`/api/governance/metrics?org_id=${DEMO_ORG_ID}`),
         fetch(`/api/governance/alerts?org_id=${DEMO_ORG_ID}`),
         fetch(`/api/intelligence/predictive-drift?orgId=${DEMO_ORG_ID}&model=default`),
-        fetch(`/api/economics/cost-anomalies`)
+        fetch(`/api/economics/cost-anomalies`),
+        fetch(`/api/dashboard/governance/playground?org_id=${DEMO_ORG_ID}`),
+        fetch(`/api/dashboard/governance/risk-trend?org_id=${DEMO_ORG_ID}`)
       ]);
 
-      const [state, risk, alerts, drift, costs] = await Promise.all([
+      const [state, metrics, alerts, drift, costs, playground, trendData] = await Promise.all([
         stateRes.json(),
-        riskRes.json(),
+        metricsRes.json(),
         alertsRes.json(),
         driftRes.json(),
-        costsRes.json()
+        costsRes.json(),
+        playRes.json(),
+        trendRes.json()
       ]);
 
-      setData({ state, risk, alerts, drift, costs });
+      setData({ 
+        state, 
+        risk: { risk_score: metrics.session_risk }, // Map unified risk
+        alerts, 
+        drift, 
+        costs, 
+        simulation: metrics.simulation, // Map unified simulation data
+        playground, 
+        trend: trendData.trend || [],
+        health: metrics.governance_health
+      });
       setLastUpdated(new Date());
     } catch (err: any) {
       logger.error("DASHBOARD_REFRESH_FAILED", { error: err.message });
@@ -118,8 +148,10 @@ export default function GovernanceDashboard() {
               {data.state?.governance_state || '---'}
             </h2>
             <div className="text-right">
-              <p className="text-[10px] font-mono text-[#555]">RISK SCORE</p>
-              <p className="text-xl font-black">{data.state?.risk_score || 0}</p>
+              <p className="text-[10px] font-mono text-[#555]">HEALTH INDEX</p>
+              <p className={`text-xl font-black ${data.health > 80 ? 'text-[#10b981]' : data.health > 50 ? 'text-[#f59e0b]' : 'text-[#ef4444]'}`}>
+                {data.health !== undefined ? `${data.health}%` : '---'}
+              </p>
             </div>
           </div>
         </div>
@@ -174,6 +206,12 @@ export default function GovernanceDashboard() {
         </div>
 
       </div>
+ 
+      {/* Simulation & Intelligence Layer */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        <SimulationWidget data={data.simulation} loading={loading} />
+        <GovernanceHealthTimeline orgId={DEMO_ORG_ID} />
+      </div>
 
       {/* Secondary Layer: Feed & Details */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -221,6 +259,33 @@ export default function GovernanceDashboard() {
 
         {/* Risk Signals Detail */}
         <div className="space-y-8">
+          <div className="bg-[#151515] border border-[#2d2d2d] rounded-3xl p-8">
+            <h3 className="text-xs font-black uppercase tracking-widest text-white mb-8 border-b border-[#222] pb-4 flex items-center gap-2">
+              <Terminal className="w-4 h-4 text-[#3b82f6]" /> Playground Usage
+            </h3>
+            <div className="space-y-4">
+              {data.playground?.activity && data.playground.activity.length > 0 ? (
+                data.playground.activity.slice(0, 4).map((event: any) => (
+                  <div key={event.id} className="flex items-center justify-between p-3 rounded-xl bg-[#111] border border-[#222]">
+                    <div className="flex items-center gap-3">
+                       <div className="w-1.5 h-1.5 rounded-full bg-[#3b82f6]" />
+                       <span className="text-[10px] font-bold text-white uppercase tracking-tight truncate max-w-[120px]">
+                         Prompt Eval
+                       </span>
+                    </div>
+                    <span className="text-[9px] font-mono text-[#444]">
+                      {new Date(event.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="py-10 text-center border border-dashed border-[#222] rounded-xl opacity-30">
+                  <span className="text-[9px] font-black uppercase tracking-widest">No Recent Evaluations</span>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="bg-[#151515] border border-[#2d2d2d] rounded-3xl p-8">
             <h3 className="text-xs font-black uppercase tracking-widest text-white mb-8 border-b border-[#222] pb-4">
               Weighted Signals

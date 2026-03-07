@@ -20,6 +20,8 @@ import { RiskMetricsEngine } from './intelligence/riskMetricsEngine';
 import { GovernanceStateEngine } from './governance/governanceStateEngine';
 import { GovernanceAlertEngine } from './governance/alertEngine';
 import { ComplianceIntelligenceEngine } from './compliance/complianceIntelligenceEngine';
+import { runAnalyzers } from './governance/analyzers/runAnalyzers';
+import { computeCompositeRisk } from './metrics/compositeRiskEngine';
 
 
 export interface GovernanceExecutionResult {
@@ -85,23 +87,37 @@ export class GovernancePipeline {
         };
       }
 
-      // 2. Guardrail Layer (Response Analysis)
+      // 2. Signal.Analysis Layer (Phase 62)
+      const signalContext = {
+        signals: [] as any[],
+        risk_score: 0
+      };
+
+      if (prompt) {
+        const analysis = await runAnalyzers(prompt);
+        signalContext.signals = analysis.signals;
+        signalContext.risk_score = analysis.totalRisk;
+      }
+
+      // 3. Guardrail Layer (Response Analysis)
       const guardrail = response 
         ? await GuardrailEngine.evaluateResponse({ org_id, response_text: response })
         : { signals: [], metrics: { hallucination_risk: 0, policy_risk: 0, tone_risk: 0, safety_risk: 0 } };
 
-      // 3. Policy Layer (Rule Execution)
+      // 4. Policy Layer (Rule Execution)
       const policies = await PolicyEngine.loadOrganizationPolicies(org_id);
-      const policyEval = PolicyEngine.evaluateSignals(policies, guardrail.signals);
+      
+      const detectionSignals = signalContext.signals.map(s => ({
+        rule_type: (s.type === 'PROMPT_INJECTION' ? 'instruction_override' : 
+                   s.type === 'SYSTEM_PROMPT_EXTRACTION' ? 'system_prompt_extraction' :
+                   s.type === 'SENSITIVE_DATA' ? 'pii_exposure' : 'safety_violation') as any,
+        score: s.severity * 100
+      }));
 
-      // 4. Compliance Intelligence (Async Analysis) - NEW HOOK
-      setImmediate(() => {
-        ComplianceIntelligenceEngine.analyze({
-          org_id,
-          session_id,
-          response
-        }).catch(err => logger.error('COMPLIANCE_PIPELINE_ERROR', { org_id, error: err.message }));
-      });
+      const policyEval = PolicyEngine.evaluateSignals(policies, [...guardrail.signals, ...detectionSignals]);
+
+      // 4a. Guardrail prompt-level detection (DATA_EXFILTRATION + future rules)
+      const resolvedViolations = prompt ? GuardrailEngine.evaluatePrompt(prompt) : [];
 
       // 5. Response Sanitization (Kernel)
       const responseIntercept = response
@@ -114,44 +130,56 @@ export class GovernancePipeline {
       // 6. Governance State (Stability)
       const govState = await GovernanceStateEngine.getGovernanceState(org_id);
 
-      // 7. Alert Generation (Async Breach Handling)
-      GovernanceAlertEngine.evaluate({
-        org_id,
-        session_id,
-        risk_score: riskMetrics.risk_score,
-        policy_action: policyEval.highest_action || undefined,
-        drift_score: riskMetrics.breakdown.drift_risk,
-        cost_spike_ratio: riskMetrics.breakdown.cost_risk / 20 // Reverse calculation for ratio audit
-      });
-
       const latency = Date.now() - t0;
 
-      // Determine final decision hierarchy
+      // Determine final decision hierarchy (Phase 62: Consumes detection risk)
       let decision = 'ALLOW';
-      if (policyEval.highest_action === 'block' || guardrail.metrics.safety_risk > 0.8) {
+      const detectionRisk = signalContext.risk_score;
+
+      if (policyEval.highest_action === 'block' || guardrail.metrics.safety_risk > 0.8 || detectionRisk > 0.7 || resolvedViolations.some(v => v.action === 'BLOCK')) {
         decision = 'BLOCK';
-      } else if (policyEval.highest_action === 'warn' || riskMetrics.risk_score > 50) {
+      } else if (policyEval.highest_action === 'warn' || riskMetrics.risk_score > 50 || detectionRisk > 0.4) {
         decision = 'WARN';
       }
 
+      // Format detection signals for the violations panel (UI-compatible)
+      const detectionViolations = signalContext.signals.map(s => ({
+        policy_name: `Detection Engine: ${s.type}`,
+        rule_type: s.type.toLowerCase() as any,
+        threshold: 0.4, // Standard warning threshold
+        actual_score: s.severity * 100,
+        action: s.severity > 0.7 ? 'block' : 'warn',
+        // Injected fields for UI specific detection panel
+        signal_type: s.type,
+        severity: s.severity,
+        explanation: s.description
+      }));
+
+      const allViolations = [...policyEval.violations, ...detectionViolations, ...resolvedViolations];
+      const composite = computeCompositeRisk({
+        signals: signalContext.signals,
+        prompt,
+        violations: allViolations,
+        decision,
+      });
+      const finalRiskScore = composite.risk_score;
+      const behavior = composite.behavior;
+
       return {
         decision,
-        risk_score: riskMetrics.risk_score,
-        governance_state: govState.governance_state,
-        violations: policyEval.violations,
+        risk_score: finalRiskScore,
+        violations: allViolations,
         signals: {
           guardrail: guardrail.metrics,
           risk_breakdown: riskMetrics.breakdown,
           state_factors: govState.contributing_factors,
+          detection: signalContext.signals,
           interceptor: {
             prompt: promptIntercept.action,
             response: responseIntercept.action
           }
         },
-        metadata: {
-          latency_ms: latency,
-          session_id: session_id || null
-        }
+        behavior
       };
 
     } catch (err: any) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
+import { createServerAuthClient } from '@/lib/supabaseAuth';
 import { buildTimeline } from '@/lib/replay/timelineBuilder';
 
 export async function GET(
@@ -8,25 +9,28 @@ export async function GET(
 ) {
   try {
     const { id: sessionId } = await params;
-    
+
     if (!sessionId) {
       return NextResponse.json({ error: 'Missing session ID.' }, { status: 400 });
     }
 
-    const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
+    // Verify the user session using the cookie-aware auth client
+    const authClient = await createServerAuthClient();
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // RBAC: Verify user owns the org associated with this session
-    const { data: sessionData, error: sessionError } = await supabaseServer
-      .from('sessions')
+    // RBAC: Resolve the org that owns this session from the evidence ledger
+    const { data: eventRow, error: sessionError } = await supabaseServer
+      .from('facttic_governance_events')
       .select('org_id')
-      .eq('id', sessionId)
-      .single();
-      
-    if (sessionError || !sessionData) {
+      .eq('session_id', sessionId)
+      .limit(1)
+      .maybeSingle();
+
+    if (sessionError || !eventRow) {
       return NextResponse.json({ error: 'Session not found or forbidden.' }, { status: 404 });
     }
 
@@ -34,19 +38,25 @@ export async function GET(
       .from('org_members')
       .select('id')
       .eq('user_id', user.id)
-      .eq('org_id', sessionData.org_id)
+      .eq('org_id', eventRow.org_id)
       .single();
 
     if (rbacError || !orgMember) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Execute Builder Sequence 
-    const timeline = await buildTimeline(sessionId);
+    // Execute Builder Sequence
+    const result = await buildTimeline(sessionId);
 
-    return NextResponse.json({ timeline }, { status: 200 });
+    if (!result) {
+      return NextResponse.json({ error: 'timeline_failed' }, { status: 500 });
+    }
+
+    const { timeline, riskPeaks, policyTriggers } = result;
+
+    return NextResponse.json({ timeline, riskPeaks, policyTriggers }, { status: 200 });
 
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'timeline_failed' }, { status: 500 });
   }
 }

@@ -53,8 +53,8 @@ export const EvidenceBuilder = {
         .gte('detected_at', timeframe_start)
         .lte('detected_at', timeframe_end),
 
-      supabase.from('governance_event_ledger')
-        .select('event_type, previous_hash, current_hash, signature, created_at')
+      supabase.from('facttic_governance_events')
+        .select('event_type, previous_hash, event_hash, signature, created_at')
         .eq('org_id', org_id)
         .gte('created_at', timeframe_start)
         .lte('created_at', timeframe_end)
@@ -120,7 +120,7 @@ export const EvidenceBuilder = {
     const ledgerBlocks = evidencePackage.ledger_verification.chain_sequence;
     if (ledgerBlocks && ledgerBlocks.length > 1) {
        for (let i = 1; i < ledgerBlocks.length; i++) {
-          if (ledgerBlocks[i].previous_hash !== ledgerBlocks[i-1].current_hash) {
+          if (ledgerBlocks[i].previous_hash !== ledgerBlocks[i-1].event_hash) {
              isChainValid = false;
              break;
           }

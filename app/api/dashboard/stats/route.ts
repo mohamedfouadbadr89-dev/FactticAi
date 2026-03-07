@@ -11,13 +11,20 @@ import { logger } from '@/lib/logger';
  */
 export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
-    // 1. Fetch data in parallel for performance
+    // Calculate 24-hour timestamp
+    const yesterday = new Date();
+    yesterday.setHours(yesterday.getHours() - 24);
+    const timeThreshold = yesterday.toISOString();
+
+    // 1. Fetch data in parallel for performance (with Observability Layer addition)
     const [
       { data: dashboardMetrics, error: metricsError },
       { data: snapshots, error: snapshotError },
       { data: predictions, error: predictionError },
       { data: alerts, error: alertsError },
-      { data: investigations, error: investigationsError }
+      { data: investigations, error: investigationsError },
+      { data: recentEvents, error: eventsError },
+      { count: activeIncidentsCount, error: incidentsError }
     ] = await Promise.all([
       supabaseServer.rpc('get_executive_dashboard', { p_org_id: orgId }),
       supabaseServer
@@ -47,17 +54,25 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
         .eq('org_id', orgId)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
-        .limit(10)
+        .limit(10),
+      supabaseServer
+        .from('facttic_governance_events')
+        .select('risk_score, decision')
+        .eq('org_id', orgId)
+        .gt('timestamp', timeThreshold),
+      supabaseServer
+        .from('facttic_incidents')
+        .select('*', { count: 'exact', head: true })
+        .eq('org_id', orgId)
+        .eq('status', 'ACTIVE')
     ]);
 
-    if (metricsError || snapshotError || predictionError || alertsError || investigationsError) {
+    if (metricsError || snapshotError || predictionError || alertsError || investigationsError || eventsError || incidentsError) {
       logger.error('DASHBOARD_STATS_FETCH_FAILED', { 
         orgId, 
         metricsError: metricsError?.message,
-        snapshotError: snapshotError?.message,
-        predictionError: predictionError?.message,
-        alertsError: alertsError?.message,
-        investigationsError: investigationsError?.message
+        eventsError: eventsError?.message,
+        incidentsError: incidentsError?.message
       });
       return NextResponse.json({ error: 'DATA_FETCH_FAILED' }, { status: 500 });
     }
@@ -66,25 +81,43 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
     const metrics = Array.isArray(dashboardMetrics) ? dashboardMetrics[0] : dashboardMetrics;
     const latestSnapshot = snapshots?.[0];
     const latestPrediction = predictions?.[0];
+    
+    // Dynamic Drift Calculate
     const avgDrift = predictions && predictions.length > 0
       ? predictions.reduce((acc, curr) => acc + (Number(curr.drift_score) || 0), 0) / predictions.length
       : 0;
+      
+    // Observability Metrics Computation
+    const totalEvents24h = recentEvents?.length || 0;
+    const blockedEvents24h = recentEvents?.filter(e => e.decision === 'BLOCK').length || 0;
+    const avgRisk24h = totalEvents24h > 0 
+      ? recentEvents!.reduce((acc, e) => acc + Number(e.risk_score), 0) / totalEvents24h
+      : 0;
+
+    const activeIncidents = activeIncidentsCount || 0;
+
+    // Health Score Formula: 100 - (avg_risk * 0.4 + active_incidents * 10 + drift_score * 0.3)
+    const driftForHealth = (avgDrift * 100) || 0; // if drift is percentage 0-1
+    let rawHealth = 100 - (avgRisk24h * 0.4 + activeIncidents * 10 + driftForHealth * 0.3);
+    const computedHealth = Math.max(0, Math.min(100, Math.round(rawHealth)));
 
     // 3. Construct the DashboardData object
     const dashboardData = {
       health: {
-        governance_score: Math.round((metrics?.governance_score || 0.84) * 100),
-        sessions_today: metrics?.sessions_30d || 0, // approximation for Phase 1
-        voice_calls: 87, // static for now
-        drift_freq: `${(metrics?.drift_frequency || 0).toFixed(1)}%`,
+        governance_score: computedHealth, // Replacing static score with Dynamic Health
+        sessions_today: totalEvents24h, // Replacing mock with reality
+        voice_calls: 0, // static for now
+        drift_freq: `${driftForHealth.toFixed(1)}%`,
         rca_confidence: "91%", 
-        policy_adherence: "96.2% compliant",
-        behavioral_drift: (metrics?.drift_frequency || 0) > 5 ? "Critical" : (metrics?.drift_frequency || 0) > 2 ? "Monitor" : "Stable",
-        open_alerts: metrics?.active_alerts || 0,
+        policy_adherence: `${totalEvents24h > 0 ? ((1 - (blockedEvents24h/totalEvents24h)) * 100).toFixed(1) : 100}% compliant`,
+        behavioral_drift: driftForHealth > 5 ? "Critical" : driftForHealth > 2 ? "Monitor" : "Stable",
+        open_alerts: activeIncidents,
         tamper_integrity: latestSnapshot?.determinism_flag ? "Verified" : "Warning",
+        avg_risk_24h: avgRisk24h.toFixed(1),
+        blocked_24h: blockedEvents24h
       },
       drift: {
-        current: `${(metrics?.drift_frequency || 0).toFixed(1)}%`,
+        current: `${driftForHealth.toFixed(1)}%`,
         avg_30d: `${(avgDrift * 100).toFixed(1)}%`,
         baseline: "0.9%",
         history: predictions?.map(p => ({
@@ -114,12 +147,12 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
         severity: (a.new_severity === 'critical' || a.new_severity === 'high') ? 'High' : a.new_severity === 'medium' ? 'Med' : 'Low'
       })) || [],
       risks: [
-        { label: "Policy Adherence", value: "96.2%", percent: 96.2, color: "text-emerald-700", barColor: "bg-emerald-500" },
-        { label: "Behavioral Drift", value: `${(metrics?.drift_frequency || 0).toFixed(1)}%`, percent: Math.min((metrics?.drift_frequency || 0) * 10, 100), color: (metrics?.drift_frequency || 0) > 5 ? "text-red-700" : "text-amber-700", barColor: (metrics?.drift_frequency || 0) > 5 ? "bg-red-500" : "bg-amber-500" },
+        { label: "Policy Adherence", value: `${totalEvents24h > 0 ? ((1 - (blockedEvents24h/totalEvents24h)) * 100).toFixed(1) : 100}%`, percent: totalEvents24h > 0 ? ((1 - (blockedEvents24h/totalEvents24h)) * 100) : 100, color: "text-emerald-700", barColor: "bg-emerald-500" },
+        { label: "Behavioral Drift", value: `${driftForHealth.toFixed(1)}%`, percent: Math.min(driftForHealth * 10, 100), color: driftForHealth > 5 ? "text-red-700" : "text-amber-700", barColor: driftForHealth > 5 ? "bg-red-500" : "bg-amber-500" },
         { label: "Tamper Events", value: "0", percent: 100, color: "text-emerald-700", barColor: "bg-emerald-500" },
         { label: "RCA Confidence", value: "91%", percent: 91, color: "text-blue-700", barColor: "bg-blue-500" },
-        { label: "Escalation Rate", value: "0.7%", percent: 0.7, color: "text-emerald-700", barColor: "bg-emerald-500" },
-        { label: "Open Investigations", value: String(metrics?.open_investigations || 0), percent: Math.min((metrics?.open_investigations || 0) * 10, 100), color: (metrics?.open_investigations || 0) > 5 ? "text-red-700" : "text-amber-700", barColor: (metrics?.open_investigations || 0) > 5 ? "bg-red-500" : "bg-amber-500" },
+        { label: "Avg Risk (24h)", value: `${avgRisk24h.toFixed(1)}/100`, percent: avgRisk24h, color: avgRisk24h > 50 ? "text-amber-700" : "text-emerald-700", barColor: avgRisk24h > 50 ? "bg-amber-500" : "bg-emerald-500" },
+        { label: "Open Incidents", value: String(activeIncidents), percent: Math.min(activeIncidents * 10, 100), color: activeIncidents > 5 ? "text-red-700" : "text-amber-700", barColor: activeIncidents > 5 ? "bg-red-500" : "bg-amber-500" },
       ],
       investigations: investigations?.map(i => ({
         id: i.id.substring(0, 8).toUpperCase(),

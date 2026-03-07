@@ -13,6 +13,8 @@ import {
   ArrowUpRight,
   MonitorDot
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { getProviderStatus, ProviderHealthResult } from '@/lib/integrations/providerHealth';
 
 interface TelemetryData {
   risk_latency: { avg_ms: number; p95_ms: number };
@@ -20,16 +22,31 @@ interface TelemetryData {
   alert_frequency: { total: number; by_type: Record<string, number>; hourly_distribution: number[] };
 }
 
+import { useInteractionMode } from '@/store/interactionMode';
+
 export default function ObservabilityDashboard() {
+  const { mode } = useInteractionMode();
   const [data, setData] = useState<TelemetryData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [providerHealths, setProviderHealths] = useState<Record<string, ProviderHealthResult>>({});
+  const [liveEvents, setLiveEvents] = useState<any[]>([]);
 
   useEffect(() => {
+    // 1. Initial Data Fetch
     async function fetchTelemetry() {
       try {
         const res = await fetch('/api/observability/advanced-metrics');
         const json = await res.json();
         setData(json);
+
+        // Fetch AI Provider Health
+        const { data: conns } = await supabase.from('ai_connections').select('id, provider_type');
+        if (conns) {
+          conns.forEach(async (conn) => {
+            const health = await getProviderStatus(conn.id);
+            setProviderHealths(prev => ({ ...prev, [conn.id]: health }));
+          });
+        }
       } catch (err) {
         console.error('Failed to fetch telemetry', err);
       } finally {
@@ -37,13 +54,20 @@ export default function ObservabilityDashboard() {
       }
     }
     fetchTelemetry();
+
+    // 2. Subscribe to Live Telemetry Stream
+    const channel = supabase.channel('telemetry')
+      .on('broadcast', { event: 'governance_event' }, (payload) => {
+        setLiveEvents((prev) => [payload.payload, ...prev].slice(0, 20)); // Keep last 20
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  if (loading) return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-      <div className="w-12 h-12 border-2 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
-    </div>
-  );
+  const effectiveData = data;
 
   return (
     <div className="min-h-screen bg-[#050505] text-white p-10 font-sans">
@@ -54,19 +78,23 @@ export default function ObservabilityDashboard() {
           </div>
           <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Signal Engineering</span>
         </div>
-        <h1 className="text-6xl font-black uppercase tracking-tighter italic leading-none">Advanced Observability</h1>
+        <h1 className="text-6xl font-black uppercase tracking-tighter italic leading-none">
+          {mode === 'voice' ? 'Audio Stream Intelligence' : 'Advanced Observability'}
+        </h1>
         <p className="text-slate-500 mt-4 max-w-xl text-sm font-medium">
-          Deep structural telemetry across the governance stack. Monitoring signal decay, 
-          propagation velocity, and alert distribution patterns.
+          {mode === 'voice' 
+            ? 'Monitoring real-time acoustic signal integrity and voice-based governance telemetry.'
+            : 'Deep structural telemetry across the governance stack. Monitoring signal decay, propagation velocity, and alert distribution patterns.'
+          }
         </p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
         {[
-          { label: 'Risk Latency (P95)', value: `${data?.risk_latency.p95_ms}ms`, icon: Clock, color: 'text-blue-400' },
-          { label: 'Drift Propagation', value: data?.drift_propagation.correlation_coefficient.toFixed(2), icon: Network, color: 'text-fuchsia-400' },
-          { label: 'Daily Alert Volume', value: data?.alert_frequency.total, icon: ShieldAlert, color: 'text-amber-400' },
-          { label: 'Spike Incidents', value: data?.drift_propagation.spike_incidents, icon: Zap, color: 'text-red-400' }
+          { label: 'Risk Latency (P95)', value: effectiveData ? `${effectiveData.risk_latency.p95_ms}ms` : '—', icon: Clock, color: 'text-blue-400' },
+          { label: 'Drift Propagation', value: effectiveData ? effectiveData.drift_propagation.correlation_coefficient.toFixed(2) : '—', icon: Network, color: 'text-fuchsia-400' },
+          { label: 'Daily Alert Volume', value: effectiveData?.alert_frequency.total ?? '—', icon: ShieldAlert, color: 'text-amber-400' },
+          { label: 'Spike Incidents', value: effectiveData?.drift_propagation.spike_incidents ?? '—', icon: Zap, color: 'text-red-400' }
         ].map((stat, i) => (
           <div key={i} className="bg-[#0a0a0a] border border-white/5 p-6 rounded-3xl group hover:border-white/10 transition-all">
             <div className="flex justify-between items-start mb-4">
@@ -80,31 +108,58 @@ export default function ObservabilityDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Latency Heatmap Simulation */}
-        <div className="lg:col-span-8 bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] p-10">
-          <div className="flex justify-between items-center mb-8">
+        {/* Live Governance Feed */}
+        <div className="lg:col-span-8 bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] p-10 h-[450px] flex flex-col">
+          <div className="flex justify-between items-center mb-6 shrink-0">
             <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" /> Signal Latency Distribution
+              <Activity className="w-4 h-4 text-emerald-500 animate-pulse" /> Live Telemetry Feed
             </h3>
-            <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-              NOMINAL PERFORMANCE
+            <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+              STREAMING ACTIVE
             </span>
           </div>
           
-          <div className="h-[300px] flex items-end gap-2 px-2">
-            {(data?.alert_frequency.hourly_distribution || []).map((v, i) => (
-              <motion.div 
-                key={i}
-                initial={{ scaleY: 0 }}
-                animate={{ scaleY: 1 }}
-                className="flex-1 bg-gradient-to-t from-amber-500/20 to-amber-500 rounded-t-lg relative"
-                style={{ height: `${Math.max(10, (v / Math.max(...data!.alert_frequency.hourly_distribution, 1)) * 100)}%` }}
-              >
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[8px] font-mono text-slate-700">
-                  {i}H
-                </div>
-              </motion.div>
-            ))}
+          <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+            {liveEvents.length === 0 ? (
+               <div className="h-full flex flex-col items-center justify-center text-slate-600 border border-white/5 border-dashed rounded-xl">
+                 <MonitorDot className="w-8 h-8 mb-3 opacity-20" />
+                 <p className="text-xs font-mono uppercase tracking-widest">Awaiting Events...</p>
+               </div>
+            ) : (
+              liveEvents.map((evt, i) => (
+                <motion.div 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  key={evt.session_id + "_" + i} 
+                  className="bg-white/[0.02] border border-white/5 p-4 rounded-xl flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-2 h-2 rounded-full ${evt.decision === 'BLOCK' ? 'bg-red-500 shadow-red-500/50' : evt.decision === 'WARN' ? 'bg-amber-500 shadow-amber-500/50' : 'bg-emerald-500 shadow-emerald-500/50'} shadow-[0_0_8px]`} />
+                    <div>
+                      <p className="text-xs font-mono text-slate-300">Session: {evt.session_id?.slice(0,8)}</p>
+                      <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest">
+                        {new Date(evt.timestamp).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                      <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase">Risk</p>
+                      <p className={`text-sm font-bold ${evt.risk_score >= 80 ? 'text-red-400' : evt.risk_score >= 60 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                        {evt.risk_score}
+                      </p>
+                    </div>
+                    <div className="text-right w-16">
+                      <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase">Decision</p>
+                      <p className={`text-xs font-black uppercase tracking-widest ${evt.decision === 'BLOCK' ? 'text-red-500' : evt.decision === 'WARN' ? 'text-amber-500' : 'text-emerald-500'}`}>
+                        {evt.decision}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
           </div>
         </div>
 
@@ -115,16 +170,19 @@ export default function ObservabilityDashboard() {
           </h3>
           
           <div className="flex-1 flex flex-col justify-center space-y-6">
-            {Object.entries(data?.alert_frequency.by_type || {}).map(([type, count], i) => (
+            {Object.entries(effectiveData?.alert_frequency.by_type ?? {}).map(([type, count], i) => {
+              const n = Number(count);
+              const total = effectiveData?.alert_frequency.total || 1;
+              return (
               <div key={i}>
                 <div className="flex justify-between items-end mb-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{type.replace(/_/g, ' ')}</span>
-                  <span className="text-xs font-bold">{Math.round((count / data!.alert_frequency.total) * 100)}%</span>
+                  <span className="text-xs font-bold">{Math.round((n / total) * 100)}%</span>
                 </div>
                 <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-amber-500" 
-                    style={{ width: `${(count / data!.alert_frequency.total) * 100}%` }}
+                  <div
+                    className="h-full bg-amber-500"
+                    style={{ width: `${(n / total) * 100}%` }}
                   ></div>
                 </div>
               </div>
@@ -139,6 +197,64 @@ export default function ObservabilityDashboard() {
               </p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Infrastructure Integrity Widget */}
+      <div className="mt-10 bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] p-10">
+        <div className="flex justify-between items-center mb-10">
+          <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+            <MonitorDot className="w-4 h-4" /> Provider Infrastructure Integrity
+          </h3>
+          <div className="flex gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Operational</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-amber-500" />
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Degraded</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-red-500" />
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Critical</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          {Object.entries(providerHealths).length === 0 ? (
+            <div className="col-span-full py-12 text-center border border-white/5 border-dashed rounded-3xl">
+              <p className="text-slate-600 text-xs font-medium italic">No active telemetry streams discovered.</p>
+            </div>
+          ) : Object.entries(providerHealths).map(([id, health], i) => (
+             <motion.div 
+               key={id}
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ delay: i * 0.1 }}
+               className="bg-white/[0.02] border border-white/5 p-5 rounded-[1.5rem] relative overflow-hidden"
+             >
+                <div className={`absolute top-0 right-0 w-16 h-16 opacity-5 bg-gradient-to-br ${
+                  health.status === 'Connected' ? 'from-emerald-500' : 
+                  health.status === 'Degraded' ? 'from-amber-500' : 'from-red-500'
+                } to-transparent`} />
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`w-2 h-2 rounded-full ${
+                    health.status === 'Connected' ? 'bg-emerald-500' : 
+                    health.status === 'Degraded' ? 'bg-amber-500' : 'bg-red-500'
+                  } shadow-[0_0_12px] ${
+                    health.status === 'Connected' ? 'shadow-emerald-500/50' : 
+                    health.status === 'Degraded' ? 'shadow-amber-500/50' : 'shadow-red-500/50'
+                  }`} />
+                  <span className="text-[9px] font-mono text-slate-600 tracking-tighter">{health.latency}ms</span>
+                </div>
+                <h4 className="text-xs font-black uppercase tracking-tight text-slate-300">
+                  {id.slice(0, 8)}...
+                </h4>
+                <p className="text-[10px] text-slate-500 mt-1 font-medium">{health.status}</p>
+             </motion.div>
+          ))}
         </div>
       </div>
       

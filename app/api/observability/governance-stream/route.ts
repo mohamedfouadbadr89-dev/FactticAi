@@ -38,10 +38,9 @@ export async function GET(req: NextRequest) {
       // Function to fetch and push latest events
       const pushEvents = async () => {
         try {
-          // Pull recent events from ledger (last 30 seconds for initial burst, then polling or realtime)
           const { data: events, error: ledgerError } = await supabaseServer
-            .from('governance_event_ledger')
-            .select('*')
+            .from('facttic_governance_events')
+            .select('id, session_id, org_id, event_type, prompt, decision, risk_score, violations, guardrail_signals, latency, created_at')
             .eq('org_id', orgId)
             .order('created_at', { ascending: false })
             .limit(10);
@@ -51,11 +50,17 @@ export async function GET(req: NextRequest) {
           if (events) {
             for (const event of events) {
               const otelEvent: GovernanceOtelEvent = {
-                event_type: event.event_type,
+                event_type: event.event_type || 'governance_decision',
                 timestamp: event.created_at,
                 org_id: event.org_id,
-                risk_score: (event.event_payload as any).risk_score || 0,
-                metadata: event.event_payload as Record<string, any>
+                risk_score: event.risk_score || 0,
+                metadata: {
+                  session_id: event.session_id,
+                  decision: event.decision,
+                  prompt: event.prompt,
+                  violations: event.violations,
+                  latency: event.latency,
+                }
               };
 
               const payload = GovernanceOtelStream.formatAsOtel(otelEvent);
@@ -70,7 +75,8 @@ export async function GET(req: NextRequest) {
       // Initial push
       await pushEvents();
 
-      // Poll every 10 seconds (In a real system, use Supabase Realtime)
+      // Poll every 10 seconds for OTEL export consumers.
+      // The observability dashboard uses client-side Supabase Realtime for push delivery.
       const interval = setInterval(pushEvents, 10000);
 
       req.signal.addEventListener('abort', () => {

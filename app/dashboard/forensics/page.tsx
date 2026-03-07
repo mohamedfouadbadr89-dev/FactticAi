@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { 
   Search, 
   Database, 
@@ -17,9 +18,13 @@ import BehaviorAnomalySignals from "@/components/forensics/BehaviorAnomalySignal
 import { TurnTimeline } from "@/components/session/TurnTimeline";
 import { logger } from "@/lib/logger";
 
-export default function ForensicsDashboard() {
+function ForensicsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const querySession = searchParams.get('session') || searchParams.get('sessionId');
+  
   const [sessions, setSessions] = useState<any[]>([]);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(querySession);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>({
     rca: null,
@@ -35,7 +40,9 @@ export default function ForensicsDashboard() {
         const res = await fetch('/api/governance/sessions?limit=10&high_risk=true');
         const list = await res.json();
         setSessions(list);
-        if (list.length > 0) setSelectedSessionId(list[0].id);
+        if (list.length > 0 && !selectedSessionId) {
+          setSelectedSessionId(list[0].id);
+        }
       } catch (err) {
         logger.error('FORENSICS_LOAD_SESSIONS_FAILED', { error: err });
       } finally {
@@ -65,9 +72,19 @@ export default function ForensicsDashboard() {
           turnsRes.json()
         ]);
 
+        // Normalize behavior field names from computeBehaviorSignals output
+        // to what BehaviorAnomalySignals component expects
+        const normalizedBehavior = behavior ? {
+          intent_drift_score: behavior.intent_drift ?? behavior.intent_drift_score ?? 0,
+          confidence_score: behavior.confidence ?? behavior.confidence_score ?? 0,
+          context_saturation: behavior.saturation ?? behavior.context_saturation ?? 0,
+          instruction_override: behavior.override_detect ?? behavior.instruction_override ?? false,
+          signals: behavior.signals ?? []
+        } : null;
+
         setData({
           rca,
-          behavior,
+          behavior: normalizedBehavior,
           timeline: Array.isArray(timelineData) ? timelineData : [],
           turns: Array.isArray(turnsData) ? turnsData : []
         });
@@ -109,7 +126,9 @@ export default function ForensicsDashboard() {
                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-colors" />
                <select 
                 value={selectedSessionId || ''}
-                onChange={(e) => setSelectedSessionId(e.target.value)}
+                onChange={(e) => {
+                 setSelectedSessionId(e.target.value);
+               }}
                 className="pl-10 pr-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-sm font-bold focus:outline-none focus:border-[var(--accent)] appearance-none min-w-[300px]"
                >
                  {sessions.map(s => (
@@ -119,6 +138,14 @@ export default function ForensicsDashboard() {
                  ))}
                </select>
              </div>
+             {selectedSessionId && (
+               <button 
+                 onClick={() => router.push(`/dashboard/replay?session=${selectedSessionId}`)}
+                 className="px-4 py-2 bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 rounded-lg text-sm font-bold hover:bg-[var(--accent)]/20 transition-all flex items-center gap-2"
+               >
+                 Inspect Replay <ExternalLink className="w-4 h-4" />
+               </button>
+             )}
              <button className="p-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg hover:border-[var(--accent)] transition-all">
                <RefreshCw className="w-4 h-4 text-[var(--text-secondary)]" />
              </button>
@@ -160,5 +187,17 @@ export default function ForensicsDashboard() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ForensicsDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-[var(--bg-primary)]">
+        <RefreshCw className="w-8 h-8 text-[var(--accent)] animate-spin" />
+      </div>
+    }>
+      <ForensicsContent />
+    </Suspense>
   );
 }

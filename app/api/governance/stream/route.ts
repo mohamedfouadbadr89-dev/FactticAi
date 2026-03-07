@@ -1,3 +1,4 @@
+import { verifyApiKey } from '@/lib/security/verifyApiKey';
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware/auth'
 import { resolveOrgContext } from '@/lib/orgResolver'
@@ -8,6 +9,16 @@ import { signalBus } from '@/lib/signalBus'
 import { logger } from '@/lib/logger'
 
 export const POST = withAuth(async (req, { session }) => {
+  const authResult = await verifyApiKey(req);
+  if (authResult.error) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.status }
+    );
+  }
+  // Override org_id from the verified API key
+  const verifiedOrgId = authResult.org_id;
+
   try {
     const body = await req.json()
     const { org_id: orgId } = await resolveOrgContext(session.user.id)

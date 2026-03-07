@@ -1,3 +1,4 @@
+import { verifyApiKey } from '@/lib/security/verifyApiKey';
 import { NextResponse } from 'next/server';
 import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { supabaseServer } from '@/lib/supabaseServer';
@@ -9,6 +10,16 @@ import { logger } from '@/lib/logger';
  * Fixed in Bug B3 to use governance_predictions table.
  */
 export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
+  const authResult = await verifyApiKey(req);
+  if (authResult.error) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.status }
+    );
+  }
+  // Override org_id from the verified API key
+  const verifiedOrgId = authResult.org_id;
+
   try {
     const { searchParams } = new URL(req.url);
     const days = parseInt(searchParams.get('days') || '30', 10);

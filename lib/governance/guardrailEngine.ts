@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { logger } from '../logger'
 import { PolicyEvaluationSignal } from './policyEngine'
+import { PolicyViolation } from '../governance/policyResolver'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -90,5 +91,35 @@ export const GuardrailEngine = {
       signals,
       metrics
     }
+  },
+
+  evaluatePrompt(userPrompt: string): PolicyViolation[] {
+    const dataExfiltrationPatterns = [
+      /training datasets/i,
+      /internal datasets/i,
+      /system prompt/i,
+      /hidden prompt/i,
+      /internal logs/i,
+      /private logs/i,
+      /model training data/i,
+    ]
+
+    const matched = dataExfiltrationPatterns.some(pattern => pattern.test(userPrompt))
+
+    if (!matched) return []
+
+    const violation: PolicyViolation = {
+      policy_name: 'DATA_EXFILTRATION',
+      explanation: 'Prompt attempts to retrieve internal system information',
+      actual_score: 90,
+      action: 'BLOCK',
+    }
+
+    logger.info('GUARDRAIL_DATA_EXFILTRATION_DETECTED', {
+      policy_name: violation.policy_name,
+      actual_score: violation.actual_score,
+    })
+
+    return [violation]
   }
 }

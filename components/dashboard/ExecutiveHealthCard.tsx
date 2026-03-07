@@ -3,6 +3,8 @@
 import React from "react";
 import type { HealthData } from "@/lib/dashboard/types";
 import { CountUp } from "@/components/ui/CountUp";
+import { computeHealthConfidence } from "@/lib/metrics/healthConfidence";
+import { Info } from "lucide-react";
 
 interface Props {
   data?: HealthData | undefined;
@@ -21,6 +23,10 @@ export default function ExecutiveHealthCard({ data }: Props) {
     tamper_integrity: "Verified",
   };
 
+  const confidence = computeHealthConfidence(d.sessions_today);
+  const displayedScore = Math.round(d.governance_score * confidence);
+  const isAdjusted = confidence < 1.0;
+
   return (
     <div 
       className="health-card relative overflow-hidden rounded-xl bg-gradient-to-br from-[var(--accent)] to-[color-mix(in_srgb,var(--accent)_70%,black)] dark:from-[color-mix(in_srgb,var(--accent)_80%,black)] dark:to-[color-mix(in_srgb,var(--accent)_60%,black)] p-8 text-white transition-all duration-300 animate-[fadeIn_.4s_ease-in-out]"
@@ -29,14 +35,23 @@ export default function ExecutiveHealthCard({ data }: Props) {
       <div className="grid grid-cols-3 gap-8">
 
         {/* LEFT — Score */}
-        <div className="flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center justify-center relative group/health">
           <span 
             className="text-[52px] font-bold tracking-tight"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
-            <CountUp value={d.governance_score} />
+            <CountUp value={displayedScore} />
           </span>
           <span className="text-lg text-white/70 mt-1">/ 100</span>
+          
+          {isAdjusted && (
+            <div className="absolute -top-2 -right-2 flex flex-col items-center group">
+              <Info className="w-3 h-3 text-white/40 hover:text-white/80 transition-colors cursor-help" />
+              <div className="absolute bottom-full mb-2 hidden group-hover:block w-48 p-2 bg-black/80 backdrop-blur-sm border border-white/10 rounded-lg text-[10px] font-medium leading-tight text-center shadow-xl z-50">
+                Confidence adjusted to {Math.round(confidence * 100)}% based on signal volume ({d.sessions_today} interactions).
+              </div>
+            </div>
+          )}
         </div>
 
         {/* CENTER — 2x2 Metrics */}

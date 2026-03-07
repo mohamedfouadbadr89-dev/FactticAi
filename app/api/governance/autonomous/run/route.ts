@@ -1,3 +1,4 @@
+import { verifyApiKey } from '@/lib/security/verifyApiKey';
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
 import { AutonomousGovernor } from '@/lib/governance/autonomousGovernor';
@@ -8,6 +9,16 @@ import { withAuth, AuthContext } from '@/lib/middleware/auth';
  * Trigger an autonomous governance evaluation or seed demo actions.
  */
 export const POST = withAuth(async (req: Request, context: AuthContext) => {
+  const authResult = await verifyApiKey(req);
+  if (authResult.error) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.status }
+    );
+  }
+  // Override org_id from the verified API key
+  const verifiedOrgId = authResult.org_id;
+
   try {
     const body = await req.json();
     const { seed, risk_score, signals, model, session_id } = body;
