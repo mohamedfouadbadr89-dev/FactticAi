@@ -13,7 +13,6 @@ import {
   AreaChart
 } from 'recharts';
 import { Activity, Clock, ShieldCheck } from 'lucide-react';
-import { demoSignals } from '@/lib/demo/demoSignals';
 
 interface Props {
   orgId: string;
@@ -34,12 +33,7 @@ export default function GovernanceHealthTimeline({ orgId }: Props) {
         if (json.timeline && json.timeline.length > 0) {
           setData(json.timeline);
         } else {
-          // Fallback to demo signals if no real data
-          setData(demoSignals.riskTrend.map(d => ({
-            timestamp: new Date(Date.now() + d.hour * 3600000).toISOString(),
-            risk: d.score,
-            health: 100 - d.score
-          })));
+          setData([]);
         }
       } catch (e) {
         console.error("Timeline reach-out failed", e);
@@ -97,6 +91,11 @@ export default function GovernanceHealthTimeline({ orgId }: Props) {
       </div>
 
       <div className="flex-1 w-full min-h-0">
+        {data.length === 0 ? (
+          <div className="h-full flex items-center justify-center border border-[#222] border-dashed rounded-xl">
+             <span className="text-[10px] uppercase font-black tracking-widest text-[#555]">{loading ? 'Loading timeline...' : 'No health data available'}</span>
+          </div>
+        ) : (
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
@@ -130,6 +129,7 @@ export default function GovernanceHealthTimeline({ orgId }: Props) {
             />
           </AreaChart>
         </ResponsiveContainer>
+        )}
       </div>
 
       <div className="mt-6 pt-6 border-t border-[#222] flex items-center justify-between">

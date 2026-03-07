@@ -78,7 +78,7 @@ export default function ConnectionWizard({ onComplete }: { onComplete?: () => vo
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: testPrompt,
-          org_id: 'dbad3ca2-3907-4279-9941-8f55c3c0efdc' // Hardcoded for demo/MVP
+          // org_id should ideally be passed in or resolved from auth session
         })
       });
       const data = await res.json();

@@ -18,10 +18,10 @@ export async function GET(req: NextRequest) {
     }
 
     const { data, error } = await supabaseServer
-      .from('governance_event_ledger')
+      .from('facttic_governance_events')
       .select('*')
       .eq('org_id', orgId)
-      .order('created_at', { ascending: false })
+      .order('timestamp', { ascending: false })
       .limit(limit);
 
     if (error) {

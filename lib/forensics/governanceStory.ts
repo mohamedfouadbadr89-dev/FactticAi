@@ -19,12 +19,8 @@ export function generateGovernanceStory(events: LedgerEvent[]): string {
   // Parse signal types from events
   const allSignalTypes: string[] = [];
   events.forEach(e => {
-    if (e.signals) {
-      try {
-        const parsed = JSON.parse(e.signals);
-        if (Array.isArray(parsed)) parsed.forEach((s: any) => allSignalTypes.push(s.type || s.signal_type || String(s)));
-        else if (typeof parsed === 'object') Object.keys(parsed).forEach(k => allSignalTypes.push(k));
-      } catch {}
+    if (e.guardrail_signals && typeof e.guardrail_signals === 'object') {
+       Object.keys(e.guardrail_signals).forEach(k => allSignalTypes.push(k));
     }
   });
   const uniqueSignals = [...new Set(allSignalTypes)];

@@ -3,13 +3,11 @@ import { TrafficSimulator } from "@/lib/testing/simulator";
 
 export async function POST(req: NextRequest) {
   try {
-    const { scenarioId, volume } = await req.json();
+    const { scenarioId, volume, org_id } = await req.json();
 
-    if (!scenarioId || !volume) {
-      return NextResponse.json({ error: "Missing scenario or volume." }, { status: 400 });
+    if (!scenarioId || !volume || !org_id) {
+      return NextResponse.json({ error: "Missing scenario, volume or org_id." }, { status: 400 });
     }
-
-    const org_id = 'dbad3ca2-3907-4279-9941-8f55c3c0efdc'; // Hardcoded for Demo consistency
 
     const logs = await TrafficSimulator.runScenario(org_id, scenarioId, volume);
 

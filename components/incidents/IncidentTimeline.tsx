@@ -124,7 +124,7 @@ export default function IncidentTimeline({ incidents }: Props) {
                           {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         </p>
                         <h4 className="text-sm font-bold tracking-tight">
-                          {event.input_prompt ? 'AI Execution Request' : 'Governance Signal Detected'}
+                          {event.prompt ? 'AI Execution Request' : 'Governance Signal Detected'}
                         </h4>
                       </div>
                       <div className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase ${event.risk_score > 75 ? 'bg-[var(--danger)]/20 text-[var(--danger)]' : 'bg-[var(--bg-primary)] border border-[var(--border-primary)] text-[var(--text-secondary)]'}`}>
@@ -143,13 +143,13 @@ export default function IncidentTimeline({ incidents }: Props) {
                       </div>
                       <div className="flex gap-4 text-[11px]">
                         <span className="font-black text-[var(--text-secondary)] uppercase w-20 shrink-0">Latency:</span>
-                        <span className="font-bold text-[var(--text-primary)]">{event.latency_ms}ms</span>
+                        <span className="font-bold text-[var(--text-primary)]">{event.latency}ms</span>
                       </div>
-                      {parseSignals(event.signals).length > 0 && (
+                      {event.guardrail_signals && Object.keys(event.guardrail_signals).length > 0 && (
                         <div className="flex gap-4 text-[11px]">
                           <span className="font-black text-[var(--accent)] uppercase w-20 shrink-0">Signals:</span>
                           <div className="flex flex-wrap gap-1.5">
-                            {parseSignals(event.signals).map((sig, idx) => (
+                            {Object.keys(event.guardrail_signals).map((sig, idx) => (
                               <span key={idx} className="px-2 py-0.5 rounded-md bg-[var(--accent)]/10 text-[var(--accent)] text-[9px] font-black uppercase tracking-wider">{sig}</span>
                             ))}
                           </div>

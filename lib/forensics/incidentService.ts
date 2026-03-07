@@ -14,6 +14,7 @@ export interface LedgerEvent {
   guardrail_signals: Record<string, any>;
   latency: number;
   model: string;
+  simulation_id?: string;
 }
 
 export interface IncidentThread {
@@ -37,7 +38,7 @@ export const IncidentService = {
   async getIncidents(orgId: string): Promise<IncidentThread[]> {
     const { data, error } = await supabaseServer
       .from('facttic_governance_events')
-      .select('id, session_id, org_id, timestamp, prompt, decision, risk_score, violations, guardrail_signals, latency, model')
+      .select('id, session_id, org_id, timestamp, prompt, decision, risk_score, violations, guardrail_signals, latency, model, simulation_id')
       .eq('org_id', orgId)
       .order('timestamp', { ascending: false })
       .limit(100);
@@ -88,7 +89,7 @@ export const IncidentService = {
   async getIncidentBySession(orgId: string, sessionId: string): Promise<IncidentThread | null> {
     const { data, error } = await supabaseServer
       .from('facttic_governance_events')
-      .select('id, session_id, org_id, timestamp, prompt, decision, risk_score, violations, guardrail_signals, latency, model')
+      .select('id, session_id, org_id, timestamp, prompt, decision, risk_score, violations, guardrail_signals, latency, model, simulation_id')
       .eq('org_id', orgId)
       .eq('session_id', sessionId)
       .order('timestamp', { ascending: true });

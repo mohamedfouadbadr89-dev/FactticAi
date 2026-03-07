@@ -15,7 +15,7 @@ export const GovernanceAnalytics = {
     const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
     
     const { data, error } = await supabaseServer
-      .from('governance_event_ledger')
+      .from('facttic_governance_events')
       .select('risk_score')
       .eq('org_id', orgId)
       .is('simulation_id', null)
@@ -37,7 +37,7 @@ export const GovernanceAnalytics = {
     const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
     
     const { data, error } = await supabaseServer
-      .from('governance_event_ledger')
+      .from('facttic_governance_events')
       .select('risk_score, scenario_type, timestamp, decision')
       .eq('org_id', orgId)
       .not('simulation_id', 'is', null)

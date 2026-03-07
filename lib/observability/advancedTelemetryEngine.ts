@@ -47,7 +47,7 @@ export class AdvancedTelemetryEngine {
           .eq('org_id', orgId)
           .gte('created_at', twentyFourHoursAgo),
           
-        supabaseServer.from('governance_event_ledger')
+        supabaseServer.from('facttic_governance_events')
           .select('event_type, created_at')
           .eq('org_id', orgId)
           .gte('created_at', twentyFourHoursAgo),

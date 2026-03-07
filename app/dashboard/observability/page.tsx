@@ -55,15 +55,23 @@ export default function ObservabilityDashboard() {
     }
     fetchTelemetry();
 
-    // 2. Subscribe to Live Telemetry Stream
-    const channel = supabase.channel('telemetry')
-      .on('broadcast', { event: 'governance_event' }, (payload) => {
-        setLiveEvents((prev) => [payload.payload, ...prev].slice(0, 20)); // Keep last 20
-      })
-      .subscribe();
+    // 2. Subscribe to Live Telemetry Stream (Org-Scoped)
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    const setupRealtime = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const orgId = session?.user?.user_metadata?.org_id;
+      if (orgId) {
+        channel = supabase.channel(`governance:${orgId}`)
+          .on('broadcast', { event: 'governance_event' }, (payload) => {
+            setLiveEvents((prev) => [payload.payload, ...prev].slice(0, 20)); // Keep last 20
+          })
+          .subscribe();
+      }
+    };
+    setupRealtime();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
 
@@ -186,7 +194,8 @@ export default function ObservabilityDashboard() {
                   ></div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
           
           <div className="mt-8 pt-8 border-t border-white/5">

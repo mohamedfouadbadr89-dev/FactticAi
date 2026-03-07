@@ -4,7 +4,8 @@ import { supabaseServer } from '@/lib/supabaseServer';
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const org_id = searchParams.get('org_id') || 'dbad3ca2-3907-4279-9941-8f55c3c0efdc';
+    const org_id = searchParams.get('org_id');
+    if (!org_id) return NextResponse.json({ error: 'Missing org_id' }, { status: 400 });
 
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 

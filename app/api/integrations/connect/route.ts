@@ -6,7 +6,7 @@ import { verifyProviderConnection } from "@/lib/integrations/verifyConnection";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { provider, apiKey, model, environment, mode } = body;
+    const { provider, apiKey, model, environment, mode, org_id } = body;
 
     // 1. Validation
     if (!provider || !apiKey || !model) {
@@ -24,9 +24,6 @@ export async function POST(req: NextRequest) {
 
     // 3. Hash raw key via Security Layer (BYOK enforcement)
     const hashedKey = SecurityLayer.secureKeyReference(apiKey);
-
-    // 3. Org ID (hardcoded for demo/MVP as per existing patterns)
-    const org_id = 'dbad3ca2-3907-4279-9941-8f55c3c0efdc';
 
     // 4. Persistence
     const { error } = await supabaseServer

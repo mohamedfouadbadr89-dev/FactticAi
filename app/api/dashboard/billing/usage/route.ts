@@ -32,15 +32,15 @@ export async function GET(req: Request) {
 
     const totalTokens = (costData || []).reduce((sum, curr) => sum + Number(curr.token_usage), 0);
 
-    // 3. Risk Evaluations (count governance_event_ledger)
+    // 3. Risk Evaluations (count facttic_governance_events)
     const { count: evalCount, error: evalError } = await supabaseServer
-      .from('governance_event_ledger')
+      .from('facttic_governance_events')
       .select('*', { count: 'exact', head: true })
       .eq('org_id', org_id);
 
-    // 4. Alerts (count alert_triggered in ledger)
+    // 4. Alerts (count alert_triggered in facttic_governance_events)
     const { count: alertCount, error: alertError } = await supabaseServer
-      .from('governance_event_ledger')
+      .from('facttic_governance_events')
       .select('*', { count: 'exact', head: true })
       .eq('org_id', org_id)
       .eq('alert_triggered', true);

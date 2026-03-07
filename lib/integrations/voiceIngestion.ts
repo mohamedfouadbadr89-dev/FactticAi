@@ -156,12 +156,10 @@ export async function ingestConversation(
   const { data: session, error: sessionError } = await supabase
     .from('sessions')
     .upsert({
+      id: payload.session_id,
       org_id: orgId,
-      external_id: payload.session_id,
-      source: payload.provider,
       status: 'completed',
-      metadata: payload.metadata,
-    }, { onConflict: 'external_id' })
+    })
     .select('id')
     .single()
 

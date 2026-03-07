@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import ReportBuilder from "@/src/reporting/ReportBuilder";
 import { FileText, Download, ShieldCheck, Activity, Target, ShieldAlert, Cpu, BarChart3, RefreshCw, Trophy, DollarSign } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 // ── Benchmark Panel (Phase 39) ─────────────────────────────────────────────
 
@@ -283,14 +284,17 @@ export default function ReportsPage() {
                   btn.innerHTML = '<span class="animate-pulse">Building Package...</span>';
                   btn.disabled = true;
                   try {
-                    // Extracting the last 30 days as standard payload range for the quick-export bound
+                    const { data: { session } } = await supabase.auth.getSession();
+                    const org_id = session?.user?.user_metadata?.org_id;
+
                     const now = new Date();
                     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
                     const res = await fetch('/api/evidence/generate', {
                        method: 'POST',
                        headers: { 'Content-Type': 'application/json' },
                        body: JSON.stringify({ 
-                           org_id: 'dbad3ca2-3907-4279-9941-8f55c3c0efdc', // Natively bound via middleware in production
+                           org_id,
+
                            timeframe_start: thirtyDaysAgo.toISOString(),
                            timeframe_end: now.toISOString(),
                            report_type: 'AI_GOVERNANCE'

@@ -34,7 +34,7 @@ export class GdprEraseEngine {
       
       // Tables referencing session_id
       const purgeTables = [
-        'conversation_timeline',
+        'facttic_governance_events',
         'evaluations',
         'messages',
         'session_turns',

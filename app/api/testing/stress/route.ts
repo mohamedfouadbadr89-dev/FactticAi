@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { StressTestingEngine } from '@/lib/testing/stressTestingEngine';
 import { logger } from '@/lib/logger';
+import { verifyApiKey } from '@/lib/security/verifyApiKey';
 
 /**
  * Stress Test Initiation API
  */
 export async function POST(req: NextRequest) {
   try {
-    const { org_id, concurrency, duration_seconds } = await req.json();
+    const authResult = await verifyApiKey(req);
+    if ('error' in authResult || authResult.status !== 200) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+    const org_id = authResult.org_id;
 
-    if (!org_id || !concurrency) {
-      return NextResponse.json({ error: 'org_id and concurrency are required' }, { status: 400 });
+    const { concurrency, duration_seconds } = await req.json();
+
+    if (!concurrency) {
+      return NextResponse.json({ error: 'concurrency is required' }, { status: 400 });
     }
 
     // Trigger the stress test in the background or wait if short

@@ -6,6 +6,7 @@ import { CardSkeleton } from "@/components/ui/CardSkeleton";
 import { ChartSkeleton } from "@/components/ui/ChartSkeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Terminal, ShieldAlert, Cpu, Activity, Play, CheckCircle2, SlidersHorizontal, Plus, Save, ClipboardList, RefreshCw, Plug, Wifi, WifiOff, Copy, Trash2, Server } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 type Scenario = 'hallucination_attack' | 'pii_leak' | 'tone_violation' | 'policy_break';
 
@@ -17,11 +18,14 @@ function SimulatorSandbox() {
   const runSimulation = async () => {
     setIsSimulating(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const orgId = session?.user?.user_metadata?.org_id;
+
       const res = await fetch('/api/simulator/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            org_id: 'dbad3ca2-3907-4279-9941-8f55c3c0efdc', // Natively bound via middleware
+            org_id: orgId, // Natively bound via middleware
             scenario: activeScenario
         })
       });

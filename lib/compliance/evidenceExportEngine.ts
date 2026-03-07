@@ -32,12 +32,12 @@ export class EvidenceExportEngine {
       if (types.includes('ledger')) {
         queries.push(
           supabaseServer
-            .from('governance_event_ledger')
+            .from('facttic_governance_events')
             .select('*')
             .eq('org_id', org_id)
-            .gte('created_at', date_start)
-            .lte('created_at', date_end)
-            .order('created_at', { ascending: true })
+            .gte('timestamp', new Date(date_start).getTime())
+            .lte('timestamp', new Date(date_end).getTime())
+            .order('timestamp', { ascending: true })
             .then(res => data.ledger = res.data || [])
         );
       }
@@ -116,7 +116,7 @@ export class EvidenceExportEngine {
     
     if (data.ledger) {
       data.ledger.forEach((b: any) => {
-        csv += `ledger,${b.event_type},${b.created_at},hash:${b.current_hash}\n`;
+        csv += `ledger,${b.event_type},${new Date(b.timestamp).toISOString()},hash:${b.event_hash}\n`;
       });
     }
 
@@ -143,7 +143,7 @@ export class EvidenceExportEngine {
     if (data.ledger) {
       text += "--- GOVERNANCE LEDGER ---\n";
       data.ledger.forEach((b: any) => {
-        text += `[${b.created_at}] TYPE: ${b.event_type} | HASH: ${b.current_hash.substring(0, 16)}...\n`;
+        text += `[${new Date(b.timestamp).toISOString()}] TYPE: ${b.event_type} | HASH: ${b.event_hash?.substring(0, 16)}...\n`;
       });
       text += "\n";
     }

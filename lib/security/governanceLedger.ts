@@ -18,8 +18,12 @@ export interface LedgerEntry extends LedgerEvent {
 
 export class GovernanceLedger {
   // Utilizing a fallback system secret for HMAC bindings if BYOK keys fail derivation in early staging
-  private static getTenantSecret(orgId: string): string {
-    return process.env.FACTTIC_TELEMETRY_SECRET || `facttic_tenant_fallback_${orgId}`;
+  private static getTenantSecret(): string {
+    const secret = process.env.FACTTIC_TELEMETRY_SECRET;
+    if (!secret && process.env.NODE_ENV === 'production') {
+      throw new Error('CRITICAL_SECURITY_FAILURE: FACTTIC_TELEMETRY_SECRET missing in production');
+    }
+    return secret || 'development_governance_fallback';
   }
 
   /**
@@ -30,14 +34,14 @@ export class GovernanceLedger {
     try {
       // 1. Resolve Sequential Link (Get previous hash)
       const { data: lastBlock } = await supabaseServer
-        .from('governance_event_ledger')
-        .select('current_hash')
+        .from('facttic_governance_events')
+        .select('event_hash')
         .eq('org_id', event.org_id)
-        .order('created_at', { ascending: false })
+        .order('timestamp', { ascending: false })
         .limit(1)
         .single();
         
-      const previousHash = lastBlock?.current_hash || 'GENESIS_BLOCK_0000000000000000000000000000000';
+      const previousHash = lastBlock?.event_hash || 'GENESIS_BLOCK_0000000000000000000000000000000';
       const timestamp = new Date().toISOString();
       
       // 2. Resolve Payload normalizations
@@ -62,7 +66,7 @@ export class GovernanceLedger {
       const currentHash = crypto.createHash('sha256').update(hashInput).digest('hex');
 
       // 4. Generate Authenticity Signature (HMAC)
-      const secret = this.getTenantSecret(event.org_id);
+      const secret = this.getTenantSecret();
       const signature = crypto.createHmac('sha256', secret).update(currentHash).digest('base64');
 
       // 5. Append Block securely utilizing Service-Role bound constraints
@@ -98,10 +102,10 @@ export class GovernanceLedger {
    */
   static async verifyIntegrity(orgId: string): Promise<{ isValid: boolean, totalBlocks: number, failurePoint?: string }> {
     const { data: blocks, error } = await supabaseServer
-      .from('governance_event_ledger')
-      .select('id, previous_hash, current_hash, signature, event_payload, created_at')
+      .from('facttic_governance_events')
+      .select('id, previous_hash, current_hash:event_hash, signature, event_payload:guardrail_signals, created_at:timestamp, org_id, event_type')
       .eq('org_id', orgId)
-      .order('created_at', { ascending: true });
+      .order('timestamp', { ascending: true });
 
     if (error) {
       logger.error('LEDGER_FETCH_ERROR', { error: error.message });
@@ -111,7 +115,7 @@ export class GovernanceLedger {
     if (!blocks || blocks.length === 0) return { isValid: true, totalBlocks: 0 };
 
     let expectedPrevious = 'GENESIS_BLOCK_0000000000000000000000000000000';
-    const secret = this.getTenantSecret(orgId);
+    const secret = this.getTenantSecret();
 
     for (const block of blocks) {
       // 1. Verify sequence linkage
@@ -142,10 +146,10 @@ export class GovernanceLedger {
 
   static async rebuildChain(orgId: string): Promise<LedgerEntry[]> {
      const { data: blocks } = await supabaseServer
-      .from('governance_event_ledger')
-      .select('*')
+      .from('facttic_governance_events')
+      .select('id, previous_hash, current_hash:event_hash, signature, event_payload:guardrail_signals, created_at:timestamp, org_id, event_type')
       .eq('org_id', orgId)
-      .order('created_at', { ascending: true });
+      .order('timestamp', { ascending: true });
 
     return blocks || [];
   }

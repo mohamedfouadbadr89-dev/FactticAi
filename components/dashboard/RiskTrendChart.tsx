@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { TrendingUp, TrendingDown, Target } from 'lucide-react';
-import { demoSignals } from '@/lib/demo/demoSignals';
 
 interface RiskTrendChartProps {
   data: any[];
@@ -10,13 +9,13 @@ interface RiskTrendChartProps {
 }
 
 export default function RiskTrendChart({ data, loading }: RiskTrendChartProps) {
-  const chartData = (data && data.length > 0) ? data : demoSignals.riskTrend;
+  const chartData = data || [];
 
-  if (loading && (!data || data.length === 0)) return (
+  if (!chartData || chartData.length === 0) return (
     <div className="bg-[#151515] border border-[#2d2d2d] rounded-3xl p-8 h-[300px] flex items-center justify-center border-dashed">
       <div className="text-center grayscale opacity-20">
          <TrendingUp className="w-12 h-12 mx-auto mb-2" />
-         <span className="text-[10px] font-black uppercase tracking-widest">Insufficient Trend Data</span>
+         <span className="text-[10px] font-black uppercase tracking-widest">{loading ? 'Loading Trends...' : 'Insufficient Trend Data'}</span>
       </div>
     </div>
   );

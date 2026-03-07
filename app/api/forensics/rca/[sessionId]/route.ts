@@ -16,7 +16,8 @@ export const GET = withAuth(async (req: Request, { params }: AuthContext) => {
   const verifiedOrgId = authResult.org_id;
 
   try {
-    const id = params?.sessionId;
+    const { sessionId } = await params;
+    const id = sessionId;
     if (!id) {
       return NextResponse.json({ error: 'Missing session identifier' }, { status: 400 });
     }

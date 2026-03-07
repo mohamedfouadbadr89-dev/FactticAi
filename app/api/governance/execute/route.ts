@@ -289,7 +289,7 @@ export async function POST(req: Request) {
           },
           body: JSON.stringify({
             messages: [{
-              topic: 'realtime:telemetry',
+              topic: `realtime:governance:${org_id}`,
               event: 'broadcast',
               payload: {
                 type: 'broadcast',

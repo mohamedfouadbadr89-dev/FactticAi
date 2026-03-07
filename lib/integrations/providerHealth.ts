@@ -49,7 +49,7 @@ export async function getProviderStatus(connectionId: string): Promise<ProviderH
     // 3. Ledger Audit for Intermittent Failures (Last 10 minutes)
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const { data: recentFailures, error: ledgerError } = await supabase
-      .from('governance_event_ledger')
+      .from('facttic_governance_events')
       .select('id')
       .eq('org_id', connection.org_id)
       .eq('event_type', 'policy_violation') // Policy violations indicate degraded integrity

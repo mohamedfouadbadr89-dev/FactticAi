@@ -52,8 +52,8 @@ async function aggregateEvaluationMetrics(orgId: string) {
 
   // Pull guardrail triggers
   const { data: guardrailEvents } = await supabase
-    .from('governance_event_ledger')
-    .select('event_type, metadata')
+    .from('facttic_governance_events')
+    .select('event_type, guardrail_signals')
     .eq('org_id', orgId)
     .eq('event_type', 'guardrail_triggered')
 

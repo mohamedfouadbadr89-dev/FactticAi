@@ -163,12 +163,11 @@ export async function POST(req: Request) {
           },
           body: JSON.stringify({
             messages: [{
-              topic: `realtime:governance:${org_id}`,
-              event: "broadcast",
+              topic: `governance:${org_id}`,
+              event: "governance_event",
               payload: {
-                type: "broadcast",
                 event: "governance_event",
-                payload: {
+                data: {
                   session_id: sessionId,
                   org_id,
                   decision: result.decision,

@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 /**
  * Forensic Incidents API
  * 
- * Returns grouped incident threads from the governance_event_ledger.
+ * Returns grouped incident threads from the facttic_governance_events table (canonical source).
  */
 export async function GET(req: Request) {
   const authResult = await verifyApiKey(req);

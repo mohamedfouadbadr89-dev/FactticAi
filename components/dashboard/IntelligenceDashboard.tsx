@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { CountUp } from "@/components/ui/CountUp";
 import { logger } from "@/lib/logger";
-import { demoSignals } from "@/lib/demo/demoSignals";
 
 interface IntelligenceData {
   pii_exposed_today: number;
@@ -17,15 +16,13 @@ interface Props {
 }
 
 export default function IntelligenceDashboard({ data }: Props) {
-  const d = data ?? {
-    pii_exposed_today: demoSignals.violations,
-    compliance_drift_score: 0.18,
-    recent_violations: [
-      { id: "V-001", type: "EMAIL_EXPOSURE", timestamp: "10:45 AM" },
-      { id: "V-002", type: "SSN_DETECTED", timestamp: "09:12 AM" }
-    ],
-    pii_trend: [4, 6, 3, 8, 12, 10, 14, 12, 11, 13, 15, 12, 11, 10, 12]
-  };
+  const d = data;
+
+  if (!d) return (
+    <div className="card h-full animate-fadeIn min-h-[300px] flex flex-col items-center justify-center border-dashed border-[#222]">
+       <span className="text-[10px] uppercase font-black tracking-widest text-[var(--text-secondary)]">No advanced intelligence data available</span>
+    </div>
+  );
 
   const isCritical = d.compliance_drift_score > 0.5;
 

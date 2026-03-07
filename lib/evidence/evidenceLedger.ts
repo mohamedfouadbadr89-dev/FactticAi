@@ -116,12 +116,13 @@ function computeEventHash(fields: HashFields): string {
  * Binds the hash to the org secret — tampering the hash invalidates the signature.
  */
 function computeSignature(eventHash: string, orgId: string): string {
-  const secret =
-    process.env.GOVERNANCE_SECRET ||
-    process.env.TELEMETRY_SECRET ||
-    `facttic_integrity_fallback_${orgId}`
-
-  return createHmac('sha256', secret).update(eventHash).digest('hex')
+  const secret = process.env.GOVERNANCE_SECRET;
+  if (!secret && process.env.NODE_ENV === 'production') {
+    throw new Error('CRITICAL_SECURITY_FAILURE: GOVERNANCE_SECRET missing in production');
+  }
+  return createHmac('sha256', secret || 'development_fallback_secret')
+    .update(eventHash)
+    .digest('hex');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

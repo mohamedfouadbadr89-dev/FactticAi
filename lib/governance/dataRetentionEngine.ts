@@ -15,7 +15,7 @@ export interface RetentionResult {
  */
 export class DataRetentionEngine {
   private static SCAN_TABLES = [
-    { name: 'conversation_timeline', timeColumn: 'timestamp' },
+    { name: 'facttic_governance_events', timeColumn: 'timestamp' },
     { name: 'incident_responses', timeColumn: 'created_at' },
     { name: 'model_behavior', timeColumn: 'timestamp' }
   ];
