@@ -42,6 +42,9 @@ async function runStressTest() {
   const CONCURRENT_REQUESTS = 200;
   console.log(`\nStarting ${CONCURRENT_REQUESTS} concurrent AI interactions...`);
 
+  // Use a SINGLE session_id to force locking concurrency on the hash chain
+  const stressSessionId = crypto.randomUUID();
+
   // --- Realtime Setup ---
   let receivedBroadcasts = 0;
   const channelName = `governance:${orgId}`;
@@ -76,7 +79,7 @@ async function runStressTest() {
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${rawApiKey}` },
           body: JSON.stringify({
             prompt: prompt,
-            session_id: crypto.randomUUID(),
+            session_id: stressSessionId,
             agent_id: 'stress_agent'
           })
         });
@@ -116,18 +119,17 @@ async function runStressTest() {
   const { data: recentBlocks } = await supabase
     .from('facttic_governance_events')
     .select('id, previous_hash, event_hash, signature, timestamp')
-    .eq('org_id', orgId)
-    .order('timestamp', { ascending: false })
-    .limit(CONCURRENT_REQUESTS);
+    .eq('session_id', stressSessionId)
+    .order('timestamp', { ascending: false });
 
   let integrityOk = true;
   let chronologicalOk = true;
-  if (recentBlocks && recentBlocks.length > 1) {
+  if (recentBlocks && recentBlocks.length === CONCURRENT_REQUESTS) {
     for (let i = 0; i < recentBlocks.length - 1; i++) {
         const curr = recentBlocks[i];
         const prev = recentBlocks[i+1];
         
-        // Check hash linking
+        // curr is newer than prev. curr.previous_hash should be prev.event_hash
         if (curr.previous_hash !== prev.event_hash) {
             integrityOk = false;
         }
@@ -136,6 +138,10 @@ async function runStressTest() {
             chronologicalOk = false;
         }
     }
+  } else {
+    integrityOk = false;
+    chronologicalOk = false;
+    console.log(`Verification failed: Expected ${CONCURRENT_REQUESTS} blocks, found ${recentBlocks?.length}`);
   }
 
   console.log("Hash Link Path Verification:", integrityOk ? "PASS" : "FAIL");

@@ -306,85 +306,33 @@ export const EvidenceLedger = {
   }> {
     try {
 
-      /**
-       * 1. Fetch previous event_hash to form the chain link.
-       *    Falls back to 'GENESIS_HASH' for the first event in a session.
-       */
-      const { data: prevEvents, error: fetchError } = await supabaseServer
-        .from('facttic_governance_events')
-        .select('event_hash')
-        .eq('session_id', event.session_id)
-        .order('timestamp', { ascending: false })
-        .limit(1)
-
-      if (fetchError) throw fetchError
-
-      const previousHash =
-        prevEvents && prevEvents.length > 0
-          ? prevEvents[0].event_hash
-          : 'GENESIS_HASH'
-
-      /**
-       * 2. Timestamp as BIGINT (unix-ms) — ordering key and chain input.
-       */
-      const timestamp = Date.now()
-
-      /**
-       * 3. SHA-256 event hash over all fields that form the ledger record.
-       *    Formula: SHA256(session_id + timestamp + prompt + decision
-       *                    + risk_score + violations + previous_hash)
-       */
-      const eventHash = computeEventHash({
-        session_id: event.session_id,
-        timestamp,
-        prompt: event.prompt,
-        decision: event.decision,
-        risk_score: event.risk_score,
-        violations: event.violations,
-        previous_hash: previousHash,
+      const secret = process.env.GOVERNANCE_SECRET || 'development_fallback_secret'
+      const violationsStr = JSON.stringify(event.violations || [])
+      
+      const { data, error } = await supabaseServer.rpc('append_governance_ledger', {
+        p_session_id: event.session_id,
+        p_org_id: event.org_id,
+        p_event_type: event.event_type || 'governance_decision',
+        p_prompt: event.prompt || null,
+        p_model: event.model || 'unspecified',
+        p_decision: event.decision,
+        p_risk_score: event.risk_score,
+        p_violations_str: violationsStr,
+        p_violations: event.violations || [],
+        p_guardrail_signals: event.guardrail_signals || {},
+        p_latency: event.latency || 0,
+        p_model_response: event.model_response || null,
+        p_secret: secret
       })
-
-      /**
-       * 4. HMAC-SHA256 signature over the event_hash.
-       *    Binds the hash to the org secret — any post-write modification
-       *    of event_hash will fail the signature check even if the attacker
-       *    correctly recomputes the SHA-256.
-       */
-      const signature = computeSignature(eventHash, event.org_id)
-
-      /**
-       * 5. Persist the tamper-evident record.
-       */
-      const { data, error } = await supabaseServer
-        .from('facttic_governance_events')
-        .insert({
-          session_id:        event.session_id,
-          org_id:            event.org_id,
-          timestamp,
-          event_type:        event.event_type || 'governance_decision',
-          prompt:            event.prompt || null,
-          model:             event.model || 'unspecified',
-          decision:          event.decision,
-          risk_score:        event.risk_score,
-          violations:        event.violations || [],
-          guardrail_signals: event.guardrail_signals || {},
-          latency:           event.latency || 0,
-          model_response:    event.model_response || null,
-          event_hash:        eventHash,
-          previous_hash:     previousHash,
-          signature,
-        })
-        .select('id')
-        .single()
 
       if (error) throw error
 
       return {
-        event_id:      data.id,
-        session_id:    event.session_id,
-        event_hash:    eventHash,
-        previous_hash: previousHash,
-        signature:     signature
+        event_id:      data.event_id,
+        session_id:    data.session_id,
+        event_hash:    data.event_hash,
+        previous_hash: data.previous_hash,
+        signature:     data.signature
       }
 
     } catch (err: any) {
