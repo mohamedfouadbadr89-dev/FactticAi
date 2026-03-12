@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createBrowserClient } from '@supabase/ssr';
 import { 
   Zap, 
   Activity, 
@@ -22,22 +23,32 @@ interface StressResult {
 }
 
 export default function StressTestingDashboard() {
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [concurrency, setConcurrency] = useState(10);
   const [duration, setDuration] = useState(5);
   const [isRunning, setIsRunning] = useState(false);
   const [lastResult, setLastResult] = useState<StressResult | null>(null);
   const [history, setHistory] = useState<StressResult[]>([]);
 
+  useEffect(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const id = session?.user?.user_metadata?.org_id;
+      if (id) setOrgId(id);
+    });
+  }, []);
+
   const triggerTest = async () => {
+    if (!orgId) return;
     setIsRunning(true);
     try {
-      // Mock org_id for demo purposes, in production this comes from context
-      const org_id = '00000000-0000-0000-0000-000000000000';
-      
       const res = await fetch('/api/testing/stress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ org_id, concurrency, duration_seconds: duration })
+        body: JSON.stringify({ org_id: orgId, concurrency, duration_seconds: duration })
       });
       
       const data = await res.json();
@@ -53,7 +64,7 @@ export default function StressTestingDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-10 font-sans">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] p-10 font-sans">
       {/* Header */}
       <header className="mb-12 flex justify-between items-start">
         <div>
@@ -64,27 +75,27 @@ export default function StressTestingDashboard() {
             <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">System Resilience Lab</span>
           </div>
           <h1 className="text-6xl font-black uppercase tracking-tighter italic leading-none">Stress Testing</h1>
-          <p className="text-slate-500 mt-4 max-w-xl text-sm font-medium">
+          <p className="text-[var(--text-secondary)] mt-4 max-w-xl text-sm font-medium">
             Subject your infrastructure to extreme concurrent load. Identify breaking points, 
             measure P95 latency shifts, and validate failover mechanisms.
           </p>
         </div>
         
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-          <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Scale Limit</p>
-          <p className="text-xl font-black italic">500 <span className="text-xs text-slate-600 not-italic">CONC/SEC</span></p>
+          <p className="text-[10px] font-black uppercase text-[var(--text-secondary)] tracking-widest mb-1">Scale Limit</p>
+          <p className="text-xl font-black italic">500 <span className="text-xs text-[var(--text-secondary)] not-italic">CONC/SEC</span></p>
         </div>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Controls */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-[2.5rem] relative overflow-hidden group">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] p-8 rounded-[2.5rem] relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
               <Zap className="w-32 h-32" />
             </div>
             
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-8">Test Configuration</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-8">Test Configuration</h3>
             
             <div className="space-y-8 relative z-10">
               <div>
@@ -138,14 +149,14 @@ export default function StressTestingDashboard() {
 
           {/* Quick Metrics */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-[#0a0a0a] border border-white/5 p-6 rounded-3xl">
-              <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest mb-2">Failure Rate</p>
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] p-6 rounded-3xl">
+              <p className="text-[10px] font-black uppercase text-[var(--text-secondary)] tracking-widest mb-2">Failure Rate</p>
               <p className={`text-2xl font-black italic ${lastResult && lastResult.failure_rate > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                 {lastResult ? `${lastResult.failure_rate.toFixed(1)}%` : '0%'}
               </p>
             </div>
-            <div className="bg-[#0a0a0a] border border-white/5 p-6 rounded-3xl">
-              <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest mb-2">P95 Latency</p>
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] p-6 rounded-3xl">
+              <p className="text-[10px] font-black uppercase text-[var(--text-secondary)] tracking-widest mb-2">P95 Latency</p>
               <p className="text-2xl font-black italic text-rose-500">
                 {lastResult ? `${lastResult.latency_ms.toFixed(0)}ms` : '0ms'}
               </p>
@@ -155,24 +166,24 @@ export default function StressTestingDashboard() {
 
         {/* Diagnostic Visualization */}
         <div className="lg:col-span-8 space-y-6">
-          <div className="bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] p-10 h-full min-h-[500px] flex flex-col">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-[2.5rem] p-10 h-full min-h-[500px] flex flex-col">
             <div className="flex justify-between items-center mb-10">
-              <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+              <h3 className="text-xs font-black uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-2">
                 <Activity className="w-4 h-4" /> Stability Timeline
               </h3>
               <div className="flex gap-4">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-rose-500 rounded-full"></div>
-                  <span className="text-[10px] font-black uppercase text-slate-600">Latency</span>
+                  <span className="text-[10px] font-black uppercase text-[var(--text-secondary)]">Latency</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500/20 border border-red-500/50 rounded-full"></div>
-                  <span className="text-[10px] font-black uppercase text-slate-600">Errors</span>
+                  <span className="text-[10px] font-black uppercase text-[var(--text-secondary)]">Errors</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 border-b border-white/5 mb-8 flex items-end gap-2 px-2">
+            <div className="flex-1 border-b border-[var(--border-primary)] mb-8 flex items-end gap-2 px-2">
               {history.length === 0 ? (
                 <div className="w-full h-full flex items-center justify-center text-slate-800 uppercase font-black italic tracking-widest text-4xl opacity-10 select-none">
                   No Diagnostic Data
@@ -200,7 +211,7 @@ export default function StressTestingDashboard() {
               )}
             </div>
 
-            <div className="flex justify-between text-[10px] font-black text-slate-700 tracking-widest uppercase">
+            <div className="flex justify-between text-[10px] font-black text-[var(--text-secondary)] tracking-widest uppercase">
               <span>Past Runs (Recent → Older)</span>
               <span>Stability Benchmark</span>
             </div>

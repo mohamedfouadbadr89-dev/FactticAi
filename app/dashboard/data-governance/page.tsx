@@ -76,13 +76,13 @@ export default function DataGovernancePage() {
   };
 
   return (
-    <div className="p-8 bg-[#050505] min-h-screen text-slate-100">
+    <div className="p-8 bg-[var(--bg-primary)] min-h-screen text-[var(--text-primary)]">
       <header className="mb-12">
         <div className="flex items-center gap-3 mb-2">
           <ShieldCheck className="text-emerald-400 w-8 h-8" />
           <h1 className="text-3xl font-black uppercase tracking-tighter">Data Governance Layer</h1>
         </div>
-        <p className="text-slate-400 max-w-2xl">
+        <p className="text-[var(--text-primary)] max-w-2xl">
           Enforce institutional compliance via deterministic data retention policies and coordinated right-to-erasure workflows.
         </p>
       </header>
@@ -90,7 +90,7 @@ export default function DataGovernancePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         
         {/* Retention Policies */}
-        <div className="glass-card p-6 border border-slate-800 rounded-2xl bg-[#0a0a0a]">
+        <div className="glass-card p-6 border border-[var(--border-primary)] rounded-2xl bg-[var(--bg-secondary)]">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <Clock className="w-5 h-5 text-blue-400" />
@@ -101,17 +101,17 @@ export default function DataGovernancePage() {
 
           <div className="space-y-4">
             {policies.length === 0 ? (
-              <p className="text-slate-500 text-sm font-mono italic">No custom retention policies defined.</p>
+              <p className="text-[var(--text-secondary)] text-sm font-mono italic">No custom retention policies defined.</p>
             ) : (
               policies.map((p, idx) => (
-                <div key={idx} className="flex items-center justify-between p-4 bg-[#111] border border-slate-800 rounded-xl">
+                <div key={idx} className="flex items-center justify-between p-4 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl">
                   <div>
-                    <p className="text-slate-200 font-bold font-mono text-sm">{p.table_name}</p>
-                    <p className="text-[10px] text-slate-500 uppercase font-bold">Registry Table</p>
+                    <p className="text-[var(--text-primary)] font-bold font-mono text-sm">{p.table_name}</p>
+                    <p className="text-[10px] text-[var(--text-secondary)] uppercase font-bold">Registry Table</p>
                   </div>
                   <div className="text-right">
                     <p className="text-emerald-400 font-black text-xl">{p.retention_days} Days</p>
-                    <p className="text-[10px] text-slate-500 uppercase font-bold">Expiration Window</p>
+                    <p className="text-[10px] text-[var(--text-secondary)] uppercase font-bold">Expiration Window</p>
                   </div>
                 </div>
               ))
@@ -120,7 +120,7 @@ export default function DataGovernancePage() {
         </div>
 
         {/* GDPR Erasure Control */}
-        <div className="glass-card p-6 border border-slate-800 rounded-2xl bg-[#0a0a0a]">
+        <div className="glass-card p-6 border border-[var(--border-primary)] rounded-2xl bg-[var(--bg-secondary)]">
           <h2 className="text-xl font-bold flex items-center gap-2 mb-8">
             <Trash2 className="w-5 h-5 text-red-400" />
             Right-to-Erasure Trigger
@@ -135,14 +135,14 @@ export default function DataGovernancePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Target Session ID</label>
+              <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">Target Session ID</label>
               <div className="flex gap-2">
                 <input 
                   type="text" 
                   value={sessionIdToErase}
                   onChange={(e) => setSessionIdToErase(e.target.value)}
                   placeholder="Enter UUID..."
-                  className="flex-1 bg-[#111] border border-slate-800 rounded-lg px-4 py-2 font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  className="flex-1 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg px-4 py-2 font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors"
                 />
                 <button 
                   onClick={handleErase}
@@ -166,11 +166,11 @@ export default function DataGovernancePage() {
 
       {/* Erasure Request History */}
       <section className="mt-12">
-        <h2 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] mb-6">Erasure Request History</h2>
-        <div className="bg-[#0a0a0a] border border-slate-800 rounded-2xl overflow-hidden">
+        <h2 className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-[0.3em] mb-6">Erasure Request History</h2>
+        <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl overflow-hidden">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-[#111] text-[10px] uppercase font-mono text-slate-500 tracking-widest border-b border-slate-800">
+              <tr className="bg-[var(--bg-primary)] text-[10px] uppercase font-mono text-[var(--text-secondary)] tracking-widest border-b border-[var(--border-primary)]">
                 <th className="p-4">Session ID</th>
                 <th className="p-4">Requested At</th>
                 <th className="p-4">Processed At</th>
@@ -180,9 +180,9 @@ export default function DataGovernancePage() {
             <tbody className="text-sm font-mono">
               {requests.map((r, idx) => (
                 <tr key={idx} className="border-b border-slate-900 last:border-0 hover:bg-white/[0.02] transition-colors">
-                  <td className="p-4 text-slate-300">{r.session_id}</td>
-                  <td className="p-4 text-slate-500">{new Date(r.requested_at).toLocaleString()}</td>
-                  <td className="p-4 text-slate-500">{r.processed_at ? new Date(r.processed_at).toLocaleString() : '-'}</td>
+                  <td className="p-4 text-[var(--text-primary)]">{r.session_id}</td>
+                  <td className="p-4 text-[var(--text-secondary)]">{new Date(r.requested_at).toLocaleString()}</td>
+                  <td className="p-4 text-[var(--text-secondary)]">{r.processed_at ? new Date(r.processed_at).toLocaleString() : '-'}</td>
                   <td className="p-4">
                     <span className={`flex items-center gap-1.5 font-bold uppercase text-[10px] px-2 py-1 rounded-full ${
                       r.request_status === 'PROCESSED' ? 'text-emerald-400 bg-emerald-400/10' :
@@ -199,7 +199,7 @@ export default function DataGovernancePage() {
               ))}
               {requests.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="p-10 text-center text-slate-600 italic">No erasure requests found in registry.</td>
+                  <td colSpan={4} className="p-10 text-center text-[var(--text-secondary)] italic">No erasure requests found in registry.</td>
                 </tr>
               )}
             </tbody>

@@ -39,7 +39,7 @@ export default function EvidenceExportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#030303] text-white p-10">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] p-10">
       {/* Header */}
       <header className="mb-12">
         <div className="flex items-center gap-3 mb-4">
@@ -49,7 +49,7 @@ export default function EvidenceExportPage() {
           <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Compliance Evidence Service</span>
         </div>
         <h1 className="text-6xl font-black uppercase tracking-tighter italic mb-4">Evidence Vault</h1>
-        <p className="text-slate-500 max-w-xl text-sm font-medium">
+        <p className="text-[var(--text-secondary)] max-w-xl text-sm font-medium">
           Generate cryptographically signed audit bundles for SOC2, GDPR, and AI Governance reviews. 
           Deterministic extraction ensures absolute data integrity across all export formats.
         </p>
@@ -58,8 +58,8 @@ export default function EvidenceExportPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Configuration Panel */}
         <div className="lg:col-span-8 space-y-8">
-          <div className="bg-[#0a0a0a] border border-white/5 p-10 rounded-[2.5rem]">
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-8">1. Select Evidence Domains</h3>
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] p-10 rounded-[2.5rem]">
+            <h3 className="text-xs font-black uppercase tracking-widest text-[var(--text-secondary)] mb-8">1. Select Evidence Domains</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
               {[
                 { id: 'ledger', label: 'Governance Ledger', desc: 'Cryptographic chain of all policy events.' },
@@ -73,7 +73,7 @@ export default function EvidenceExportPage() {
                   className={`flex items-start text-left p-6 rounded-2xl border transition-all ${
                     selectedTypes.includes(type.id) 
                       ? 'bg-emerald-500/10 border-emerald-500/30' 
-                      : 'bg-white/5 border-white/5 hover:border-white/10'
+                      : 'bg-white/5 border-[var(--border-primary)] hover:border-white/10'
                   }`}
                 >
                   <div className={`mt-1 mr-4 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
@@ -83,13 +83,13 @@ export default function EvidenceExportPage() {
                   </div>
                   <div>
                     <p className="text-[11px] font-black uppercase tracking-tighter mb-1">{type.label}</p>
-                    <p className="text-[9px] text-slate-500 font-medium">{type.desc}</p>
+                    <p className="text-[9px] text-[var(--text-secondary)] font-medium">{type.desc}</p>
                   </div>
                 </button>
               ))}
             </div>
 
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-8">2. Export Format</h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-[var(--text-secondary)] mb-8">2. Export Format</h3>
             <div className="flex gap-4 mb-12">
               {[
                 { id: 'JSON', icon: FileJson },
@@ -102,7 +102,7 @@ export default function EvidenceExportPage() {
                   className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl border transition-all ${
                     format === f.id 
                       ? 'bg-white text-black border-white' 
-                      : 'bg-[#111] border-white/5 text-slate-400 hover:border-white/20'
+                      : 'bg-[var(--bg-primary)] border-[var(--border-primary)] text-[var(--text-primary)] hover:border-white/20'
                   }`}
                 >
                   <f.icon className="w-4 h-4" />
@@ -116,7 +116,7 @@ export default function EvidenceExportPage() {
               disabled={exporting || selectedTypes.length === 0}
               className={`w-full py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-3 transition-all ${
                 exporting 
-                  ? 'bg-slate-800 text-slate-500' 
+                  ? 'bg-slate-800 text-[var(--text-secondary)]' 
                   : 'bg-emerald-500 text-black hover:bg-emerald-400 shadow-[0_10px_30px_rgba(16,185,129,0.3)]'
               }`}
             >
@@ -137,11 +137,11 @@ export default function EvidenceExportPage() {
 
         {/* Status & History Sidebar */}
         <div className="lg:col-span-4 space-y-8">
-          <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-[2rem] overflow-hidden relative">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] p-8 rounded-[2rem] overflow-hidden relative">
             <div className="absolute top-0 right-0 p-4 opacity-10">
               <Database size={100} />
             </div>
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-6 flex items-center gap-2">
+            <h3 className="text-xs font-black uppercase tracking-widest text-[var(--text-secondary)] mb-6 flex items-center gap-2">
               <Clock className="w-3 h-3" /> Recent Activity
             </h3>
             
@@ -154,9 +154,9 @@ export default function EvidenceExportPage() {
                 <div key={i} className="group flex items-center justify-between p-4 bg-white/5 border border-transparent hover:border-white/10 rounded-xl transition-all">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-tighter group-hover:text-emerald-400 transition-colors">{item.label}</p>
-                    <p className="text-[9px] text-slate-600 font-mono mt-1">{item.time}</p>
+                    <p className="text-[9px] text-[var(--text-secondary)] font-mono mt-1">{item.time}</p>
                   </div>
-                  <ExternalLink className="w-3 h-3 text-slate-700 group-hover:text-slate-400" />
+                  <ExternalLink className="w-3 h-3 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]" />
                 </div>
               ))}
             </div>

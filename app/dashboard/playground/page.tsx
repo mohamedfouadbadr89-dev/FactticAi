@@ -1,29 +1,42 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PromptRunner from '@/components/playground/PromptRunner';
 import GovernanceResults from '@/components/playground/GovernanceResults';
 import { ShieldCheck, Info } from 'lucide-react';
+import { createBrowserClient } from '@supabase/ssr';
 
 export default function PlaygroundPage() {
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any | null>(null);
 
+  useEffect(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const id = session?.user?.user_metadata?.org_id;
+      if (id) setOrgId(id);
+    });
+  }, []);
+
   const handleRunGovernance = async (config: any) => {
+    if (!orgId) return;
     setLoading(true);
     setResults(null);
     const sessionId = crypto.randomUUID();
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer facttic-test-key'
         },
         body: JSON.stringify({
           prompt: config.prompt,
           model: config.model,
-          org_id: '864c43c5-0484-4955-a353-f0435582a4af',
+          org_id: orgId,
           session_id: sessionId,
         })
       });

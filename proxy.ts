@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 import { isFeatureEnabled } from '@/config/featureFlags';
 import { extractToken, verifySession } from '@/core/auth';
 import { resolveOrgContext } from '@/lib/orgResolver';
@@ -8,7 +9,7 @@ import { cache } from '@/lib/redis';
 import { logger } from '@/lib/logger';
 
 // ---- Auth Route Protection ----
-const PROTECTED_PATHS: string[] = [];
+const PROTECTED_PATHS = ['/dashboard', '/admin'];
 const AUTH_PATHS = ['/login', '/register'];
 
 // if (isProtected && !session) {
@@ -35,17 +36,29 @@ export async function proxy(request: NextRequest) {
     (p) => path === p || path.startsWith(`${p}/`)
   );
 
-  // TODO: Replace with real session validation (Supabase cookie, JWT, etc.)
-  const session = request.cookies.get('facttic-session')?.value;
+  // Validate session using Supabase SSR (cookie-based, Edge-compatible)
+  if (isProtected || isAuthPage) {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return request.cookies.getAll(); },
+          setAll() {}, // read-only in proxy
+        },
+      }
+    );
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (isProtected && !session) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', path);
-    return NextResponse.redirect(loginUrl);
-  }
+    if (isProtected && !user) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', path);
+      return NextResponse.redirect(loginUrl);
+    }
 
-  if (isAuthPage && session) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    if (isAuthPage && user) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
   }
 
   // ---- Rate Limiting (API routes only) ----

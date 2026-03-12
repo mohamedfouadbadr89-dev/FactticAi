@@ -30,7 +30,7 @@ const CustomTabs = ({ activeTab, onTabChange }: { activeTab: string; onTabChange
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
               isActive 
                 ? 'bg-[var(--accent)] text-white shadow-[0_4px_20px_rgba(var(--accent-rgb),0.3)] scale-[1.02]' 
-                : 'text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-primary)]/50'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
             }`}
           >
             <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse' : ''}`} />

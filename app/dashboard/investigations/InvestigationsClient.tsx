@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Activity, X, ShieldAlert, FileWarning, Search, MessageSquare } from 'lucide-react'
 
 interface Investigation {
@@ -16,6 +17,7 @@ interface Investigation {
 }
 
 export function InvestigationsClient() {
+  const router = useRouter()
   const [investigations, setInvestigations] = useState<Investigation[]>([])
   const [loading, setLoading] = useState(true)
   
@@ -74,23 +76,23 @@ export function InvestigationsClient() {
   if (loading) {
     return (
       <div className="w-full max-w-7xl mx-auto p-6 md:p-8 space-y-4 animate-pulse">
-        <div className="h-8 w-48 rounded-[var(--radius)] bg-[#222]" />
-        <div className="h-64 w-full rounded-[var(--radius)] bg-[#222]" />
+        <div className="h-8 w-48 rounded-[var(--radius)] bg-[var(--bg-secondary)]" />
+        <div className="h-64 w-full rounded-[var(--radius)] bg-[var(--bg-secondary)]" />
       </div>
     )
   }
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6 md:p-8 space-y-8 relative">
-      <div className="pb-6 border-b border-[#2d2d2d]">
+      <div className="pb-6 border-b border-[var(--border-primary)]">
         <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">Active Investigations</h1>
         <p className="text-sm font-medium text-[var(--text-secondary)]">Deterministic root cause analysis and drift discovery pipeline.</p>
       </div>
 
-      <div className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="uppercase tracking-widest font-black text-[9px] border-b border-[#2d2d2d] bg-[#111]">
+            <thead className="uppercase tracking-widest font-black text-[9px] border-b border-[var(--border-primary)] bg-[var(--bg-primary)]">
               <tr>
                 <th className="px-6 py-4 font-black text-[var(--text-secondary)]">Investigation Signal</th>
                 <th className="px-6 py-4 font-black text-[var(--text-secondary)]">Lifecycle</th>
@@ -103,7 +105,7 @@ export function InvestigationsClient() {
             <tbody className="divide-y divide-[#2d2d2d]">
               {investigations.length > 0 ? (
                 investigations.map((inv) => (
-                  <tr key={inv.id} onClick={() => openInvestigation(inv)} className="hover:bg-[#222] transition-colors cursor-pointer group">
+                  <tr key={inv.id} onClick={() => openInvestigation(inv)} className="hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer group">
                     <td className="px-6 py-6">
                       <div className="text-sm font-bold font-mono tracking-tighter text-[var(--text-primary)] group-hover:text-primary transition-colors">
                         {inv.triggered_by || 'Unknown'}
@@ -117,7 +119,7 @@ export function InvestigationsClient() {
                     </td>
                     <td className="px-6 py-6 font-bold">
                       <div className="flex items-center gap-2">
-                        <div className="w-16 h-1.5 bg-[#333] rounded-full overflow-hidden border border-[#444] transition-colors duration-300">
+                        <div className="w-16 h-1.5 bg-[var(--bg-secondary)] rounded-full overflow-hidden border border-[var(--border-primary)] transition-colors duration-300">
                           <div 
                             className="h-full bg-[#ef4444] transition-colors duration-300" 
                             style={{ width: `${(inv.drift_score ?? 0.5) * 100}%` }}
@@ -130,7 +132,7 @@ export function InvestigationsClient() {
                       {inv.governance_root_cause_reports?.length || 1} Artifacts
                     </td>
                     <td className="px-6 py-6">
-                      <span className="text-[9px] font-black uppercase tracking-widest border border-[#333] px-2 py-1 rounded-sm text-[var(--text-secondary)]">
+                      <span className="text-[9px] font-black uppercase tracking-widest border border-[var(--border-primary)] px-2 py-1 rounded-sm text-[var(--text-secondary)]">
                         {getPhaseTag(inv.status)}
                       </span>
                     </td>
@@ -154,8 +156,8 @@ export function InvestigationsClient() {
 
        {/* Conversation Timeline Panel Overlay */}
        {selectedInvestigation && (
-        <div className="fixed inset-y-0 right-0 w-full md:w-[600px] bg-[#111] border-l border-[#2d2d2d] shadow-2xl z-50 transform transition-transform animate-fade-in-left flex flex-col">
-          <div className="p-6 border-b border-[#2d2d2d] flex justify-between items-center bg-[#1a1a1a]">
+        <div className="fixed inset-y-0 right-0 w-full md:w-[600px] bg-[var(--bg-primary)] border-l border-[var(--border-primary)] shadow-2xl z-50 transform transition-transform animate-fade-in-left flex flex-col">
+          <div className="p-6 border-b border-[var(--border-primary)] flex justify-between items-center bg-[var(--bg-secondary)]">
             <div>
               <h2 className="text-xl font-bold flex items-center gap-2 text-[var(--text-primary)]">
                 <Search className="w-5 h-5 text-primary" /> Conversation Timeline
@@ -164,27 +166,37 @@ export function InvestigationsClient() {
                 Replay ID: {selectedInvestigation.id.substring(0,8)}
               </p>
             </div>
-            <button onClick={() => setSelectedInvestigation(null)} className="p-2 hover:bg-[#333] rounded-full transition-colors">
-              <X className="w-5 h-5 text-[var(--text-secondary)]" />
-            </button>
+            <div className="flex items-center gap-2">
+              {selectedInvestigation.session_id && (
+                <button
+                  onClick={() => router.push(`/dashboard/forensics?session=${selectedInvestigation.session_id}`)}
+                  className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline flex items-center gap-1 px-3 py-1 border border-[var(--accent)]/30 rounded-lg hover:bg-[var(--accent)]/5 transition-all"
+                >
+                  <MessageSquare className="w-3 h-3" /> Forensics
+                </button>
+              )}
+              <button onClick={() => setSelectedInvestigation(null)} className="p-2 hover:bg-[var(--bg-secondary)] rounded-full transition-colors">
+                <X className="w-5 h-5 text-[var(--text-secondary)]" />
+              </button>
+            </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#111]">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[var(--bg-primary)]">
              {timelineLoading ? (
                <div className="animate-pulse space-y-4">
-                 <div className="h-16 w-3/4 bg-[#222] rounded-r-2xl rounded-bl-2xl"></div>
-                 <div className="h-24 w-full bg-[#1a1a1a] rounded border border-[#ef4444]/50"></div>
+                 <div className="h-16 w-3/4 bg-[var(--bg-secondary)] rounded-r-2xl rounded-bl-2xl"></div>
+                 <div className="h-24 w-full bg-[var(--bg-secondary)] rounded border border-[#ef4444]/50"></div>
                </div>
              ) : timeline.map((event, idx) => (
-                <div key={idx} className="relative pl-6 border-l-2 border-[#333] pb-6 last:pb-0 group">
-                  <div className="absolute w-3 h-3 bg-[#444] rounded-full -left-[7px] top-1 border-2 border-[#0a0a0a] group-hover:bg-primary transition-colors"></div>
+                <div key={idx} className="relative pl-6 border-l-2 border-[var(--border-primary)] pb-6 last:pb-0 group">
+                  <div className="absolute w-3 h-3 bg-[var(--bg-secondary)] rounded-full -left-[7px] top-1 border-2 border-[#0a0a0a] group-hover:bg-primary transition-colors"></div>
                   
                   <div className="text-[10px] text-[var(--text-secondary)] font-mono mb-2">
                     {new Date(event.timestamp).toLocaleTimeString()} · {event.event_type.toUpperCase()}
                   </div>
 
                   {event.event_type === 'message' && (
-                    <div className={`p-4 rounded-2xl max-w-[85%] text-sm ${event.event_reference.role === 'user' ? 'bg-[#222] text-[#eee] rounded-tl-sm' : 'bg-[#3b82f6]/10 text-[#3b82f6] border border-[#3b82f6]/20 rounded-tr-sm ml-auto'}`}>
+                    <div className={`p-4 rounded-2xl max-w-[85%] text-sm ${event.event_reference.role === 'user' ? 'bg-[var(--bg-secondary)] text-[#eee] rounded-tl-sm' : 'bg-[#3b82f6]/10 text-[#3b82f6] border border-[#3b82f6]/20 rounded-tr-sm ml-auto'}`}>
                       {event.event_reference.content}
                     </div>
                   )}

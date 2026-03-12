@@ -98,7 +98,7 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-10">
-      <header className="flex justify-between items-end pb-8 border-b border-white/5">
+      <header className="flex justify-between items-end pb-8 border-b border-[var(--border-primary)]">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
              <div className="p-2.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded-xl border border-[var(--accent)]/20">
@@ -108,7 +108,7 @@ export default function ProfilePage() {
           </div>
           <p className="text-sm text-[var(--text-secondary)] font-medium">Manage your governance standing and institutional metadata.</p>
         </div>
-        <div className="flex items-center gap-4 bg-[var(--bg-secondary)] p-1.5 rounded-2xl border border-white/5 shadow-inner">
+        <div className="flex items-center gap-4 bg-[var(--bg-secondary)] p-1.5 rounded-2xl border border-[var(--border-primary)] shadow-inner">
            <span className="px-5 py-2 rounded-xl bg-[var(--accent)] text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[var(--accent)]/20">
               {profile?.role || 'VIEWER'}
            </span>
@@ -118,7 +118,7 @@ export default function ProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Core Stats */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="card p-8 space-y-8 border-white/5 bg-gradient-to-br from-white/[0.03] to-transparent">
+          <div className="card p-8 space-y-8 border-[var(--border-primary)] bg-gradient-to-br from-white/[0.03] to-transparent">
              <div className="flex flex-col items-center text-center space-y-4">
                 <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-[var(--accent)] to-[var(--accent-soft)] p-1 shadow-2xl">
                    <div className="w-full h-full rounded-full bg-[var(--bg-primary)] flex items-center justify-center border-4 border-[var(--bg-primary)]">
@@ -131,26 +131,26 @@ export default function ProfilePage() {
                 </div>
              </div>
 
-             <div className="space-y-5 pt-4 border-t border-white/5">
+             <div className="space-y-5 pt-4 border-t border-[var(--border-primary)]">
                 <div className="flex items-center gap-4 group">
                    <Mail className="w-4 h-4 text-gray-500 group-hover:text-[var(--accent)] transition-colors" />
                    <div className="space-y-0.5">
                       <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest block">Email Binding</span>
-                      <span className="text-sm font-mono text-gray-200">{user?.email}</span>
+                      <span className="text-sm font-mono text-[var(--text-primary)]">{user?.email}</span>
                    </div>
                 </div>
                 <div className="flex items-center gap-4 group">
                    <Building className="w-4 h-4 text-gray-500 group-hover:text-[var(--accent)] transition-colors" />
                    <div className="space-y-0.5">
                       <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest block">Affiliation</span>
-                      <span className="text-sm font-bold text-gray-200">{org?.name || 'Deattached Identity'}</span>
+                      <span className="text-sm font-bold text-[var(--text-primary)]">{org?.name || 'Deattached Identity'}</span>
                    </div>
                 </div>
                 <div className="flex items-center gap-4 group">
                    <Clock className="w-4 h-4 text-gray-500 group-hover:text-[var(--accent)] transition-colors" />
                    <div className="space-y-0.5">
                       <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest block">Inducted At</span>
-                      <span className="text-sm font-mono text-gray-200">{new Date(user?.created_at).toLocaleDateString()}</span>
+                      <span className="text-sm font-mono text-[var(--text-primary)]">{new Date(user?.created_at).toLocaleDateString()}</span>
                    </div>
                 </div>
              </div>
@@ -169,9 +169,9 @@ export default function ProfilePage() {
 
         {/* Configuration */}
         <div className="lg:col-span-8">
-           <div className="card p-10 space-y-10 shadow-2xl border-white/5">
+           <div className="card p-10 space-y-10 shadow-2xl border-[var(--border-primary)]">
               <section className="space-y-8">
-                <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+                <div className="flex items-center gap-3 pb-4 border-b border-[var(--border-primary)]">
                    <Briefcase className="w-5 h-5 text-[var(--accent)]" />
                    <h3 className="font-black text-xs tracking-[0.3em] uppercase">Occupational Metadata</h3>
                 </div>
@@ -183,7 +183,7 @@ export default function ProfilePage() {
                         type="text" 
                         value={profile?.job_title || ''} 
                         onChange={(e) => setProfile({...profile, job_title: e.target.value})}
-                        className="w-full bg-[var(--bg-primary)] border border-white/5 p-4 rounded-xl text-sm text-gray-200 focus:border-[var(--accent)] focus:ring-4 ring-[var(--accent)]/5 transition-all outline-none shadow-inner" 
+                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] p-4 rounded-xl text-sm text-[var(--text-primary)] focus:border-[var(--accent)] focus:ring-4 ring-[var(--accent)]/5 transition-all outline-none shadow-inner" 
                         placeholder="Risk Analyst"
                       />
                    </div>
@@ -193,7 +193,7 @@ export default function ProfilePage() {
                         type="text" 
                         value={profile?.department || ''} 
                         onChange={(e) => setProfile({...profile, department: e.target.value})}
-                        className="w-full bg-[var(--bg-primary)] border border-white/5 p-4 rounded-xl text-sm text-gray-200 focus:border-[var(--accent)] focus:ring-4 ring-[var(--accent)]/5 transition-all outline-none shadow-inner" 
+                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] p-4 rounded-xl text-sm text-[var(--text-primary)] focus:border-[var(--accent)] focus:ring-4 ring-[var(--accent)]/5 transition-all outline-none shadow-inner" 
                         placeholder="AI Safety Operations"
                       />
                    </div>
@@ -201,7 +201,7 @@ export default function ProfilePage() {
               </section>
 
               <section className="space-y-6">
-                <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+                <div className="flex items-center gap-3 pb-4 border-b border-[var(--border-primary)]">
                    <User className="w-5 h-5 text-[var(--accent)]" />
                    <h3 className="font-black text-xs tracking-[0.3em] uppercase">Professional Narrative</h3>
                 </div>
@@ -211,7 +211,7 @@ export default function ProfilePage() {
                      rows={4}
                      value={profile?.bio || ''} 
                      onChange={(e) => setProfile({...profile, bio: e.target.value})}
-                     className="w-full bg-[var(--bg-primary)] border border-white/5 p-5 rounded-2xl text-sm text-gray-200 focus:border-[var(--accent)] focus:ring-4 ring-[var(--accent)]/5 transition-all outline-none shadow-inner resize-none" 
+                     className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] p-5 rounded-2xl text-sm text-[var(--text-primary)] focus:border-[var(--accent)] focus:ring-4 ring-[var(--accent)]/5 transition-all outline-none shadow-inner resize-none" 
                      placeholder="Institutional focus on deterministic risk modeling and multi-agent safety..."
                    />
                 </div>

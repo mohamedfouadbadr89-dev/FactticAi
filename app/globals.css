@@ -71,6 +71,12 @@
   --bg-elevated: var(--surface-1);
   --border-primary: var(--border-subtle);
   --border-secondary: var(--border-strong);
+
+  /* Utility Vars */
+  --accent-soft: rgba(37, 99, 235, 0.06);
+  --card-bg: var(--surface-1);
+  --skeleton-base: #E8E5E0;
+  --skeleton-highlight: #FFFFFF;
 }
 
 /* =============================================
@@ -104,6 +110,12 @@
   --bg-elevated: var(--surface-1);
   --border-primary: var(--border-subtle);
   --border-secondary: var(--border-strong);
+
+  /* Utility Vars */
+  --accent-soft: rgba(37, 99, 235, 0.12);
+  --card-bg: var(--surface-1);
+  --skeleton-base: rgba(255, 255, 255, 0.05);
+  --skeleton-highlight: rgba(255, 255, 255, 0.12);
 }
 
 html, body {

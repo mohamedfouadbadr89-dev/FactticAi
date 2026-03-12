@@ -1,28 +1,31 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { createBrowserClient } from '@supabase/ssr';
 import { CreditCard, History, Shield, CheckCircle, ArrowRight, Download } from 'lucide-react';
 import PricingSelector from '@/components/billing/PricingSelector';
 import BillingCycleToggle from '@/components/billing/BillingCycleToggle';
 
-const DEMO_ORG_ID = "00000000-0000-0000-0000-000000000000";
-
 export default function BillingPage() {
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
 
   useEffect(() => {
-    fetch(`/api/dashboard/billing/plan?org_id=${DEMO_ORG_ID}`)
-      .then(res => res.json())
-      .then(json => {
-        setData(json);
-        setLoading(false);
-      })
-      .catch(e => {
-        console.error("Plan fetch failed", e);
-        setLoading(false);
-      });
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const orgId = session?.user?.user_metadata?.org_id;
+      if (!orgId) { setLoading(false); return; }
+      fetch(`/api/dashboard/billing/plan?org_id=${orgId}`)
+        .then(res => res.json())
+        .then(json => { setData(json); setLoading(false); })
+        .catch(e => { console.error("Plan fetch failed", e); setLoading(false); });
+    });
   }, []);
 
   const invoices = [
@@ -33,14 +36,17 @@ export default function BillingPage() {
 
   return (
     <div className="p-10 space-y-12 pb-32">
-      <header>
-        <div className="flex items-center gap-2 text-[var(--accent)] mb-2">
-          <CreditCard className="w-4 h-4" />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Financial Control Plane</span>
+      <header className="flex items-end justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-[var(--accent)] mb-2">
+            <CreditCard className="w-4 h-4" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Financial Control Plane</span>
+          </div>
+          <h1 className="text-3xl font-black uppercase italic tracking-tighter leading-none">
+            Plan & Billing
+          </h1>
         </div>
-        <h1 className="text-3xl font-black uppercase italic tracking-tighter leading-none">
-          Plan & Billing
-        </h1>
+        <button onClick={() => router.push('/dashboard/usage')} className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">Usage →</button>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">

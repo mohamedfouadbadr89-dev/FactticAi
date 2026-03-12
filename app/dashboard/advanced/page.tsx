@@ -56,8 +56,8 @@ function SimulatorSandbox() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
          {/* Scenario Controller */}
-         <div className="lg:col-span-1 bg-[#111] border border-[#2d2d2d] rounded-2xl p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-6 border-b border-[#2d2d2d] pb-4">
+         <div className="lg:col-span-1 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-6 border-b border-[var(--border-primary)] pb-4">
               <Terminal className="w-5 h-5 text-gray-400" />
               <h2 className="text-sm font-bold tracking-wide uppercase text-[var(--text-primary)]">Threat Scenarios</h2>
             </div>
@@ -69,8 +69,8 @@ function SimulatorSandbox() {
                   onClick={() => setActiveScenario(s.id as Scenario)}
                   className={`w-full text-left p-4 rounded-xl border transition-all ${
                      activeScenario === s.id 
-                     ? 'bg-[#1a1a1a] border-[#ef4444]/50 ring-1 ring-[#ef4444] shadow-[0_0_15px_rgba(239,68,68,0.1)]' 
-                     : 'bg-[#1a1a1a] border-[#2d2d2d] hover:border-[#444]'
+                     ? 'bg-[var(--bg-secondary)] border-[#ef4444]/50 ring-1 ring-[#ef4444] shadow-[0_0_15px_rgba(239,68,68,0.1)]' 
+                     : 'bg-[var(--bg-secondary)] border-[var(--border-primary)] hover:border-[var(--border-primary)]'
                   }`}
                 >
                   <div className="flex justify-between items-center mb-2">
@@ -100,8 +100,8 @@ function SimulatorSandbox() {
          </div>
 
          {/* Execution Results */}
-         <div className="lg:col-span-2 bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl p-6 shadow-sm flex flex-col">
-            <div className="flex items-center justify-between mb-6 border-b border-[#2d2d2d] pb-4">
+         <div className="lg:col-span-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 shadow-sm flex flex-col">
+            <div className="flex items-center justify-between mb-6 border-b border-[var(--border-primary)] pb-4">
               <div className="flex items-center gap-3">
                  <ShieldAlert className="w-5 h-5 text-[#3b82f6]" />
                  <h2 className="text-sm font-bold tracking-wide uppercase text-[var(--text-primary)]">Governance Intercept Report</h2>
@@ -118,10 +118,10 @@ function SimulatorSandbox() {
             </div>
 
             {!latestReport && !isSimulating && (
-               <div className="flex-1 flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-[#2d2d2d] rounded-xl">
-                  <Terminal className="w-12 h-12 text-[#222] mb-4" />
+               <div className="flex-1 flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-[var(--border-primary)] rounded-xl">
+                  <Terminal className="w-12 h-12 text-[var(--text-secondary)] mb-4" />
                   <p className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest">Sandbox Ready</p>
-                  <p className="text-xs text-[#555] mt-2 font-mono">Select a scenario array and execute to intercept active traffic simulation.</p>
+                  <p className="text-xs text-[var(--text-secondary)] mt-2 font-mono">Select a scenario array and execute to intercept active traffic simulation.</p>
                </div>
             )}
 
@@ -135,8 +135,8 @@ function SimulatorSandbox() {
             {latestReport && !isSimulating && (
                <div className="flex-1 flex flex-col animate-fade-in-up space-y-6">
                   {/* Dynamic Simulation Terminal */}
-                  <div className="bg-[#111] border border-[#333] rounded-xl p-6 font-mono text-xs overflow-hidden">
-                     <div className="flex items-center gap-2 text-[#9ca3af] mb-4 border-b border-[#222] pb-2">
+                  <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl p-6 font-mono text-xs overflow-hidden">
+                     <div className="flex items-center gap-2 text-[var(--text-secondary)] mb-4 border-b border-[var(--border-primary)] pb-2">
                         <span className="w-2 h-2 rounded-full bg-[#ef4444]"></span>
                         <span className="w-2 h-2 rounded-full bg-[#ef4444] opacity-70"></span>
                         <span className="w-2 h-2 rounded-full bg-[#10b981]"></span>
@@ -145,11 +145,11 @@ function SimulatorSandbox() {
                      <div className="text-[var(--success)] mb-2">{`> INITIALIZING ${latestReport.scenario.toUpperCase()} ATTACK VECTOR`}</div>
                      <div className="text-[var(--primary)] mb-4">{`> PAYLOAD: "${latestReport.synthetic_payload}"`}</div>
                      
-                     <div className="text-slate-500 mb-2">{`> ROUTING TO GUARDRAIL_ENGINE [org_id: dbad...]`}</div>
+                     <div className="text-[var(--text-secondary)] mb-2">{`> ROUTING TO GUARDRAIL_ENGINE [org_id: dbad...]`}</div>
                      
                      {latestReport.triggered_rules && latestReport.triggered_rules.length > 0 && (
-                        <div className="pl-4 border-l border-[#333] mb-4 space-y-2">
-                           <div className="text-slate-400">Triggered Intercept Logic:</div>
+                        <div className="pl-4 border-l border-[var(--border-primary)] mb-4 space-y-2">
+                           <div className="text-[var(--text-primary)]">Triggered Intercept Logic:</div>
                            {latestReport.triggered_rules.map((rule: string, i: number) => (
                                <div key={i} className="flex justify-between w-full">
                                   <span className="text-[#ef4444] opacity-70 font-bold">- {rule}</span>
@@ -171,11 +171,11 @@ function SimulatorSandbox() {
 
                   {/* Summary Metric Array */}
                   <div className="grid grid-cols-2 gap-4">
-                     <div className="bg-[#222] p-4 rounded-xl border border-[#333]">
+                     <div className="bg-[var(--bg-secondary)] p-4 rounded-xl border border-[var(--border-primary)]">
                         <div className="text-[10px] text-[var(--text-secondary)] uppercase tracking-widest font-bold mb-1">Calculated Risk Velocity</div>
                         <div className="text-3xl font-black text-[var(--warning)]">{(latestReport.risk_score * 100).toFixed(0)}%</div>
                      </div>
-                     <div className="bg-[#222] p-4 rounded-xl border border-[#333] flex flex-col justify-center items-center">
+                     <div className="bg-[var(--bg-secondary)] p-4 rounded-xl border border-[var(--border-primary)] flex flex-col justify-center items-center">
                         {latestReport.intercepted ? (
                            <>
                              <CheckCircle2 className="w-8 h-8 text-[var(--success)] mb-2" />
@@ -288,18 +288,18 @@ function GovernancePolicyEditor() {
     };
 
     return (
-        <div className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl p-6 shadow-sm">
-             <div className="flex items-center justify-between mb-6 border-b border-[#2d2d2d] pb-4">
+        <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 shadow-sm">
+             <div className="flex items-center justify-between mb-6 border-b border-[var(--border-primary)] pb-4">
                <div className="flex flex-col">
                   <div className="flex items-center gap-3">
                      <SlidersHorizontal className="w-5 h-5 text-[#3b82f6]" />
-                     <h2 className="text-sm font-bold tracking-wide uppercase text-white">Governance Policy Editor</h2>
+                     <h2 className="text-sm font-bold tracking-wide uppercase text-[var(--text-primary)]">Governance Policy Editor</h2>
                   </div>
-                  <p className="text-[10px] text-[#9ca3af] uppercase tracking-widest mt-1 font-mono">Bound explicit thresholds to real-time execution Guardrails.</p>
+                  <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-widest mt-1 font-mono">Bound explicit thresholds to real-time execution Guardrails.</p>
                </div>
                <button 
                   onClick={() => setShowAdd(!showAdd)}
-                  className={`px-4 py-2 ${showAdd ? 'bg-[#444]' : 'bg-[#3b82f6]'} hover:opacity-80 text-white text-xs font-black uppercase tracking-widest rounded flex items-center gap-2 transition-all`}
+                  className={`px-4 py-2 ${showAdd ? 'bg-[var(--bg-secondary)]' : 'bg-[#3b82f6]'} hover:opacity-80 text-white text-xs font-black uppercase tracking-widest rounded flex items-center gap-2 transition-all`}
                >
                    {showAdd ? <Activity className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                    {showAdd ? 'Cancel' : 'New Rule'}
@@ -309,23 +309,23 @@ function GovernancePolicyEditor() {
              <div className="space-y-4">
                  {/* Add Form */}
                  {showAdd && (
-                    <div className="bg-[#111] border border-[#3b82f6]/50 rounded-xl p-6 mb-6 animate-in slide-in-from-top duration-300">
+                    <div className="bg-[var(--bg-primary)] border border-[#3b82f6]/50 rounded-xl p-6 mb-6 animate-in slide-in-from-top duration-300">
                         <p className="text-[10px] font-black uppercase tracking-widest text-[#3b82f6] mb-4">Create Guardrail Protocol</p>
                         <div className="grid grid-cols-12 gap-4">
                             <div className="col-span-12 md:col-span-4">
-                                <label className="block text-[9px] font-black text-[#555] uppercase mb-1.5">Policy Name</label>
+                                <label className="block text-[9px] font-black text-[var(--text-secondary)] uppercase mb-1.5">Policy Name</label>
                                 <input 
                                     type="text" 
                                     placeholder="e.g. Reject Hallucinations"
-                                    className="bg-[#1a1a1a] border border-[#333] rounded px-3 py-2 w-full text-xs text-white focus:outline-none focus:border-[#3b82f6]"
+                                    className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded px-3 py-2 w-full text-xs text-[var(--text-primary)] focus:outline-none focus:border-[#3b82f6]"
                                     value={newPolicy.name}
                                     onChange={e => setNewPolicy({...newPolicy, name: e.target.value})}
                                 />
                             </div>
                             <div className="col-span-6 md:col-span-2">
-                                <label className="block text-[9px] font-black text-[#555] uppercase mb-1.5">Signal</label>
+                                <label className="block text-[9px] font-black text-[var(--text-secondary)] uppercase mb-1.5">Signal</label>
                                 <select 
-                                    className="bg-[#1a1a1a] border border-[#333] rounded px-3 py-2 w-full text-[10px] font-mono text-gray-300 focus:border-[#3b82f6] uppercase tracking-widest"
+                                    className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded px-3 py-2 w-full text-[10px] font-mono text-gray-300 focus:border-[#3b82f6] uppercase tracking-widest"
                                     value={newPolicy.signal}
                                     onChange={e => setNewPolicy({...newPolicy, signal: e.target.value as any})}
                                 >
@@ -336,9 +336,9 @@ function GovernancePolicyEditor() {
                                 </select>
                             </div>
                             <div className="col-span-6 md:col-span-2">
-                                <label className="block text-[9px] font-black text-[#555] uppercase mb-1.5">Action</label>
+                                <label className="block text-[9px] font-black text-[var(--text-secondary)] uppercase mb-1.5">Action</label>
                                 <select 
-                                    className="bg-[#1a1a1a] border border-[#333] rounded px-3 py-2 w-full text-[10px] font-mono text-gray-300 focus:border-[#3b82f6] uppercase tracking-widest"
+                                    className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded px-3 py-2 w-full text-[10px] font-mono text-gray-300 focus:border-[#3b82f6] uppercase tracking-widest"
                                     value={newPolicy.action}
                                     onChange={e => setNewPolicy({...newPolicy, action: e.target.value as any})}
                                 >
@@ -350,7 +350,7 @@ function GovernancePolicyEditor() {
                                 </select>
                             </div>
                             <div className="col-span-9 md:col-span-3">
-                                <label className="block text-[9px] font-black text-[#555] uppercase mb-1.5">Threshold ({newPolicy.value}%)</label>
+                                <label className="block text-[9px] font-black text-[var(--text-secondary)] uppercase mb-1.5">Threshold ({newPolicy.value}%)</label>
                                 <input 
                                     type="range" min="0" max="100" 
                                     value={newPolicy.value}
@@ -371,7 +371,7 @@ function GovernancePolicyEditor() {
                     </div>
                  )}
 
-                 <div className="grid grid-cols-12 gap-4 px-4 text-[10px] font-black uppercase tracking-widest text-[#555] mb-2 border-b border-[#2d2d2d] pb-2">
+                 <div className="grid grid-cols-12 gap-4 px-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-2 border-b border-[var(--border-primary)] pb-2">
                      <div className="col-span-4">Policy Internal Name / Status</div>
                      <div className="col-span-3">Condition Logic</div>
                      <div className="col-span-3">Active Threshold</div>
@@ -379,34 +379,34 @@ function GovernancePolicyEditor() {
                  </div>
 
                  {loading ? (
-                    <div className="flex items-center justify-center py-12 animate-pulse text-[#444]">
+                    <div className="flex items-center justify-center py-12 animate-pulse text-[var(--text-secondary)]">
                         <SlidersHorizontal className="w-8 h-8 animate-bounce" />
                     </div>
                  ) : policies.length === 0 ? (
-                    <div className="text-center py-12 border-2 border-dashed border-[#2d2d2d] rounded-xl text-[#444]">
+                    <div className="text-center py-12 border-2 border-dashed border-[var(--border-primary)] rounded-xl text-[var(--text-secondary)]">
                         <Server className="w-10 h-10 mx-auto mb-3 opacity-20" />
                         <p className="text-xs font-black uppercase tracking-widest">No custom policies deployed</p>
                         <p className="text-[10px] font-mono mt-1">Org is running on global engine defaults Stage 7.75.</p>
                     </div>
                  ) : policies.map((p) => (
-                    <div key={p.id} className={`grid grid-cols-12 gap-4 items-center bg-[#222] border ${p.enabled ? 'border-[#333]' : 'border-[#2d1a1a] opacity-50'} rounded-xl p-4 transition-all hover:border-[#444] group`}>
+                    <div key={p.id} className={`grid grid-cols-12 gap-4 items-center bg-[var(--bg-secondary)] border ${p.enabled ? 'border-[var(--border-primary)]' : 'border-[#2d1a1a] opacity-50'} rounded-xl p-4 transition-all hover:border-[var(--border-primary)] group`}>
                         <div className="col-span-4 flex items-center gap-3">
                            <button 
                              onClick={() => toggleEnabled(p)}
-                             className={`w-3 h-3 rounded-full border ${p.enabled ? 'bg-[#10b981] border-[#10b981]' : 'bg-transparent border-[#444]'}`} 
+                             className={`w-3 h-3 rounded-full border ${p.enabled ? 'bg-[#10b981] border-[#10b981]' : 'bg-transparent border-[var(--border-primary)]'}`} 
                            />
                            <div>
-                             <p className="text-xs font-bold text-white mb-0.5">{p.name}</p>
-                             <p className="text-[9px] font-mono text-[#555] opacity-0 group-hover:opacity-100 transition-opacity uppercase">{p.id.slice(0, 8)}</p>
+                             <p className="text-xs font-bold text-[var(--text-primary)] mb-0.5">{p.name}</p>
+                             <p className="text-[9px] font-mono text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 transition-opacity uppercase">{p.id.slice(0, 8)}</p>
                            </div>
                         </div>
                         <div className="col-span-3">
-                           <span className="text-[10px] font-mono text-[#9ca3af] uppercase tracking-tighter">
+                           <span className="text-[10px] font-mono text-[var(--text-secondary)] uppercase tracking-tighter">
                              IF {p.condition.signal} {p.condition.operator}
                            </span>
                         </div>
                         <div className="col-span-3 flex items-center gap-3">
-                           <div className="flex-1 h-1 bg-[#111] rounded-full overflow-hidden">
+                           <div className="flex-1 h-1 bg-[var(--bg-primary)] rounded-full overflow-hidden">
                               <div className="h-full bg-[#3b82f6] rounded-full" style={{ width: `${p.condition.value}%` }} />
                            </div>
                            <span className="text-xs font-mono font-bold w-12 text-right text-[#f59e0b]">{p.condition.value}%</span>
@@ -422,7 +422,7 @@ function GovernancePolicyEditor() {
                             </span>
                             <button 
                                 onClick={() => handleDelete(p.id)}
-                                className="text-[#444] hover:text-[#ef4444] transition-colors p-1"
+                                className="text-[var(--text-secondary)] hover:text-[#ef4444] transition-colors p-1"
                             >
                                 <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -469,19 +469,19 @@ function SecurityAuditLogPanel() {
   };
 
   return (
-    <div className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#2d2d2d]">
+    <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-[var(--border-primary)]">
         <div className="flex items-center gap-3">
           <ClipboardList className="w-5 h-5 text-[#3b82f6]" />
           <div>
-            <h2 className="text-sm font-bold tracking-wide uppercase text-white">Security Audit Log</h2>
-            <p className="text-[10px] text-[#9ca3af] font-mono mt-0.5">All critical governance API actions. Last 30 entries.</p>
+            <h2 className="text-sm font-bold tracking-wide uppercase text-[var(--text-primary)]">Security Audit Log</h2>
+            <p className="text-[10px] text-[var(--text-secondary)] font-mono mt-0.5">All critical governance API actions. Last 30 entries.</p>
           </div>
         </div>
         <button
           onClick={fetchLogs}
           disabled={loadingLogs}
-          className="flex items-center gap-2 px-3 py-1.5 border border-[#444] hover:border-[#3b82f6] text-[#9ca3af] hover:text-[#3b82f6] rounded text-[10px] font-black uppercase tracking-widest transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-3 py-1.5 border border-[var(--border-primary)] hover:border-[#3b82f6] text-[var(--text-secondary)] hover:text-[#3b82f6] rounded text-[10px] font-black uppercase tracking-widest transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loadingLogs ? 'animate-spin' : ''}`} />
           Refresh
@@ -490,19 +490,19 @@ function SecurityAuditLogPanel() {
 
       {loadingLogs ? (
         <div className="flex items-center justify-center h-24 animate-pulse">
-          <Activity className="w-5 h-5 text-[#555] animate-spin" />
+          <Activity className="w-5 h-5 text-[var(--text-secondary)] animate-spin" />
         </div>
       ) : logs.length === 0 ? (
         <div className="text-center py-12">
-          <ClipboardList className="w-8 h-8 text-[#333] mx-auto mb-3" />
-          <p className="text-xs font-black uppercase tracking-widest text-[#555]">No audit entries yet</p>
-          <p className="text-[10px] text-[#444] font-mono mt-1">Actions will appear here after critical API calls.</p>
+          <ClipboardList className="w-8 h-8 text-[var(--text-secondary)] mx-auto mb-3" />
+          <p className="text-xs font-black uppercase tracking-widest text-[var(--text-secondary)]">No audit entries yet</p>
+          <p className="text-[10px] text-[var(--text-secondary)] font-mono mt-1">Actions will appear here after critical API calls.</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="text-[9px] font-black uppercase tracking-widest text-[#555] border-b border-[#2d2d2d]">
+              <tr className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] border-b border-[var(--border-primary)]">
                 <th className="pb-3 pr-6">Action</th>
                 <th className="pb-3 pr-6">Resource</th>
                 <th className="pb-3 pr-6">Actor</th>
@@ -512,10 +512,10 @@ function SecurityAuditLogPanel() {
             </thead>
             <tbody className="divide-y divide-[#222]">
               {logs.map((log) => (
-                <tr key={log.id} className="group hover:bg-[#222]/50 transition-colors">
-                  <td className="py-3 pr-6 font-mono font-bold text-white">{log.action}</td>
-                  <td className="py-3 pr-6 text-[#9ca3af] font-mono truncate max-w-[200px]">{log.resource}</td>
-                  <td className="py-3 pr-6 text-[#9ca3af] font-mono text-[10px]">
+                <tr key={log.id} className="group hover:bg-[var(--bg-secondary)]/50 transition-colors">
+                  <td className="py-3 pr-6 font-mono font-bold text-[var(--text-primary)]">{log.action}</td>
+                  <td className="py-3 pr-6 text-[var(--text-secondary)] font-mono truncate max-w-[200px]">{log.resource}</td>
+                  <td className="py-3 pr-6 text-[var(--text-secondary)] font-mono text-[10px]">
                     {log.actor_id ? log.actor_id.slice(0, 8) + '…' : 'system'}
                   </td>
                   <td className="py-3 pr-6">
@@ -523,7 +523,7 @@ function SecurityAuditLogPanel() {
                       {log.status}
                     </span>
                   </td>
-                  <td className="py-3 text-right text-[#555] font-mono text-[10px]">
+                  <td className="py-3 text-right text-[var(--text-secondary)] font-mono text-[10px]">
                     {new Date(log.created_at).toLocaleString()}
                   </td>
                 </tr>
@@ -578,20 +578,20 @@ function EventStreamMonitorPanel() {
     : 0;
 
   return (
-    <div className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl p-6 shadow-sm">
+    <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#2d2d2d]">
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-[var(--border-primary)]">
         <div className="flex items-center gap-3">
           <Activity className="w-5 h-5 text-[#10b981]" />
           <div>
-            <h2 className="text-sm font-bold tracking-wide uppercase text-white">Event Stream Monitor</h2>
-            <p className="text-[10px] text-[#9ca3af] font-mono mt-0.5">OpenTelemetry governance events — real-time export status.</p>
+            <h2 className="text-sm font-bold tracking-wide uppercase text-[var(--text-primary)]">Event Stream Monitor</h2>
+            <p className="text-[10px] text-[var(--text-secondary)] font-mono mt-0.5">OpenTelemetry governance events — real-time export status.</p>
           </div>
         </div>
         <button
           onClick={() => fetchData(true)}
           disabled={refreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 border border-[#444] hover:border-[#10b981] text-[#9ca3af] hover:text-[#10b981] rounded text-[9px] font-black uppercase tracking-widest transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 border border-[var(--border-primary)] hover:border-[#10b981] text-[var(--text-secondary)] hover:text-[#10b981] rounded text-[9px] font-black uppercase tracking-widest transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
           Refresh
@@ -600,25 +600,25 @@ function EventStreamMonitorPanel() {
 
       {!data ? (
         <div className="flex items-center justify-center h-40 animate-pulse">
-          <Activity className="w-7 h-7 text-[#555] animate-spin" />
+          <Activity className="w-7 h-7 text-[var(--text-secondary)] animate-spin" />
         </div>
       ) : (
         <>
           {/* Stats row */}
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-[#111] rounded-xl p-4 text-center border border-[#2d2d2d]">
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#555] mb-1">Events / sec</p>
+            <div className="bg-[var(--bg-primary)] rounded-xl p-4 text-center border border-[var(--border-primary)]">
+              <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1">Events / sec</p>
               <p className="text-2xl font-black text-[#10b981]">
                 {metrics?.events_per_second?.toFixed(1) ?? '0.0'}
               </p>
             </div>
-            <div className="bg-[#111] rounded-xl p-4 text-center border border-[#2d2d2d]">
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#555] mb-1">Last 60s</p>
+            <div className="bg-[var(--bg-primary)] rounded-xl p-4 text-center border border-[var(--border-primary)]">
+              <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1">Last 60s</p>
               <p className="text-2xl font-black text-[#3b82f6]">{metrics?.total_in_window ?? 0}</p>
             </div>
-            <div className="bg-[#111] rounded-xl p-4 text-center border border-[#2d2d2d]">
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#555] mb-1">Categories</p>
-              <p className="text-2xl font-black text-white">
+            <div className="bg-[var(--bg-primary)] rounded-xl p-4 text-center border border-[var(--border-primary)]">
+              <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1">Categories</p>
+              <p className="text-2xl font-black text-[var(--text-primary)]">
                 {Object.keys(metrics?.by_category ?? {}).length}
               </p>
             </div>
@@ -627,14 +627,14 @@ function EventStreamMonitorPanel() {
           {/* Category bars */}
           {totalCatEvents > 0 && (
             <div className="mb-6 space-y-2">
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#555] mb-3">Event Categories</p>
+              <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-3">Event Categories</p>
               {(Object.entries(metrics.by_category) as [string, number][]).map(([cat, count]) => (
                 <div key={cat}>
                   <div className="flex justify-between text-[9px] mb-1">
-                    <span className="font-mono text-[#9ca3af]">{cat}</span>
+                    <span className="font-mono text-[var(--text-secondary)]">{cat}</span>
                     <span className="font-black" style={{ color: categoryColor(cat) }}>{count}</span>
                   </div>
-                  <div className="h-1.5 bg-[#222] rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{
@@ -650,7 +650,7 @@ function EventStreamMonitorPanel() {
 
           {/* Exporter status */}
           <div className="mb-6">
-            <p className="text-[9px] font-black uppercase tracking-widest text-[#555] mb-3">Export Adapters</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-3">Export Adapters</p>
             <div className="flex flex-wrap gap-2">
               {exporters.map((exp: any) => (
                 <div
@@ -658,10 +658,10 @@ function EventStreamMonitorPanel() {
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-mono ${
                     exp.active
                       ? 'border-[#10b981]/50 bg-[#10b981]/10 text-[#10b981]'
-                      : 'border-[#333] bg-[#111] text-[#555]'
+                      : 'border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-secondary)]'
                   }`}
                 >
-                  <div className={`w-1.5 h-1.5 rounded-full ${exp.active ? 'bg-[#10b981]' : 'bg-[#444]'}`} />
+                  <div className={`w-1.5 h-1.5 rounded-full ${exp.active ? 'bg-[#10b981]' : 'bg-[var(--bg-secondary)]'}`} />
                   {exp.name}
                   <span className="text-[8px] font-black uppercase">{exp.active ? 'ACTIVE' : 'INACTIVE'}</span>
                 </div>
@@ -671,18 +671,18 @@ function EventStreamMonitorPanel() {
 
           {/* Recent events feed */}
           <div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-[#555] mb-3">Recent Events</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-3">Recent Events</p>
             {recent.length === 0 ? (
-              <p className="text-[10px] text-[#444] font-mono text-center py-6">No events recorded yet.</p>
+              <p className="text-[10px] text-[var(--text-secondary)] font-mono text-center py-6">No events recorded yet.</p>
             ) : (
               <div className="space-y-1.5 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-[#333]">
                 {recent.map((ev: any) => {
                   const cat = ev.event_type?.split('.')[0] ?? 'custom';
                   return (
-                    <div key={ev.id} className="flex items-center gap-3 bg-[#111] border border-[#2d2d2d] rounded-lg px-3 py-2">
+                    <div key={ev.id} className="flex items-center gap-3 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg px-3 py-2">
                       <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: categoryColor(cat) }} />
-                      <span className="text-[10px] font-mono text-[#9ca3af] flex-1 truncate">{ev.event_type}</span>
-                      <span className="text-[9px] text-[#444] font-mono flex-shrink-0">
+                      <span className="text-[10px] font-mono text-[var(--text-secondary)] flex-1 truncate">{ev.event_type}</span>
+                      <span className="text-[9px] text-[var(--text-secondary)] font-mono flex-shrink-0">
                         {new Date(ev.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                       </span>
                     </div>
@@ -760,13 +760,13 @@ function GovernanceTestingLabPanel() {
   };
 
   return (
-    <div className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl p-6 shadow-sm">
+    <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 shadow-sm">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#2d2d2d]">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[var(--border-primary)]">
         <Terminal className="w-5 h-5 text-[#ef4444]" />
         <div>
-          <h2 className="text-sm font-bold tracking-wide uppercase text-white">Governance Testing Lab</h2>
-          <p className="text-[10px] text-[#9ca3af] font-mono mt-0.5">Automated adversarial stress tests for AI governance boundaries.</p>
+          <h2 className="text-sm font-bold tracking-wide uppercase text-[var(--text-primary)]">Governance Testing Lab</h2>
+          <p className="text-[10px] text-[var(--text-secondary)] font-mono mt-0.5">Automated adversarial stress tests for AI governance boundaries.</p>
         </div>
       </div>
 
@@ -774,28 +774,28 @@ function GovernanceTestingLabPanel() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Agent name */}
         <div>
-          <label className="block text-[9px] font-black uppercase tracking-widest text-[#555] mb-2">Agent Name</label>
+          <label className="block text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-2">Agent Name</label>
           <input
             type="text"
             placeholder="e.g. gpt-4o-prod"
             value={agentName}
             onChange={e => setAgentName(e.target.value)}
-            className="w-full bg-[#111] border border-[#333] rounded px-3 py-2 text-xs font-mono text-[#9ca3af] focus:outline-none focus:border-[#ef4444] placeholder:text-[#444]"
+            className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-xs font-mono text-[var(--text-secondary)] focus:outline-none focus:border-[#ef4444] placeholder:text-[var(--text-secondary)]"
           />
         </div>
         {/* Scenario */}
         <div>
-          <label className="block text-[9px] font-black uppercase tracking-widest text-[#555] mb-2">Test Scenario</label>
+          <label className="block text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-2">Test Scenario</label>
           <select
             value={scenario}
             onChange={e => setScenario(e.target.value as LabScenario)}
-            className="w-full bg-[#111] border border-[#333] rounded px-3 py-2 text-xs font-mono text-[#9ca3af] focus:outline-none focus:border-[#ef4444]"
+            className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-xs font-mono text-[var(--text-secondary)] focus:outline-none focus:border-[#ef4444]"
           >
             {TEST_SCENARIOS.map(s => (
               <option key={s.id} value={s.id}>{s.label}</option>
             ))}
           </select>
-          <p className="text-[9px] text-[#444] font-mono mt-1.5">
+          <p className="text-[9px] text-[var(--text-secondary)] font-mono mt-1.5">
             {TEST_SCENARIOS.find(s => s.id === scenario)?.description}
           </p>
         </div>
@@ -827,19 +827,19 @@ function GovernanceTestingLabPanel() {
 
       {/* Report */}
       {report && (
-        <div className="bg-[#111] border border-[#2d2d2d] rounded-xl p-5 space-y-5">
+        <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl p-5 space-y-5">
           {/* Summary row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className={`px-2 py-0.5 rounded border text-[9px] font-black uppercase tracking-widest ${resultColor(report.result)}`}>
                 {report.result}
               </span>
-              <span className="text-xs font-bold text-white">{report.agent_name}</span>
-              <span className="text-[10px] text-[#555] font-mono">· {report.scenario.replace(/_/g, ' ')}</span>
+              <span className="text-xs font-bold text-[var(--text-primary)]">{report.agent_name}</span>
+              <span className="text-[10px] text-[var(--text-secondary)] font-mono">· {report.scenario.replace(/_/g, ' ')}</span>
             </div>
             <button
               onClick={handleDownload}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-[#444] hover:border-[#10b981] text-[#9ca3af] hover:text-[#10b981] rounded text-[9px] font-black uppercase tracking-widest transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-[var(--border-primary)] hover:border-[#10b981] text-[var(--text-secondary)] hover:text-[#10b981] rounded text-[9px] font-black uppercase tracking-widest transition-colors"
             >
               <CheckCircle2 className="w-3 h-3" /> Download Report
             </button>
@@ -848,10 +848,10 @@ function GovernanceTestingLabPanel() {
           {/* Risk meter */}
           <div>
             <div className="flex justify-between text-[9px] font-black uppercase tracking-widest mb-1.5">
-              <span className="text-[#555]">Risk Score</span>
+              <span className="text-[var(--text-secondary)]">Risk Score</span>
               <span style={{ color: riskColor(report.risk_score) }}>{report.risk_score.toFixed(1)} / 100</span>
             </div>
-            <div className="h-2 bg-[#222] rounded-full overflow-hidden">
+            <div className="h-2 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{ width: `${report.risk_score}%`, backgroundColor: riskColor(report.risk_score) }}
@@ -861,16 +861,16 @@ function GovernanceTestingLabPanel() {
 
           {/* Stats grid */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-[#1a1a1a] rounded-lg p-3 text-center">
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#555] mb-1">Prompts Fired</p>
-              <p className="text-xl font-black text-white">{report.prompts_fired}</p>
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-3 text-center">
+              <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1">Prompts Fired</p>
+              <p className="text-xl font-black text-[var(--text-primary)]">{report.prompts_fired}</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-lg p-3 text-center">
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#555] mb-1">Signals</p>
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-3 text-center">
+              <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1">Signals</p>
               <p className="text-xl font-black text-[#3b82f6]">{report.governance_signals.length}</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-lg p-3 text-center">
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#555] mb-1">Violations</p>
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-3 text-center">
+              <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1">Violations</p>
               <p className="text-xl font-black text-[#ef4444]">{report.violations.length}</p>
             </div>
           </div>
@@ -888,9 +888,9 @@ function GovernanceTestingLabPanel() {
           )}
 
           {/* Recommendation */}
-          <div className="border-t border-[#2d2d2d] pt-4">
+          <div className="border-t border-[var(--border-primary)] pt-4">
             <p className="text-[9px] font-black uppercase tracking-widest text-[#10b981] mb-2">Recommendation</p>
-            <p className="text-[10px] font-mono text-[#9ca3af] leading-relaxed">{report.recommendation}</p>
+            <p className="text-[10px] font-mono text-[var(--text-secondary)] leading-relaxed">{report.recommendation}</p>
           </div>
         </div>
       )}
@@ -931,13 +931,13 @@ function ExternalIntegrationsPanel() {
   const statusIcon = (status: string) => {
     if (status === 'active') return <Wifi className="w-3.5 h-3.5 text-[#10b981]" />;
     if (status === 'error')  return <WifiOff className="w-3.5 h-3.5 text-[#ef4444]" />;
-    return <WifiOff className="w-3.5 h-3.5 text-[#555]" />;
+    return <WifiOff className="w-3.5 h-3.5 text-[var(--text-secondary)]" />;
   };
 
   const statusBadge = (status: string) => {
     if (status === 'active')   return 'text-[#10b981] bg-[#10b981]/20 border-[#10b981]/50';
     if (status === 'error')    return 'text-[#ef4444] bg-[#ef4444]/20 border-[#ef4444]/50';
-    return 'text-[#555] bg-[#222] border-[#333]';
+    return 'text-[var(--text-secondary)] bg-[var(--bg-secondary)] border-[var(--border-primary)]';
   };
 
   const handleTest = async (providerId: ProviderId) => {
@@ -961,13 +961,13 @@ function ExternalIntegrationsPanel() {
   };
 
   return (
-    <div className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl p-6 shadow-sm">
+    <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 shadow-sm">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#2d2d2d]">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[var(--border-primary)]">
         <Plug className="w-5 h-5 text-[#3b82f6]" />
         <div>
-          <h2 className="text-sm font-bold tracking-wide uppercase text-white">External Integrations</h2>
-          <p className="text-[10px] text-[#9ca3af] font-mono mt-0.5">Connect external Voice AI providers to ingest conversation telemetry.</p>
+          <h2 className="text-sm font-bold tracking-wide uppercase text-[var(--text-primary)]">External Integrations</h2>
+          <p className="text-[10px] text-[var(--text-secondary)] font-mono mt-0.5">Connect external Voice AI providers to ingest conversation telemetry.</p>
         </div>
       </div>
 
@@ -978,12 +978,12 @@ function ExternalIntegrationsPanel() {
           const webhookUrl = provider.webhookPath ? `${baseUrl}${provider.webhookPath}` : null;
 
           return (
-            <div key={provider.id} className="bg-[#111] border border-[#2d2d2d] rounded-xl p-4">
+            <div key={provider.id} className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl p-4">
               {/* Row 1: Provider name + status */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   {statusIcon(state.status)}
-                  <span className="text-xs font-bold text-white">{provider.label}</span>
+                  <span className="text-xs font-bold text-[var(--text-primary)]">{provider.label}</span>
                 </div>
                 <span className={`px-2 py-0.5 rounded border text-[9px] font-black uppercase tracking-widest ${
                   statusBadge(state.status)
@@ -1002,7 +1002,7 @@ function ExternalIntegrationsPanel() {
                     ...prev,
                     [provider.id]: { ...prev[provider.id], apiKey: e.target.value }
                   }))}
-                  className="flex-1 bg-[#1a1a1a] border border-[#333] rounded px-3 py-1.5 text-xs font-mono text-[#9ca3af] focus:outline-none focus:border-[#3b82f6] placeholder:text-[#444]"
+                  className="flex-1 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded px-3 py-1.5 text-xs font-mono text-[var(--text-secondary)] focus:outline-none focus:border-[#3b82f6] placeholder:text-[var(--text-secondary)]"
                 />
                 <button
                   onClick={() => handleTest(provider.id)}
@@ -1016,11 +1016,11 @@ function ExternalIntegrationsPanel() {
               {/* Row 3: Webhook URL */}
               {webhookUrl ? (
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-[#555]">Webhook URL:</span>
-                  <span className="flex-1 text-[10px] font-mono text-[#555] truncate">{webhookUrl}</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Webhook URL:</span>
+                  <span className="flex-1 text-[10px] font-mono text-[var(--text-secondary)] truncate">{webhookUrl}</span>
                   <button
                     onClick={() => copyWebhook(webhookUrl, provider.id)}
-                    className="text-[#555] hover:text-[#9ca3af] transition-colors"
+                    className="text-[var(--text-secondary)] hover:text-[var(--text-secondary)] transition-colors"
                     title="Copy webhook URL"
                   >
                     <Copy className="w-3 h-3" />
@@ -1030,7 +1030,7 @@ function ExternalIntegrationsPanel() {
                   )}
                 </div>
               ) : (
-                <p className="text-[9px] text-[#444] font-mono mt-2">Webhook support coming soon for this provider.</p>
+                <p className="text-[9px] text-[var(--text-secondary)] font-mono mt-2">Webhook support coming soon for this provider.</p>
               )}
             </div>
           );

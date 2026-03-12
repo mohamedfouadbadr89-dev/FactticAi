@@ -54,14 +54,17 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
         .neq('status', 'closed')
     ]);
 
-    if (snapshotError || predictionError || alertsError || eventsError || incidentsError) {
-      logger.error('DASHBOARD_STATS_FETCH_FAILED', { 
-        orgId, 
+    if (snapshotError || predictionError || alertsError || eventsError) {
+      logger.error('DASHBOARD_STATS_FETCH_FAILED', {
+        orgId,
         snapshotError: snapshotError?.message,
         eventsError: eventsError?.message,
-        incidentsError: incidentsError?.message
       });
       return NextResponse.json({ error: 'DATA_FETCH_FAILED' }, { status: 500 });
+    }
+    // incidentsError is non-fatal — table may not exist yet (Phase 5)
+    if (incidentsError) {
+      logger.warn('DASHBOARD_INCIDENTS_UNAVAILABLE', { orgId, error: incidentsError?.message });
     }
 
     // 2. Process Data

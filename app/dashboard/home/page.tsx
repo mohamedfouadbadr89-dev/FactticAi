@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { useRouter } from 'next/navigation'
 import {
   ShieldCheck,
   Zap,
@@ -43,6 +44,7 @@ type OverviewData = {
 }
 
 export default function HomePage() {
+  const router = useRouter()
   const [data, setData] = React.useState<OverviewData | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [executiveMode, setExecutiveMode] = React.useState(false)
@@ -62,7 +64,7 @@ export default function HomePage() {
 
   if (loading || !data)
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center animate-pulse text-[#333]">
+      <div className="min-h-screen bg-[var(--bg-secondary)] flex items-center justify-center animate-pulse text-[var(--text-secondary)]">
         <Shield className="w-12 h-12 animate-spin" />
       </div>
     )
@@ -75,7 +77,7 @@ export default function HomePage() {
       : '#ef4444'
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
+    <div className="min-h-screen bg-[var(--bg-secondary)] text-[var(--text-primary)] p-8">
 
       {/* Header */}
 
@@ -86,18 +88,18 @@ export default function HomePage() {
             Facttic v1 Dashboard
           </h1>
 
-          <p className="text-[10px] text-[#555] font-mono tracking-widest uppercase mt-1">
+          <p className="text-[10px] text-[var(--text-secondary)] font-mono tracking-widest uppercase mt-1">
             Unified Control Plane / Enterprise AI Governance
           </p>
         </div>
 
-        <div className="flex items-center gap-4 bg-[#111] p-1 rounded-xl border border-[#2d2d2d]">
+        <div className="flex items-center gap-4 bg-[var(--bg-primary)] p-1 rounded-xl border border-[var(--border-primary)]">
           <button
             onClick={() => setExecutiveMode(false)}
             className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
               !executiveMode
                 ? 'bg-[#3b82f6] text-white'
-                : 'text-[#555] hover:text-white'
+                : 'text-[var(--text-secondary)] hover:text-white'
             }`}
           >
             Engine View
@@ -108,7 +110,7 @@ export default function HomePage() {
             className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
               executiveMode
                 ? 'bg-[#10b981] text-white'
-                : 'text-[#555] hover:text-white'
+                : 'text-[var(--text-secondary)] hover:text-white'
             }`}
           >
             Executive View
@@ -126,10 +128,10 @@ export default function HomePage() {
 
           {/* HEALTH CARD */}
 
-          <div className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-3xl p-8 relative overflow-hidden">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-3xl p-8 relative overflow-hidden">
 
             <div className="flex items-center justify-between mb-6">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#555]">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)]">
                 AI Health Index
               </span>
 
@@ -153,7 +155,7 @@ export default function HomePage() {
                 {data.health_score}
               </span>
 
-              <span className="text-[10px] font-black text-[#444] uppercase">
+              <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase">
                 /100
               </span>
             </div>
@@ -164,12 +166,12 @@ export default function HomePage() {
 
                 <div key={key} className="flex flex-col gap-1.5">
 
-                  <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-[#555]">
+                  <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
                     <span>{key}</span>
                     <span>{val}%</span>
                   </div>
 
-                  <div className="h-1 bg-[#111] rounded-full overflow-hidden">
+                  <div className="h-1 bg-[var(--bg-primary)] rounded-full overflow-hidden">
 
                     <div
                       className="h-full"
@@ -190,37 +192,39 @@ export default function HomePage() {
 
           {/* ENTERPRISE PROTECTION */}
 
-          <div className="bg-[#111] border border-[#2d2d2d] rounded-2xl p-6">
+          <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl p-6">
 
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#444] mb-4">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-4">
               Enterprise Protection
             </h3>
 
             <div className="grid grid-cols-2 gap-4">
 
-              <div className="p-4 bg-[#1a1a1a] rounded-xl border border-[#2d2d2d]">
-
-                <p className="text-[8px] font-black text-[#555] uppercase mb-1">
+              <button
+                onClick={() => router.push('/dashboard/governance')}
+                className="p-4 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-primary)] text-left hover:border-[var(--accent)] transition-all"
+              >
+                <p className="text-[8px] font-black text-[var(--text-secondary)] uppercase mb-1">
                   Blocked Responses
                 </p>
 
                 <p className="text-xl font-black">
                   {data.governance.blocked_responses}
                 </p>
+              </button>
 
-              </div>
-
-              <div className="p-4 bg-[#1a1a1a] rounded-xl border border-[#2d2d2d]">
-
-                <p className="text-[8px] font-black text-[#555] uppercase mb-1">
+              <button
+                onClick={() => router.push('/dashboard/alerts')}
+                className="p-4 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-primary)] text-left hover:border-[var(--accent)] transition-all"
+              >
+                <p className="text-[8px] font-black text-[var(--text-secondary)] uppercase mb-1">
                   Drift Alerts
                 </p>
 
                 <p className="text-xl font-black">
                   {data.intelligence.drift_alerts}
                 </p>
-
-              </div>
+              </button>
 
             </div>
 
@@ -244,6 +248,7 @@ export default function HomePage() {
               description="Facttic routes requests across providers optimizing cost, risk, and latency."
               metric={data.gateway.active_providers}
               label="Provider Count"
+              onClick={() => router.push('/dashboard/gateway')}
             />
 
             {/* INTELLIGENCE */}
@@ -254,6 +259,7 @@ export default function HomePage() {
               description="Profiles model behaviour and detects performance drift."
               metric={data.intelligence.model_count}
               label="Models Tracked"
+              onClick={() => router.push('/dashboard/intelligence')}
             />
 
             {/* GOVERNANCE */}
@@ -264,6 +270,7 @@ export default function HomePage() {
               description="Real-time policy enforcement for every AI interaction."
               metric={data.governance.total_intercepts}
               label="Intercepts"
+              onClick={() => router.push('/dashboard/governance')}
             />
 
             {/* AGENTS */}
@@ -274,15 +281,16 @@ export default function HomePage() {
               description="Control multi-step workflows and tool usage guardrails."
               metric={data.agents.active_agents}
               label="Active Agents"
+              onClick={() => router.push('/dashboard/agents')}
             />
 
           </div>
 
           {/* ACTIVITY CHART */}
 
-          <div className="bg-[#111] border border-[#2d2d2d] rounded-3xl p-8">
+          <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-3xl p-8">
 
-            <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#555] flex items-center gap-2 mb-6">
+            <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] flex items-center gap-2 mb-6">
               <Activity className="w-4 h-4" />
               Multi-Layer Activity Timeline
             </h3>
@@ -341,20 +349,22 @@ function PillarCard({
   title,
   description,
   metric,
-  label
+  label,
+  onClick
 }: {
   icon: React.ReactNode
   title: string
   description: string
   metric: number
   label: string
+  onClick?: () => void
 }) {
   return (
-    <div className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl p-6 hover:border-[#444] transition-all group">
+    <div onClick={onClick} className={`bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 hover:border-[var(--accent)] transition-all group ${onClick ? 'cursor-pointer' : ''}`}>
 
       <div className="flex items-center gap-3 mb-6">
 
-        <div className="p-2 bg-[#111] rounded-lg border border-[#2d2d2d]">
+        <div className="p-2 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-primary)]">
           {icon}
         </div>
 
@@ -364,14 +374,14 @@ function PillarCard({
 
       </div>
 
-      <p className="text-[10px] text-[#555] font-mono leading-relaxed mb-4">
+      <p className="text-[10px] text-[var(--text-secondary)] font-mono leading-relaxed mb-4">
         {description}
       </p>
 
-      <div className="flex items-end justify-between border-t border-[#2d2d2d] pt-4">
+      <div className="flex items-end justify-between border-t border-[var(--border-primary)] pt-4">
 
         <div>
-          <p className="text-[9px] font-black text-[#333] uppercase">
+          <p className="text-[9px] font-black text-[var(--text-secondary)] uppercase">
             {label}
           </p>
 
@@ -380,7 +390,7 @@ function PillarCard({
           </p>
         </div>
 
-        <ArrowRight className="w-4 h-4 text-[#333] group-hover:text-white transition-colors" />
+        <ArrowRight className="w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-colors" />
 
       </div>
 

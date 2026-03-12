@@ -1,17 +1,31 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { BarChart3, Binary, ShieldAlert, Zap, ArrowUpRight, ArrowDownRight, Activity } from 'lucide-react';
-
-// Mock values for fallback
-const DEMO_ORG_ID = "00000000-0000-0000-0000-000000000000";
+import { createBrowserClient } from '@supabase/ssr';
 
 export default function UsagePage() {
+  const router = useRouter();
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/dashboard/billing/usage?org_id=${DEMO_ORG_ID}`)
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const id = session?.user?.user_metadata?.org_id;
+      if (id) setOrgId(id);
+      else setLoading(false);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!orgId) return;
+    fetch(`/api/dashboard/billing/usage?org_id=${orgId}`)
       .then(res => res.json())
       .then(json => {
         setData(json);
@@ -21,7 +35,7 @@ export default function UsagePage() {
         console.error("Usage fetch failed", e);
         setLoading(false);
       });
-  }, []);
+  }, [orgId]);
 
   const metrics = [
     { label: 'Interactions Used', value: data?.interactions || 0, icon: MessageSquareIcon, color: 'text-[var(--accent)]', sub: 'Calculated Sessions' },
@@ -32,14 +46,17 @@ export default function UsagePage() {
 
   return (
     <div className="p-10 space-y-12">
-      <header>
-        <div className="flex items-center gap-2 text-[var(--accent)] mb-2">
-          <Activity className="w-4 h-4" />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Operational Telemetry</span>
+      <header className="flex items-end justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-[var(--accent)] mb-2">
+            <Activity className="w-4 h-4" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Operational Telemetry</span>
+          </div>
+          <h1 className="text-3xl font-black uppercase italic tracking-tighter leading-none">
+            Governance Usage
+          </h1>
         </div>
-        <h1 className="text-3xl font-black uppercase italic tracking-tighter leading-none">
-          Governance Usage
-        </h1>
+        <button onClick={() => router.push('/dashboard/billing')} className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">Billing →</button>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">

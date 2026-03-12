@@ -170,18 +170,22 @@ export default function IncidentTimeline({ incidents }: Props) {
 
           {/* Incident Actions */}
           <div className="p-4 bg-[var(--bg-primary)]/30 flex items-center justify-end gap-3 border-t border-[var(--border-primary)]">
-            <Link
-              href={`/dashboard/forensics?session=${incident.session_id}`}
-              className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--accent)] transition-all"
-            >
-              <Workflow className="w-3 h-3" /> Forensic Analysis
-            </Link>
-            <Link
-              href={`/dashboard/replay?session=${incident.session_id}`}
-              className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--accent)] transition-all"
-            >
-              <ExternalLink className="w-3 h-3" /> View Replay
-            </Link>
+            {incident.session_id && (
+              <Link
+                href={`/dashboard/forensics?session=${incident.session_id}`}
+                className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--accent)] transition-all"
+              >
+                <Workflow className="w-3 h-3" /> Forensic Analysis
+              </Link>
+            )}
+            {incident.session_id && (
+              <Link
+                href={`/dashboard/replay?session=${incident.session_id}`}
+                className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--accent)] transition-all"
+              >
+                <ExternalLink className="w-3 h-3" /> View Replay
+              </Link>
+            )}
           </div>
 
         </div>

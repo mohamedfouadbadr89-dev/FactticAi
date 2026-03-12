@@ -71,12 +71,12 @@ function DeploymentConfigPanel() {
   const badgeStyle = (mode: DeploymentMode) =>
     selected === mode
       ? 'border-2 border-[' + DEPLOYMENT_MODES[mode].badge + '] bg-[' + DEPLOYMENT_MODES[mode].badge + ']/10'
-      : 'border border-[#2d2d2d] hover:border-[#444]';
+      : 'border border-[var(--border-primary)] hover:border-[var(--border-primary)]';
 
   return (
-    <div className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl p-6 md:p-8 shadow-sm col-span-full animate-[fadeIn_.4s_ease-in-out]">
+    <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 md:p-8 shadow-sm col-span-full animate-[fadeIn_.4s_ease-in-out]">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#2d2d2d]">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[var(--border-primary)]">
         <Server className="w-5 h-5 text-[#3b82f6]" />
         <div>
           <h3 className="text-sm font-bold tracking-wide uppercase text-white">Deployment Configuration</h3>
@@ -86,7 +86,7 @@ function DeploymentConfigPanel() {
 
       {loading ? (
         <div className="flex items-center justify-center h-48 animate-pulse">
-          <RefreshCw className="w-7 h-7 text-[#555] animate-spin" />
+          <RefreshCw className="w-7 h-7 text-[var(--text-secondary)] animate-spin" />
         </div>
       ) : (
         <>
@@ -106,8 +106,8 @@ function DeploymentConfigPanel() {
                 <p className="text-[10px] text-[#9ca3af] font-mono leading-relaxed line-clamp-2">{meta.description}</p>
                 <ul className="mt-3 space-y-1">
                   {meta.features.slice(0, 3).map((f, i) => (
-                    <li key={i} className="text-[9px] text-[#555] font-mono flex items-center gap-1.5">
-                      <div className="w-1 h-1 rounded-full bg-[#444]" />
+                    <li key={i} className="text-[9px] text-[var(--text-secondary)] font-mono flex items-center gap-1.5">
+                      <div className="w-1 h-1 rounded-full bg-[var(--bg-secondary)]" />
                       {f}
                     </li>
                   ))}
@@ -118,24 +118,24 @@ function DeploymentConfigPanel() {
 
           {/* Region selector */}
           <div className="mb-6">
-            <label className="block text-[9px] font-black uppercase tracking-widest text-[#555] mb-2">Deployment Region</label>
+            <label className="block text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-2">Deployment Region</label>
             <div className="relative">
               <select
                 value={selectedRegion}
                 onChange={e => setSelectedRegion(e.target.value)}
-                className="w-full bg-[#111] border border-[#333] rounded-lg px-4 py-2.5 text-xs font-mono text-[#9ca3af] focus:outline-none focus:border-[#3b82f6] appearance-none"
+                className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg px-4 py-2.5 text-xs font-mono text-[#9ca3af] focus:outline-none focus:border-[#3b82f6] appearance-none"
               >
                 {REGIONS.map(r => (
                   <option key={r.value} value={r.value}>{r.label} ({r.residency})</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#555] pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
             </div>
           </div>
 
           {/* Compliance profile */}
           {compliance && (
-            <div className="bg-[#111] border border-[#2d2d2d] rounded-xl p-4 mb-6">
+            <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl p-4 mb-6">
               <p className="text-[9px] font-black uppercase tracking-widest text-[#9ca3af] mb-3">Compliance Profile</p>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
                 {([
@@ -146,13 +146,13 @@ function DeploymentConfigPanel() {
                   { label: 'Priv. VPC',val: compliance.privateVpc },
                   { label: 'Audit Log',val: compliance.auditLogs },
                 ] as { label: string; val: boolean }[]).map(({ label, val }) => (
-                  <div key={label} className={`rounded-lg p-2 text-center border ${val ? 'border-[#10b981]/40 bg-[#10b981]/10' : 'border-[#333] bg-[#1a1a1a]'}`}>
+                  <div key={label} className={`rounded-lg p-2 text-center border ${val ? 'border-[#10b981]/40 bg-[#10b981]/10' : 'border-[var(--border-primary)] bg-[var(--bg-secondary)]'}`}>
                     <p className="text-[8px] font-black uppercase tracking-widest mb-1" style={{ color: val ? '#10b981' : '#444' }}>{label}</p>
-                    <div className={`mx-auto w-3 h-3 rounded-full ${val ? 'bg-[#10b981]' : 'bg-[#333]'}`} />
+                    <div className={`mx-auto w-3 h-3 rounded-full ${val ? 'bg-[#10b981]' : 'bg-[var(--bg-secondary)]'}`} />
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] font-mono text-[#555] leading-relaxed">{compliance.description}</p>
+              <p className="text-[10px] font-mono text-[var(--text-secondary)] leading-relaxed">{compliance.description}</p>
             </div>
           )}
 

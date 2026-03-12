@@ -1,38 +1,30 @@
 import { NextResponse } from 'next/server';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { supabaseServer } from '@/lib/supabaseServer';
-import { resolveOrgContext } from '@/lib/orgResolver';
 
 /**
  * GET /api/governance/sessions
  *
- * Returns distinct sessions from the evidence ledger.
+ * Returns distinct sessions from the evidence ledger for the authenticated org.
  */
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
-    let orgId: string | null = null;
-    try {
-      const orgContext = await resolveOrgContext('user-1234');
-      orgId = orgContext.org_id;
-    } catch {
-      const { data: fallback } = await supabaseServer
-        .from('org_members')
-        .select('org_id')
-        .limit(1)
-        .single();
-      orgId = fallback?.org_id || null;
-    }
+    const { searchParams } = new URL(req.url);
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const highRisk = searchParams.get('high_risk') === 'true';
 
-    if (!orgId) {
-      return NextResponse.json({ error: 'Organization not found' }, { status: 403 });
-    }
-
-    // Query the persisted sessions table directly
-    const { data, error } = await supabaseServer
+    let query = supabaseServer
       .from('sessions')
       .select('*')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(limit);
+
+    if (highRisk) {
+      query = query.gt('total_risk', 50);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
@@ -40,4 +32,4 @@ export async function GET(req: Request) {
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-}
+});

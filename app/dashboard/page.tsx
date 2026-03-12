@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import ExecutiveHealthCard from "@/components/dashboard/ExecutiveHealthCard";
 import DriftTrendCard from "@/components/dashboard/DriftTrendCard";
 import ActiveAlertsCard from "@/components/dashboard/ActiveAlertsCard";
@@ -11,7 +12,8 @@ import VoiceDriftCard from "@/components/dashboard/VoiceDriftCard";
 import IntelligenceDashboard from "@/components/dashboard/IntelligenceDashboard";
 import DashboardFilters from "@/components/dashboard/DashboardFilters";
 import { useDashboardData } from "@/lib/dashboard/useDashboardData";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { createBrowserClient } from "@supabase/ssr";
 import QuickStart from "@/components/onboarding/QuickStart";
 
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -40,7 +42,9 @@ function DashboardLoadingSkeleton() {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { data, loading, error } = useDashboardData("/api/dashboard/stats");
+  const [orgId, setOrgId] = useState<string | null>(null);
 
   const [filters, setFilters] = React.useState({
     startDate: "",
@@ -48,6 +52,17 @@ export default function DashboardPage() {
     modelVersion: "all",
     channels: ["chat", "voice"]
   });
+
+  useEffect(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const id = session?.user?.user_metadata?.org_id;
+      if (id) setOrgId(id);
+    });
+  }, []);
 
   if (loading) {
     return <DashboardLoadingSkeleton />;
@@ -75,11 +90,17 @@ export default function DashboardPage() {
             Executive Risk Overview
           </h1>
 
-          {error && (
-            <span className="bg-[var(--danger-bg)] text-[var(--danger)] text-[11px] font-semibold uppercase tracking-wide px-3 py-1 rounded-full">
-              ⚠ Fallback Data
-            </span>
-          )}
+          <div className="flex items-center gap-4">
+            {error && (
+              <span className="bg-[var(--danger-bg)] text-[var(--danger)] text-[11px] font-semibold uppercase tracking-wide px-3 py-1 rounded-full">
+                ⚠ Fallback Data
+              </span>
+            )}
+            <button onClick={() => router.push('/dashboard/governance')} className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">Governance →</button>
+            <button onClick={() => router.push('/dashboard/alerts')} className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">Alerts →</button>
+            <button onClick={() => router.push('/dashboard/reports')} className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">Reports →</button>
+            <button onClick={() => router.push('/dashboard/compliance')} className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">Compliance →</button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -99,7 +120,7 @@ export default function DashboardPage() {
 
         {/* Voice + Governance */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <GovernanceStateCard orgId="demo-org-123" />
+          <GovernanceStateCard orgId={orgId ?? ""} />
           <GovernanceSnapshotCard />
         </div>
 

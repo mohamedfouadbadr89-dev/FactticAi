@@ -1,23 +1,39 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import ScenarioSelector from '@/components/simulation/ScenarioSelector';
 import { PlayCircle, ShieldCheck, Terminal, CheckCircle2, History, Database } from 'lucide-react';
+import { createBrowserClient } from '@supabase/ssr';
 
 export default function SimulationPage() {
+  const router = useRouter();
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [scenarioId, setScenarioId] = useState('hallucination');
   const [volume, setVolume] = useState(5);
   const [logs, setLogs] = useState<any[]>([]);
 
+  useEffect(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const id = session?.user?.user_metadata?.org_id;
+      if (id) setOrgId(id);
+    });
+  }, []);
+
   const handleRunSimulation = async () => {
+    if (!orgId) return;
     setLoading(true);
     setLogs([]);
     try {
       const res = await fetch('/api/simulation/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scenario: scenarioId, volume, org_id: 'dbad3ca2-3907-4279-9941-8f55c3c0efdc' })
+        body: JSON.stringify({ scenario: scenarioId, volume, org_id: orgId })
       });
       const data = await res.json();
       if (data.success) {
@@ -44,6 +60,8 @@ export default function SimulationPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <button onClick={() => router.push('/dashboard/governance')} className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">Governance →</button>
+            <button onClick={() => router.push('/dashboard/forensics')} className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">Forensics →</button>
             <div className="px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest flex items-center gap-2">
               <Database className="w-3.5 h-3.5 text-emerald-500" />
               Persisting to Ledger
@@ -88,7 +106,7 @@ export default function SimulationPage() {
               )}
               
               {loading && Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex gap-4 p-3 rounded-xl bg-black/5 animate-pulse border border-white/5">
+                <div key={i} className="flex gap-4 p-3 rounded-xl bg-black/5 animate-pulse border border-[var(--border-primary)]">
                    <div className="w-24 h-4 bg-white/5 rounded" />
                    <div className="flex-1 h-4 bg-white/5 rounded" />
                 </div>

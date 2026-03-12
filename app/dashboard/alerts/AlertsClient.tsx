@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { createBrowserClient } from '@supabase/ssr'
 import { ShieldAlert, CheckCircle2, Activity, AlertTriangle, Lock, Bell } from 'lucide-react'
 
 // ── Incident Response Panel ──────────────────────────────────────────────────
@@ -76,9 +77,21 @@ function IncidentResponsePanel() {
 
   const handleResolve = async (id: string) => {
     setResolving(id)
+    // Optimistic update
+    setIncidents(prev => prev.map(i => i.id === id ? { ...i, resolved: true } : i))
     try {
-      // Optimistic update
-      setIncidents(prev => prev.map(i => i.id === id ? { ...i, resolved: true } : i))
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      await supabase
+        .from('facttic_incidents')
+        .update({ status: 'RESOLVED' })
+        .eq('id', id)
+    } catch (e) {
+      console.error('Failed to persist resolve:', e)
+      // Revert optimistic update on failure
+      setIncidents(prev => prev.map(i => i.id === id ? { ...i, resolved: false } : i))
     } finally {
       setResolving(null)
     }
@@ -88,14 +101,14 @@ function IncidentResponsePanel() {
   const resolvedCount = incidents.filter(i =>  i.resolved).length
 
   return (
-    <div className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl p-6 shadow-sm">
+    <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#2d2d2d]">
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-[var(--border-primary)]">
         <div className="flex items-center gap-3">
           <ShieldAlert className="w-5 h-5 text-[#ef4444]" />
           <div>
-            <h2 className="text-sm font-bold tracking-wide uppercase text-white">Incident Response Panel</h2>
-            <p className="text-[10px] text-[#9ca3af] font-mono mt-0.5">Autonomous governance incident triage and resolution.</p>
+            <h2 className="text-sm font-bold tracking-wide uppercase text-[var(--text-primary)]">Incident Response Panel</h2>
+            <p className="text-[10px] text-[var(--text-secondary)] font-mono mt-0.5">Autonomous governance incident triage and resolution.</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -111,13 +124,13 @@ function IncidentResponsePanel() {
       {/* Body */}
       {loading ? (
         <div className="flex items-center justify-center h-32 animate-pulse">
-          <Activity className="w-6 h-6 text-[#555] animate-spin" />
+          <Activity className="w-6 h-6 text-[var(--text-secondary)] animate-spin" />
         </div>
       ) : incidents.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <CheckCircle2 className="w-10 h-10 text-[#10b981] mb-3" />
-          <p className="text-xs font-black uppercase tracking-widest text-[#9ca3af]">No Active Incidents</p>
-          <p className="text-[10px] text-[#555] mt-1 font-mono">All governance signals within bounds.</p>
+          <p className="text-xs font-black uppercase tracking-widest text-[var(--text-secondary)]">No Active Incidents</p>
+          <p className="text-[10px] text-[var(--text-secondary)] mt-1 font-mono">All governance signals within bounds.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -126,8 +139,8 @@ function IncidentResponsePanel() {
               key={incident.id}
               className={`grid grid-cols-12 items-center gap-4 p-4 rounded-xl border transition-all ${
                 incident.resolved
-                  ? 'bg-[#111] border-[#222] opacity-60'
-                  : 'bg-[#222] border-[#333]'
+                  ? 'bg-[var(--bg-primary)] border-[var(--border-primary)] opacity-60'
+                  : 'bg-[var(--bg-secondary)] border-[var(--border-primary)]'
               }`}
             >
               {/* Status dot */}
@@ -139,21 +152,21 @@ function IncidentResponsePanel() {
 
               {/* Incident type */}
               <div className="col-span-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-[#9ca3af] mb-0.5">Type</p>
-                <p className="text-xs font-bold text-white">{INCIDENT_LABELS[incident.incident_type]}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-0.5">Type</p>
+                <p className="text-xs font-bold text-[var(--text-primary)]">{INCIDENT_LABELS[incident.incident_type]}</p>
               </div>
 
               {/* Trigger source */}
               <div className="col-span-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-[#9ca3af] mb-0.5">Trigger</p>
-                <p className="text-xs font-mono text-[#9ca3af] truncate" title={incident.trigger_source}>
+                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-0.5">Trigger</p>
+                <p className="text-xs font-mono text-[var(--text-secondary)] truncate" title={incident.trigger_source}>
                   {incident.trigger_source}
                 </p>
               </div>
 
               {/* Action taken */}
               <div className="col-span-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-[#9ca3af] mb-1">Action</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1">Action</p>
                 <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded border text-[9px] font-black uppercase tracking-wider ${
                   ACTION_COLOR[incident.action_taken]
                 }`}>
@@ -268,7 +281,7 @@ export function AlertsClient() {
    <IncidentResponsePanel />
 
    {/* Ledger Verification Status Widget */}
-   <div className="bg-[#111] border border-[#2d2d2d] rounded-2xl p-6 shadow-sm flex items-center justify-between">
+   <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl p-6 shadow-sm flex items-center justify-between">
       <div>
          <h2 className="text-sm font-bold tracking-widest uppercase text-[var(--text-primary)] mb-1">Governance Event Ledger Integrity</h2>
          {ledgerVerification ? (
@@ -288,7 +301,7 @@ export function AlertsClient() {
       </button>
    </div>
 
- <div className="flex justify-between items-end pb-6 border-b border-[#2d2d2d]">
+ <div className="flex justify-between items-end pb-6 border-b border-[var(--border-primary)]">
  <div>
  <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">Escalation Logs</h1>
  <p className="text-sm font-medium text-[var(--text-secondary)]">Real-time institutional escalation logs and audit trail.</p>
@@ -352,7 +365,7 @@ export function AlertsClient() {
  </td>
  <td className="px-6 py-6 text-right">
  <button 
- onClick={() => router.push(`/dashboard/executive?investigate=${alert.interaction_id}`)}
+ onClick={() => router.push(`/dashboard/investigations?investigate=${alert.interaction_id}`)}
  className="bg-[var(--bg-primary)] border border-[var(--border-primary)] text-[var(--accent)] px-4 py-2 rounded text-[10px] font-black uppercase tracking-widest hover:border-[var(--accent)] transition-all shadow-sm"
  >
  Verify

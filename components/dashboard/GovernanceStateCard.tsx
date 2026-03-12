@@ -27,6 +27,7 @@ export default function GovernanceStateCard({ orgId }: { orgId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!orgId) return;
     async function fetchState() {
       try {
         const res = await fetch(`/api/governance/state?orgId=${orgId}`);

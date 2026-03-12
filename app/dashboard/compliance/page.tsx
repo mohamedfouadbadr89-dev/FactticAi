@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
   ShieldCheck, 
@@ -31,9 +32,7 @@ import {
   Pie
 } from 'recharts';
 import { logger } from '@/lib/logger';
-
-// Default Org ID for demonstration
-const ORG_ID = "864c43c5-0484-4955-a353-f0435582a4af";
+import { createBrowserClient } from '@supabase/ssr';
 
 interface ComplianceSignal {
   id: string;
@@ -52,17 +51,31 @@ interface LedgerEvent {
 }
 
 export default function ComplianceDashboard() {
+  const router = useRouter();
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [signals, setSignals] = useState<ComplianceSignal[]>([]);
   const [ledgerEvents, setLedgerEvents] = useState<LedgerEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
-  const fetchData = async () => {
+  useEffect(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const id = session?.user?.user_metadata?.org_id;
+      if (id) setOrgId(id);
+      else setLoading(false);
+    });
+  }, []);
+
+  const fetchData = async (id: string) => {
     setLoading(true);
     try {
       const [signalsRes, ledgerRes] = await Promise.all([
-        fetch(`/api/compliance/signals?org_id=${ORG_ID}&limit=50`),
-        fetch(`/api/compliance/ledger?org_id=${ORG_ID}&limit=50`)
+        fetch(`/api/compliance/signals?org_id=${id}&limit=50`),
+        fetch(`/api/compliance/ledger?org_id=${id}&limit=50`)
       ]);
 
       const signalsData = await signalsRes.json();
@@ -78,8 +91,8 @@ export default function ComplianceDashboard() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (orgId) fetchData(orgId);
+  }, [orgId]);
 
   const handleExport = async () => {
     setExporting(true);
@@ -88,7 +101,7 @@ export default function ComplianceDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          org_id: ORG_ID,
+          org_id: orgId!,
           types: ['ledger', 'compliance', 'risk'],
           format: 'JSON',
           date_start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -102,7 +115,7 @@ export default function ComplianceDashboard() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Compliance_Audit_${ORG_ID}.json`;
+      a.download = `Compliance_Audit_${orgId}.json`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -139,7 +152,7 @@ export default function ComplianceDashboard() {
   const COLORS = ['#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e'];
 
   return (
-    <div className="min-h-screen bg-[#020202] text-white p-10 font-sans selection:bg-cyan-500/30">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] p-10 font-sans selection:bg-cyan-500/30">
       {/* Header */}
       <motion.header 
         initial={{ opacity: 0, y: -20 }}
@@ -154,15 +167,17 @@ export default function ComplianceDashboard() {
             <span className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.2em]">Compliance Intel v2.1 (LIVE)</span>
           </div>
           <h1 className="text-6xl font-black uppercase tracking-tighter italic leading-none">PII Surveillance</h1>
-          <p className="text-slate-500 mt-4 max-w-xl text-sm font-medium">
+          <p className="text-[var(--text-secondary)] mt-4 max-w-xl text-sm font-medium">
             Real-time monitoring of sensitive data leakage across model endpoints. 
             Automated detection of emails, credentials, and institutional identifiers.
           </p>
         </div>
         
-        <div className="flex gap-4">
-          <button 
-            onClick={fetchData}
+        <div className="flex gap-4 items-center">
+          <button onClick={() => router.push('/dashboard/alerts')} className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">Alerts →</button>
+          <button onClick={() => router.push('/dashboard/incidents')} className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">Incidents →</button>
+          <button
+            onClick={() => { if (orgId) fetchData(orgId); }}
             disabled={loading}
             className="flex items-center gap-2 px-5 py-3 bg-white/5 border border-white/10 rounded-xl text-xs font-bold hover:bg-white/10 transition-all uppercase tracking-widest disabled:opacity-50"
           >
@@ -192,15 +207,15 @@ export default function ComplianceDashboard() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.1 }}
-            className="group relative bg-[#0a0a0a] border border-white/5 p-8 rounded-[2rem] overflow-hidden hover:border-cyan-500/30 transition-all duration-500"
+            className="group relative bg-[var(--bg-secondary)] border border-[var(--border-primary)] p-8 rounded-[2rem] overflow-hidden hover:border-cyan-500/30 transition-all duration-500"
           >
             <div className="absolute -right-4 -top-4 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
               <stat.icon size={80} />
             </div>
-            <p className="text-[10px] uppercase font-black text-slate-500 tracking-[0.2em] mb-4">{stat.label}</p>
+            <p className="text-[10px] uppercase font-black text-[var(--text-secondary)] tracking-[0.2em] mb-4">{stat.label}</p>
             <div className="flex items-baseline gap-2">
               <span className={`text-4xl font-black italic uppercase ${stat.color}`}>{stat.value}</span>
-              <span className="text-[10px] font-bold text-slate-600 uppercase">{stat.sub}</span>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase">{stat.sub}</span>
             </div>
             <div className="mt-4 h-1 w-12 bg-white/10 rounded-full group-hover:w-full transition-all duration-700 overflow-hidden">
                <div className={`h-full bg-current ${stat.color.replace('text', 'bg')}`} style={{width: i === 1 ? `${100-avgRisk}%` : '60%'}}></div>
@@ -214,12 +229,12 @@ export default function ComplianceDashboard() {
         <div className="lg:col-span-8 space-y-8">
           
           {/* Risk Score Heatmap (Time Series) */}
-          <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-[2.5rem]">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] p-8 rounded-[2.5rem]">
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-cyan-400">PII Risk Heatmap</h3>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-cyan-500" />
-                <span className="text-[10px] font-bold text-slate-500 uppercase">Live Stream</span>
+                <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase">Live Stream</span>
               </div>
             </div>
             <div className="h-[300px] w-full mt-4">
@@ -247,7 +262,7 @@ export default function ComplianceDashboard() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Entity Frequency Bar Chart */}
-            <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-[2.5rem]">
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] p-8 rounded-[2.5rem]">
               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-cyan-400 mb-8">Sensitive Entity Frequency</h3>
               <div className="h-[250px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -269,16 +284,16 @@ export default function ComplianceDashboard() {
             </div>
 
             {/* Audit Ledger List */}
-            <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-[2.5rem] overflow-hidden">
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] p-8 rounded-[2.5rem] overflow-hidden">
                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-cyan-400 mb-8">Governance Ledger Feed</h3>
                <div className="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
                   {ledgerEvents.map((event) => (
-                    <div key={event.id} className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/5 transition-all">
+                    <div key={event.id} className="p-4 bg-white/[0.02] border border-[var(--border-primary)] rounded-2xl hover:bg-white/5 transition-all">
                        <div className="flex items-center justify-between mb-2">
                           <span className="text-[9px] font-black uppercase tracking-widest text-cyan-500">{event.event_type.replace(/_/g, ' ')}</span>
-                          <span className="text-[8px] font-mono text-slate-600">{new Date(event.created_at).toLocaleTimeString()}</span>
+                          <span className="text-[8px] font-mono text-[var(--text-secondary)]">{new Date(event.created_at).toLocaleTimeString()}</span>
                        </div>
-                       <p className="text-[10px] text-slate-400 font-medium truncate">{event.id}</p>
+                       <p className="text-[10px] text-[var(--text-primary)] font-medium truncate">{event.id}</p>
                     </div>
                   ))}
                </div>
@@ -299,7 +314,7 @@ export default function ComplianceDashboard() {
              </button>
           </div>
 
-          <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-[2rem]">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] p-8 rounded-[2rem]">
             <div className="flex items-center gap-2 mb-8">
               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-cyan-400/60 leading-none">Signal Stream</h3>
               <div className="h-px flex-1 bg-white/5"></div>
@@ -311,12 +326,12 @@ export default function ComplianceDashboard() {
                   <RefreshCw className="w-8 h-8 text-cyan-500 animate-spin mx-auto" />
                 </div>
               ) : signals.length === 0 ? (
-                <div className="py-10 text-center border border-dashed border-white/5 rounded-2xl">
-                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">No signals detected</p>
+                <div className="py-10 text-center border border-dashed border-[var(--border-primary)] rounded-2xl">
+                   <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">No signals detected</p>
                 </div>
               ) : (
                 signals.slice(0, 5).map((signal) => (
-                  <div key={signal.id} className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center gap-4">
+                  <div key={signal.id} className="p-4 bg-white/[0.02] border border-[var(--border-primary)] rounded-2xl flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
                       signal.pii_detected ? 'bg-red-500/10 border-red-500/20' : 'bg-emerald-500/10 border-emerald-500/20'
                     }`}>
@@ -324,7 +339,7 @@ export default function ComplianceDashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] font-black uppercase tracking-tight truncate italic">{signal.session_id}</p>
-                      <p className="text-[8px] text-slate-600 font-mono">{new Date(signal.created_at).toLocaleString()}</p>
+                      <p className="text-[8px] text-[var(--text-secondary)] font-mono">{new Date(signal.created_at).toLocaleString()}</p>
                     </div>
                     <div className="text-right">
                        <p className={`text-xs font-black italic ${signal.compliance_risk_score > 50 ? 'text-red-400' : 'text-emerald-400'}`}>

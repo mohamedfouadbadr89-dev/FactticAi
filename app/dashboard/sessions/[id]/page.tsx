@@ -98,7 +98,7 @@ export default function SessionDetailsPage() {
  }
 
  return (
- <div className="min-h-screen bg-[#F8FAFC] text-[var(--text-primary)] selection:bg-[var(--gold-soft)]">
+ <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] selection:bg-[var(--gold-soft)]">
  <header className="border-b border-[var(--border-primary)] bg-[var(--card-bg)] sticky top-0 z-30 backdrop-blur-md">
  <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
  <div className="flex items-center gap-4">

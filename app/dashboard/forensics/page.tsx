@@ -34,21 +34,24 @@ function ForensicsContent() {
   });
 
   // 1. Initial Load: Fetch last 10 high-risk sessions
-  useEffect(() => {
-    async function fetchSessions() {
-      try {
-        const res = await fetch('/api/governance/sessions?limit=10&high_risk=true');
-        const list = await res.json();
-        setSessions(list);
-        if (list.length > 0 && !selectedSessionId) {
-          setSelectedSessionId(list[0].id);
-        }
-      } catch (err) {
-        logger.error('FORENSICS_LOAD_SESSIONS_FAILED', { error: err });
-      } finally {
-        setLoading(false);
+  const fetchSessions = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/governance/sessions?limit=10&high_risk=true');
+      const json = await res.json();
+      const list = Array.isArray(json) ? json : (json.data || json.sessions || []);
+      setSessions(list);
+      if (list.length > 0 && !selectedSessionId) {
+        setSelectedSessionId(list[0].id);
       }
+    } catch (err) {
+      logger.error('FORENSICS_LOAD_SESSIONS_FAILED', { error: err });
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     fetchSessions();
   }, []);
 
@@ -146,8 +149,11 @@ function ForensicsContent() {
                  Inspect Replay <ExternalLink className="w-4 h-4" />
                </button>
              )}
-             <button className="p-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg hover:border-[var(--accent)] transition-all">
-               <RefreshCw className="w-4 h-4 text-[var(--text-secondary)]" />
+             <button
+               onClick={fetchSessions}
+               className="p-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg hover:border-[var(--accent)] transition-all"
+             >
+               <RefreshCw className={`w-4 h-4 text-[var(--text-secondary)] ${loading ? 'animate-spin' : ''}`} />
              </button>
           </div>
         </div>

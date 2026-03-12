@@ -123,7 +123,7 @@ export default function TenantConfigPage() {
                         <span className="font-bold text-sm text-[var(--text-primary)]">{log.user}</span>
                         <time className="font-mono text-[10px] text-[var(--text-secondary)]">{log.date}</time>
                      </div>
-                     <ul className="text-xs text-[var(--text-secondary)] space-y-1 font-mono bg-[#0f0f0f] p-2 rounded border border-[#222]">
+                     <ul className="text-xs text-[var(--text-secondary)] space-y-1 font-mono bg-[var(--bg-primary)] p-2 rounded border border-[var(--border-primary)]">
                         {log.changes.map((change, i) => (
                           <li key={i}>{change}</li>
                         ))}

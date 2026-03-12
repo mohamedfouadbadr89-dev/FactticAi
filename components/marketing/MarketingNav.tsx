@@ -38,7 +38,7 @@ export function MarketingNav() {
         <div className="flex items-center gap-4">
           <ThemeToggle />
           <Link
-            href="/dashboard"
+            href="/login"
             className="press-depth px-6 py-2.5 bg-[var(--accent)] text-white text-mono-xs border-none hover:opacity-90 transition-opacity"
           >
             Access Dashboard
