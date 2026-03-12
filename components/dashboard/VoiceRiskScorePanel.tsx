@@ -22,11 +22,7 @@ export default function VoiceRiskScorePanel({ conversationId, orgId }: { convers
     const fetchScores = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/voice/riskScores?conversationId=${conversationId}&orgId=${orgId}`, {
-          headers: {
-            'x-api-key': 'dashboard-client-key'
-          }
-        });
+        const response = await fetch(`/api/voice/riskScores?conversationId=${conversationId}`);
 
         if (!response.ok) {
           if (response.status === 404) {

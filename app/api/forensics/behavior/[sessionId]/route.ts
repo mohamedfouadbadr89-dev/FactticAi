@@ -1,26 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { BehaviorForensicsEngine } from '@/lib/forensics/behaviorForensicsEngine';
 import { logger } from '@/lib/logger';
-import { verifyApiKey } from '@/lib/security/verifyApiKey';
 
-/**
- * Session Behavior Forensics API
- * 
- * Performs deep behavioral analysis on a specific session timeline.
- */
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ sessionId: string }> }
-) {
+export const GET = withAuth(async (req: Request, { params }: AuthContext) => {
   try {
-    const authResult = await verifyApiKey(req);
-    if (authResult.error) {
-      return NextResponse.json(
-        { error: authResult.error },
-        { status: authResult.status }
-      );
-    }
-    const verifiedOrgId = authResult.org_id;
     const { sessionId } = await params;
 
     if (!sessionId) {
@@ -39,4 +23,4 @@ export async function GET(
     logger.error('BEHAVIOR_API_FAILURE', { error: err.message });
     return NextResponse.json({ error: 'INTERNAL_SERVER_ERROR' }, { status: 500 });
   }
-}
+});
