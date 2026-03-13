@@ -41,24 +41,30 @@ export default async function IncidentsPage() {
         .limit(200)
 
       if (data) {
-        incidents = data.map((incident: any) => ({
-          id: incident.session_id + incident.timestamp, // Ensure unique list ID
-          session_id: incident.session_id,
-          severity: incident.severity,
-          risk_score: incident.severity === 'critical' ? 95 : incident.severity === 'high' ? 80 : incident.severity === 'medium' ? 50 : 20, // Synthetic mapping since risk score isnt stored here directly
-          created_at: new Date(incident.timestamp).getTime(),
-          events: [{
-            time: new Date(incident.timestamp).toISOString(),
-            decision: incident.severity === 'low' ? 'WARN' : 'BLOCK',
-            risk_score: incident.severity === 'critical' ? 95 : incident.severity === 'high' ? 80 : incident.severity === 'medium' ? 50 : 20,
-            prompt: 'Event Triggered',
-            model: 'Internal',
-            violations: [{
-              policy_name: incident.violation_type,
-              action: incident.severity === 'low' ? 'WARN' : 'BLOCK'
+        const severityMap: Record<string, string> = { critical: 'CRITICAL', high: 'HIGH', medium: 'MEDIUM', low: 'LOW' }
+        incidents = data.map((incident: any) => {
+          const ts = new Date(incident.timestamp).getTime()
+          const sev = (incident.severity || 'low').toLowerCase()
+          const riskScore = sev === 'critical' ? 95 : sev === 'high' ? 80 : sev === 'medium' ? 50 : 20
+          return {
+            session_id: incident.session_id,
+            severity: (severityMap[sev] || 'LOW') as any,
+            startTime: ts,
+            events: [{
+              id: incident.session_id + incident.timestamp,
+              session_id: incident.session_id,
+              org_id: orgId,
+              timestamp: ts,
+              decision: sev === 'low' ? 'WARN' : 'BLOCK',
+              risk_score: riskScore,
+              prompt: 'Event Triggered',
+              model: 'Internal',
+              violations: [{ policy_name: incident.violation_type, action: sev === 'low' ? 'WARN' : 'BLOCK' }],
+              guardrail_signals: {},
+              latency: 0
             }]
-          }]
-        }))
+          }
+        })
       }
     }
   } catch (e) {

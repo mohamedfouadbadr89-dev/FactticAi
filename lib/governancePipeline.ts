@@ -136,7 +136,12 @@ export class GovernancePipeline {
       let decision = 'ALLOW';
       const detectionRisk = signalContext.risk_score;
 
-      if (policyEval.highest_action === 'block' || guardrail.metrics.safety_risk > 0.8 || detectionRisk > 0.7 || resolvedViolations.some(v => v.action === 'BLOCK')) {
+      // Phase 62b: Direct high-severity signal check — if ANY individual signal
+      // has severity >= 0.8 (e.g. SSN/PII detection), force BLOCK regardless of
+      // aggregate dilution from other analyzers
+      const hasHighSeveritySignal = signalContext.signals.some(s => s.severity >= 0.8);
+
+      if (hasHighSeveritySignal || policyEval.highest_action === 'block' || guardrail.metrics.safety_risk > 0.8 || detectionRisk > 0.7 || resolvedViolations.some(v => v.action === 'BLOCK')) {
         decision = 'BLOCK';
       } else if (policyEval.highest_action === 'warn' || riskMetrics.risk_score > 50 || detectionRisk > 0.4) {
         decision = 'WARN';

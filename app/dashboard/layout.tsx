@@ -6,7 +6,7 @@ import { SimulationProvider } from "@/lib/dashboard/SimulationContext";
 import OnboardingTour from "@/components/ui/OnboardingTour";
 import UserFeedbackWidget from "@/components/ui/UserFeedbackWidget";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function DashboardLayout({
   children,
@@ -14,6 +14,20 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const syncAttempted = useRef(false);
+
+  useEffect(() => {
+    if (syncAttempted.current) return;
+    syncAttempted.current = true;
+
+    fetch('/api/dashboard/stats').then(res => {
+      if (res.status === 401) {
+        fetch('/api/setup/sync-user', { method: 'POST' })
+          .then(r => { if (r.ok) window.location.reload(); })
+          .catch(() => {});
+      }
+    }).catch(() => {});
+  }, []);
 
   return (
     <SimulationProvider>

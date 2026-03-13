@@ -43,10 +43,20 @@ export const POST = withAuth(async (req: Request, { orgId, userId: currentUserId
       if (inviteError) {
         // Handle edge case where auth user exists but public.users record is missing
         if (inviteError.message.includes('already been registered')) {
-           // We explicitly avoid listUsers() to prevent cross-tenant exposure.
-           // If the user exists in Auth but not public.users, they should be synced
-           // or we return a restricted error.
-           return NextResponse.json({ error: 'USER_EXISTS_IN_AUTH_BUT_NOT_SYNCED' }, { status: 409 });
+          // Use admin API to find the user by email and sync them
+          const { data: listData } = await supabaseServer.auth.admin.listUsers();
+          const authUser = listData?.users?.find(u => u.email === email);
+          if (authUser) {
+            targetUserId = authUser.id;
+            // Sync to public.users
+            await supabaseServer.from('users').upsert({
+              id: authUser.id,
+              email,
+              full_name: authUser.user_metadata?.full_name ?? email.split('@')[0],
+            });
+          } else {
+            return NextResponse.json({ error: 'USER_EXISTS_IN_AUTH_BUT_NOT_SYNCED' }, { status: 409 });
+          }
         } else {
            throw inviteError;
         }

@@ -45,7 +45,7 @@ export default function GovernanceStateCard({ orgId }: { orgId: string }) {
 
   if (loading) {
     return (
-      <div className="animate-pulse bg-white/5 h-64 rounded-xl border border-white/10" />
+      <div className="animate-pulse bg-[var(--bg-secondary)] h-64 rounded-xl border border-[var(--border-primary)]" />
     );
   }
 
@@ -68,12 +68,12 @@ export default function GovernanceStateCard({ orgId }: { orgId: string }) {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-white/10 bg-[var(--card-bg)] p-6 transition-all hover:border-white/20 animate-[fadeIn_.4s_ease-in-out]">
+    <div className="relative overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--card-bg)] p-6 transition-all hover:border-[var(--accent)]/30 animate-[fadeIn_.4s_ease-in-out]">
       {/* Background Glow */}
       <div className="absolute -inset-1 opacity-[0.03] bg-gradient-to-br from-white to-transparent pointer-events-none" />
 
       <div className="flex items-center justify-between mb-8">
-        <h3 className="text-sm font-medium text-white/60 uppercase tracking-widest flex items-center gap-2">
+        <h3 className="text-sm font-medium text-[var(--text-secondary)] uppercase tracking-widest flex items-center gap-2">
           <Zap className="w-3.5 h-3.5 text-[var(--accent)]" />
           Governance Status
         </h3>
@@ -84,12 +84,12 @@ export default function GovernanceStateCard({ orgId }: { orgId: string }) {
       </div>
 
       <div className="flex items-end gap-4 mb-8">
-        <div className="text-7xl font-bold text-white tracking-tighter leading-none" style={{ fontFamily: "'Playfair Display', serif" }}>
+        <div className="text-7xl font-bold text-[var(--text-primary)] tracking-tighter leading-none" style={{ fontFamily: "'Playfair Display', serif" }}>
           {data.risk_score}
         </div>
         <div className="pb-1.5 w-full max-w-[120px]">
-          <div className="text-[10px] uppercase tracking-widest text-white/40 mb-1.5">Risk Exposure</div>
-          <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+          <div className="text-[10px] uppercase tracking-widest text-[var(--text-secondary)] opacity-60 mb-1.5">Risk Exposure</div>
+          <div className="h-1.5 w-full bg-[var(--bg-secondary)] rounded-full overflow-hidden">
             <div 
               className="h-full bg-gradient-to-r from-[var(--accent)] to-[var(--danger)] transition-all duration-1000 ease-out"
               style={{ width: `${data.risk_score}%` }}
@@ -105,12 +105,12 @@ export default function GovernanceStateCard({ orgId }: { orgId: string }) {
           { label: "Policy", value: data.contributing_factors.policy, max: 25, color: "var(--danger)" },
           { label: "Guardrail", value: data.contributing_factors.guardrail, max: 20, color: "var(--success)" },
         ].map((factor) => (
-          <div key={factor.label} className="bg-white/[0.03] rounded-lg p-3 border border-white/5 transition-colors hover:bg-white/[0.05]">
+          <div key={factor.label} className="bg-[var(--bg-secondary)] rounded-lg p-3 border border-[var(--border-primary)] transition-colors hover:bg-[var(--bg-primary)]">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[9px] uppercase tracking-widest text-white/30">{factor.label}</span>
-              <span className="text-[11px] font-mono text-white/70">{(factor.value).toFixed(1)}</span>
+              <span className="text-[9px] uppercase tracking-widest text-[var(--text-secondary)] opacity-50">{factor.label}</span>
+              <span className="text-[11px] font-mono text-[var(--text-primary)] opacity-70">{(factor.value).toFixed(1)}</span>
             </div>
-            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+            <div className="h-1 bg-[var(--bg-primary)] rounded-full overflow-hidden">
               <div 
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{ 
@@ -126,7 +126,7 @@ export default function GovernanceStateCard({ orgId }: { orgId: string }) {
 
       {/* Decorative background element */}
       <div className="absolute -right-4 -bottom-4 opacity-[0.03] pointer-events-none group-hover:opacity-[0.05] transition-opacity">
-        <Shield className="w-32 h-32 text-white" />
+        <Shield className="w-32 h-32 text-[var(--text-primary)]" />
       </div>
     </div>
   );

@@ -26,14 +26,13 @@ export default function SimulationPage() {
   }, []);
 
   const handleRunSimulation = async () => {
-    if (!orgId) return;
     setLoading(true);
     setLogs([]);
     try {
       const res = await fetch('/api/simulation/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scenario: scenarioId, volume, org_id: orgId })
+        body: JSON.stringify({ scenario: scenarioId, volume })
       });
       const data = await res.json();
       if (data.success) {

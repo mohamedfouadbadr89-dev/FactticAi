@@ -14,11 +14,22 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
   const { mode: channel, setMode: setChannel } = useInteractionMode();
   const [mode, setMode] = useState<"executive" | "advanced">("executive");
   const [auditMode, setAuditMode] = useState(false);
+  const [healthScore, setHealthScore] = useState<number | null>(null);
   const { isSimulating, simulationStep, startSimulation, resetSimulation } = useSimulation();
 
   useEffect(() => {
     const saved = localStorage.getItem("facttic_audit_mode");
     if (saved === "true") setAuditMode(true);
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/dashboard/stats')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const score = data?.health?.governance_score ?? data?.data?.health?.governance_score;
+        if (typeof score === 'number') setHealthScore(score);
+      })
+      .catch(() => {});
   }, []);
 
   const toggleAuditMode = () => {
@@ -111,7 +122,7 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
             Health
           </span>
           <div className="text-lg font-bold">
-            <CountUp value={84} />
+            {healthScore != null ? <CountUp value={healthScore} /> : '--'}
           </div>
         </div>
 

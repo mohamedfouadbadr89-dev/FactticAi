@@ -42,13 +42,12 @@ export default function StressTestingDashboard() {
   }, []);
 
   const triggerTest = async () => {
-    if (!orgId) return;
     setIsRunning(true);
     try {
       const res = await fetch('/api/testing/stress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ org_id: orgId, concurrency, duration_seconds: duration })
+        body: JSON.stringify({ concurrency, duration_seconds: duration })
       });
       
       const data = await res.json();

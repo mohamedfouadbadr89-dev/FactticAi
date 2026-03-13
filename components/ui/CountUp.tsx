@@ -68,10 +68,10 @@ export function CountUp({ value, decimals = 0, duration = 600, className = '', s
   // Hydration mismatch prevention isn't strictly necessary since displayValue initializes to the exact prop value, 
   return (
     <span className={className}>
-      {displayValue.toLocaleString(undefined, {
+      {displayValue != null ? displayValue.toLocaleString(undefined, {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals,
-      })}
+      }) : '--'}
       {suffix}
     </span>
   );

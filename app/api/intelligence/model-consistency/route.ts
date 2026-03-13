@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { ModelConsistencyEngine } from '@/lib/intelligence/modelConsistencyEngine';
 import { logger } from '@/lib/logger';
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: Request, _ctx: AuthContext) => {
   try {
     const { prompt, modelA, modelB } = await req.json();
 
@@ -17,4 +18,4 @@ export async function POST(req: NextRequest) {
     logger.error('API_MODEL_CONSISTENCY_FAILURE', { error: err.message });
     return NextResponse.json({ error: 'Failed to execute consistency test' }, { status: 500 });
   }
-}
+});

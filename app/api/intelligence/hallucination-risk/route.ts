@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { computeHallucinationRisk } from '@/lib/intelligence/hallucinationRisk';
 
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req: Request, _ctx: AuthContext) => {
   const { searchParams } = new URL(req.url);
   const sessionId = searchParams.get('sessionId');
 
@@ -24,4 +25,4 @@ export async function GET(req: NextRequest) {
       occurrence_count: signal.frequency
     }
   });
-}
+});

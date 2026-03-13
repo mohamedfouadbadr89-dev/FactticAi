@@ -4,6 +4,9 @@ import { ConnectorRegistry } from '@/src/connectors/ConnectorRegistry';
 import { Auth0Connector } from '@/src/connectors/implementations/Auth0Connector';
 import { DatadogConnector } from '@/src/connectors/implementations/DatadogConnector';
 import { PagerDutyConnector } from '@/src/connectors/implementations/PagerDutyConnector';
+import { VapiConnector } from '@/src/connectors/implementations/VapiConnector';
+import { RetellConnector } from '@/src/connectors/implementations/RetellConnector';
+import { ElevenLabsConnector } from '@/src/connectors/implementations/ElevenLabsConnector';
 import { logger } from '@/lib/logger';
 
 // Lazy loading / singleton orchestration
@@ -11,7 +14,7 @@ let initialized = false;
 async function initializeRegistry() {
   if (initialized) return;
   const registry = ConnectorRegistry.getInstance();
-  
+
   // Registering with mock/missing config for demo purposes.
   // In a real env, these would be loaded from env vars or the database securely.
   const auth0 = new Auth0Connector();
@@ -25,6 +28,19 @@ async function initializeRegistry() {
   const pd = new PagerDutyConnector();
   await pd.initialize({});
   registry.register(pd);
+
+  // Voice governance providers
+  const vapi = new VapiConnector();
+  await vapi.initialize({ endpoint: 'https://api.vapi.ai', apiKey: process.env.VAPI_API_KEY || '' });
+  registry.register(vapi);
+
+  const retell = new RetellConnector();
+  await retell.initialize({ endpoint: 'https://api.retellai.com', apiKey: process.env.RETELL_API_KEY || '' });
+  registry.register(retell);
+
+  const elevenlabs = new ElevenLabsConnector();
+  await elevenlabs.initialize({ endpoint: 'https://api.elevenlabs.io/v1', apiKey: process.env.ELEVENLABS_API_KEY || '' });
+  registry.register(elevenlabs);
 
   initialized = true;
 }
