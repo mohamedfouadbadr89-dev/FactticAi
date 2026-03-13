@@ -209,11 +209,13 @@ interface Alert {
  metadata?: any
 }
 
+const PAGE_SIZE = 10
 
 export function AlertsClient() {
  const [alerts, setAlerts] = useState<Alert[]>([])
  const [loading, setLoading] = useState(true)
  const [filter, setFilter] = useState<Severity>('all')
+ const [page, setPage] = useState(0)
  const [ledgerVerification, setLedgerVerification] = useState<any>(null)
  const [ledgerChecking, setLedgerChecking] = useState(false)
  const router = useRouter()
@@ -259,6 +261,12 @@ export function AlertsClient() {
  if (filter ==='all') return alerts
  return alerts.filter(a => a.new_severity === filter)
  }, [alerts, filter])
+
+ const totalPages = Math.max(1, Math.ceil(filteredAlerts.length / PAGE_SIZE))
+ const pageAlerts = filteredAlerts.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+ // Reset page when filter changes
+ React.useEffect(() => { setPage(0) }, [filter])
 
  const getChannel = (alert: Alert) => {
  // Heuristic: check metadata or interaction_id type
@@ -335,8 +343,8 @@ export function AlertsClient() {
  </tr>
  </thead>
  <tbody className="divide-y divide-">
- {filteredAlerts.length > 0 ? (
- filteredAlerts.map((alert) => (
+ {pageAlerts.length > 0 ? (
+ pageAlerts.map((alert) => (
  <tr key={alert.id} className="hover:/50 transition-all group">
  <td className="px-6 py-6 font-bold">
  <div className="flex items-center gap-3">
@@ -384,6 +392,32 @@ export function AlertsClient() {
  </tbody>
  </table>
  </div>
+
+ {/* Pagination */}
+ {totalPages > 1 && (
+   <div className="px-6 py-4 border-t border-[var(--border-primary)] flex items-center justify-between">
+     <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
+       {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredAlerts.length)} of {filteredAlerts.length}
+     </span>
+     <div className="flex items-center gap-2">
+       <button
+         onClick={() => setPage(p => Math.max(0, p - 1))}
+         disabled={page === 0}
+         className="px-4 py-1.5 text-[10px] font-black uppercase tracking-widest border border-[var(--border-primary)] rounded hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+       >
+         ← Prev
+       </button>
+       <span className="text-[10px] font-mono text-[var(--text-secondary)]">{page + 1} / {totalPages}</span>
+       <button
+         onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+         disabled={page === totalPages - 1}
+         className="px-4 py-1.5 text-[10px] font-black uppercase tracking-widest border border-[var(--border-primary)] rounded hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+       >
+         Next →
+       </button>
+     </div>
+   </div>
+ )}
  </div>
  </div>
  )

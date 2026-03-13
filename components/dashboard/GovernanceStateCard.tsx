@@ -27,7 +27,7 @@ export default function GovernanceStateCard({ orgId }: { orgId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!orgId) return;
+    if (!orgId) { setLoading(false); return; }
     async function fetchState() {
       try {
         const res = await fetch(`/api/governance/state?orgId=${orgId}`);
@@ -49,7 +49,17 @@ export default function GovernanceStateCard({ orgId }: { orgId: string }) {
     );
   }
 
-  if (!data) return null;
+  if (!data) return (
+    <div className="relative overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--card-bg)] p-6 flex flex-col items-center justify-center gap-3 min-h-[200px] animate-[fadeIn_.4s_ease-in-out]">
+      <Shield className="w-8 h-8 text-[var(--text-secondary)] opacity-30" />
+      <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] opacity-50 text-center">
+        Governance State<br />Unavailable
+      </p>
+      <a href="/dashboard/governance" className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline mt-1">
+        Configure →
+      </a>
+    </div>
+  );
 
   const stateColors = {
     SAFE: "text-[var(--success)] bg-[var(--success)]/10 border-[var(--success)]/20",

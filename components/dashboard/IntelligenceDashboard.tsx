@@ -66,12 +66,17 @@ export default function IntelligenceDashboard({ data }: Props) {
           <div className="p-4 bg-[var(--danger-bg)] rounded-xl border border-[var(--danger)]/20">
              <p className="text-[10px] font-black uppercase text-[var(--danger)] mb-2">Critical Privacy Incidents</p>
              <div className="space-y-2">
-                {d.recent_violations.map(v => (
+                {d.recent_violations.slice(0, 3).map(v => (
                   <div key={v.id} className="flex items-center justify-between text-xs font-medium">
                     <span className="text-[var(--text-primary)]">{v.type}</span>
                     <span className="text-[var(--text-secondary)] opacity-60">{v.timestamp}</span>
                   </div>
                 ))}
+                {d.recent_violations.length > 3 && (
+                  <a href="/dashboard/alerts" className="block text-[10px] font-black uppercase tracking-widest text-[var(--danger)] opacity-70 hover:opacity-100 pt-1">
+                    +{d.recent_violations.length - 3} more →
+                  </a>
+                )}
              </div>
           </div>
         </div>

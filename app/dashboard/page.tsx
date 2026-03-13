@@ -15,6 +15,7 @@ import { useDashboardData } from "@/lib/dashboard/useDashboardData";
 import React, { useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import QuickStart from "@/components/onboarding/QuickStart";
+import { useInteractionMode } from "@/store/interactionMode";
 
 import { Skeleton } from "@/components/ui/Skeleton";
 import { CardSkeleton } from "@/components/ui/CardSkeleton";
@@ -45,6 +46,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { data, loading, error } = useDashboardData("/api/dashboard/stats");
   const [orgId, setOrgId] = useState<string | null>(null);
+  const { mode: channel } = useInteractionMode();
 
   const [filters, setFilters] = React.useState({
     startDate: "",
@@ -81,8 +83,32 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Voice Mode — empty state banner */}
+      {channel === "voice" && (
+        <div className="max-w-[1400px] mx-auto px-8 pt-10">
+          <div className="rounded-2xl border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-12 flex flex-col items-center justify-center text-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-[var(--accent)]/10 flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">No Voice Sessions Yet</h3>
+            <p className="text-sm text-[var(--text-secondary)] max-w-md">
+              Voice governance data will appear here once you connect a voice provider and run your first session.
+              Switch to <strong>Chat</strong> to see your current governance data.
+            </p>
+            <a href="/dashboard/integrations" className="mt-2 text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">
+              Connect Voice Provider →
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Dashboard Content */}
-      <div className="max-w-[1400px] mx-auto px-8 py-10 space-y-10">
+      <div className={`max-w-[1400px] mx-auto px-8 py-10 space-y-10 ${channel === "voice" ? "opacity-20 pointer-events-none select-none" : ""}`}>
 
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -112,26 +138,28 @@ export default function DashboardPage() {
         {/* Drift Monitoring */}
         <DriftTrendCard initialData={data?.drift} filters={filters} />
 
-        {/* Alerts + Risk */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Alerts + Risk + Governance State */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <ActiveAlertsCard data={data?.alerts} />
           <RiskBreakdownCard data={data?.risks} />
-        </div>
-
-        {/* Voice Drift + Governance State */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <VoiceDriftCard data={data?.voice_drift} />
           <GovernanceStateCard orgId={orgId ?? ""} />
         </div>
 
-        {/* Governance Snapshot */}
-        <GovernanceSnapshotCard />
+        {/* Voice Drift + Intelligence */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <VoiceDriftCard data={data?.voice_drift} />
+          <IntelligenceDashboard data={data?.intelligence} />
+        </div>
 
-        {/* Intelligence Layer */}
-        <IntelligenceDashboard data={data?.intelligence} />
-
-        {/* Investigations */}
-        <RecentInvestigationsCard data={data?.investigations} />
+        {/* Governance Snapshot + Recent Investigations */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          <div className="lg:col-span-3">
+            <GovernanceSnapshotCard />
+          </div>
+          <div className="lg:col-span-2">
+            <RecentInvestigationsCard data={data?.investigations} />
+          </div>
+        </div>
 
       </div>
     </div>

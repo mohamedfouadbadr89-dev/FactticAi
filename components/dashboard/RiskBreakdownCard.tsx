@@ -1,6 +1,9 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import type { RiskMetric } from "@/lib/dashboard/types";
 import { CountUp } from "@/components/ui/CountUp";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Props {
   data?: RiskMetric[] | undefined;
@@ -15,11 +18,16 @@ const defaultMetrics: RiskMetric[] = [
   { label: "Open Investigations", value: "4", percent: 40, color: "text-[var(--warning)]", barColor: "bg-[var(--warning)]" },
 ];
 
+const PAGE_SIZE = 4;
+
 export default function RiskBreakdownCard({ data }: Props) {
   const metrics = data ?? defaultMetrics;
+  const [page, setPage] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(metrics.length / PAGE_SIZE));
+  const pageMetrics = metrics.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   return (
-    <div className="card animate-[fadeIn_.4s_ease-in-out]">
+    <div className="card animate-[fadeIn_.4s_ease-in-out] flex flex-col">
 
       {/* Header */}
       <div className="card-header flex items-center justify-between">
@@ -30,8 +38,8 @@ export default function RiskBreakdownCard({ data }: Props) {
       </div>
 
       {/* Body */}
-      <div className="p-6 grid grid-cols-2 gap-4">
-        {metrics.map((m) => (
+      <div className="p-6 grid grid-cols-2 gap-4 flex-1">
+        {pageMetrics.map((m) => (
           <div key={m.label} className="risk-card bg-[var(--bg-secondary)] rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="risk-note text-xs font-medium text-[var(--text-secondary)]">{m.label}</span>
@@ -49,6 +57,31 @@ export default function RiskBreakdownCard({ data }: Props) {
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="px-6 py-3 border-t border-[var(--border-color)] flex items-center justify-between mt-auto">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
+            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, metrics.length)} of {metrics.length}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="p-1.5 rounded-lg border border-[var(--border-primary)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page === totalPages - 1}
+              className="p-1.5 rounded-lg border border-[var(--border-primary)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

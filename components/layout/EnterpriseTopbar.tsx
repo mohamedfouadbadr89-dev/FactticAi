@@ -8,7 +8,7 @@ import { AuditModeOverlay } from "@/components/ui/AuditModeOverlay";
 import { useSimulation } from "@/lib/dashboard/SimulationContext";
 import GlobalSearch from "@/components/ui/GlobalSearch";
 import { useInteractionMode } from "@/store/interactionMode";
-import { Menu, HelpCircle } from "lucide-react";
+import { Menu } from "lucide-react";
 
 export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
   const { mode: channel, setMode: setChannel } = useInteractionMode();
@@ -109,13 +109,6 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
         </button>
 
         <ThemeToggle />
-
-        <button 
-          className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] rounded-lg transition-colors"
-          title="Global Help Guide"
-        >
-          <HelpCircle className="w-5 h-5" />
-        </button>
 
         <div className="hidden lg:block px-4 py-1.5 rounded-lg border border-[var(--border-primary)] text-center min-w-[100px]">
           <span className="text-[10px] uppercase tracking-widest text-[var(--text-secondary)]">

@@ -47,38 +47,32 @@ export default function RecentInvestigationsCard({ data }: Props) {
       </div>
 
       {/* Table */}
-      <div className="inv-table">
+      <div className="inv-table overflow-x-auto">
         {rows.length === 0 ? (
           <div className="py-8 text-center text-sm text-[var(--text-secondary)]">No investigations found</div>
         ) : (
           <table className="w-full text-left">
             <thead className="sticky top-0 z-10 bg-[var(--bg-primary)]">
               <tr className="border-b border-[var(--border-color)]">
-                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">ID</th>
-                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">Investigation Name</th>
-                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold col-phase">Channel</th>
-                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold col-phase">Phase</th>
-                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">Status</th>
-                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">RCA Conf.</th>
-                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold col-assigned">Assigned</th>
-                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold text-right">Last Updated</th>
+                <th className="px-4 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">ID</th>
+                <th className="px-4 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">Name</th>
+                <th className="px-4 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">Status</th>
+                <th className="px-4 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">RCA</th>
+                <th className="px-4 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold text-right">Updated</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--border-color)] text-[13px] text-[var(--text-secondary)]">
+            <tbody className="divide-y divide-[var(--border-color)] text-[12px] text-[var(--text-secondary)]">
               {pageRows.map((row) => (
                 <tr key={row.id} className="hover:bg-[var(--bg-secondary)] transition-colors duration-150">
-                  <td className="px-6 py-4 font-mono font-medium text-[var(--text-primary)]">{row.id}</td>
-                  <td className="px-6 py-4 font-medium text-[var(--text-primary)]">{row.name}</td>
-                  <td className="px-6 py-4 col-phase">{row.channel}</td>
-                  <td className="px-6 py-4 col-phase">{row.phase}</td>
-                  <td className="px-6 py-4">
-                    <span className={`${statusClass[row.status] ?? "bg-[var(--bg-secondary)] text-[var(--text-secondary)]"} text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-[20px]`}>
+                  <td className="px-4 py-3 font-mono font-medium text-[var(--text-primary)] whitespace-nowrap">{row.id}</td>
+                  <td className="px-4 py-3 font-medium text-[var(--text-primary)] max-w-[140px] truncate" title={row.name}>{row.name}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`${statusClass[row.status] ?? "bg-[var(--bg-secondary)] text-[var(--text-secondary)]"} text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full`}>
                       {row.status}
                     </span>
                   </td>
-                  <td className={`px-6 py-4 font-mono font-medium ${row.rcaColor}`}><CountUp value={parseFloat(row.rca)} />%</td>
-                  <td className="px-6 py-4 text-[var(--text-primary)] col-assigned">{row.assigned}</td>
-                  <td className="px-6 py-4 font-mono text-right">{row.updated}</td>
+                  <td className={`px-4 py-3 font-mono font-medium whitespace-nowrap ${row.rcaColor}`}><CountUp value={parseFloat(row.rca)} />%</td>
+                  <td className="px-4 py-3 font-mono text-right whitespace-nowrap text-[var(--text-muted)]">{row.updated}</td>
                 </tr>
               ))}
             </tbody>
@@ -88,7 +82,7 @@ export default function RecentInvestigationsCard({ data }: Props) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="px-6 py-4 border-t border-[var(--border-color)] flex items-center justify-between">
+        <div className="px-4 py-3 border-t border-[var(--border-color)] flex items-center justify-between">
           <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
             Page {page + 1} of {totalPages}
           </span>

@@ -3,51 +3,87 @@
 import React from 'react';
 import Link from 'next/link';
 
-const footerLinks = [
-  { href: "/#platform", label: "Platform" },
-  { href: "/#governance", label: "Governance Layers" },
-  { href: "/#security", label: "Security Architecture" },
-  { href: "/#compliance", label: "Compliance Center" },
-  { href: "/#pricing", label: "Platform Tiers" },
-  { href: "/#docs", label: "Documentation" }
+const footerCols = [
+  {
+    title: "Platform",
+    links: [
+      { href: "/#system-overview", label: "Architecture" },
+      { href: "/#security", label: "Security" },
+      { href: "/#compliance", label: "Compliance" },
+      { href: "/#governance", label: "Governance Layers" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { href: "/docs", label: "Documentation" },
+      { href: "/docs#api-reference", label: "API Reference" },
+      { href: "/blog", label: "Blog" },
+      { href: "/faq", label: "FAQ" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { href: "/pricing", label: "Pricing" },
+      { href: "/login", label: "Dashboard" },
+      { href: "/login", label: "Sign In" },
+    ],
+  },
 ];
 
 export function Footer() {
   return (
     <footer className="w-full border-t border-[var(--border-subtle)] bg-[var(--surface-3)]">
-      {/* Institutional Separator */}
       <div className="h-px bg-gradient-to-r from-transparent via-[var(--border-strong)] to-transparent" />
 
-      <div className="max-w-[1400px] mx-auto px-8 py-10">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-          {/* Navigation */}
-          <nav className="flex flex-wrap justify-center md:justify-start gap-x-8 gap-y-2 order-1 md:order-1">
-            {footerLinks.map((link, i) => (
-              <Link 
-                key={i} 
-                href={link.href} 
-                className="footer-link text-mono-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Copyright */}
-          <div className="text-mono-xs text-[var(--text-muted)] opacity-60 order-2 md:order-2">
-            Facttic.AI © 2026 · All Rights Reserved
+      <div className="max-w-[1400px] mx-auto px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
+          {/* Brand */}
+          <div>
+            <Link href="/" className="text-mono text-[var(--text-primary)] hover:opacity-80 transition-opacity">
+              Facttic.AI
+            </Link>
+            <p className="text-[11px] font-mono text-[var(--text-muted)] mt-3 leading-relaxed">
+              Institutional AI Governance Infrastructure
+            </p>
+            <div className="flex items-center gap-1.5 mt-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-[9px] font-mono text-[var(--text-muted)]">All systems operational</span>
+            </div>
           </div>
+
+          {/* Cols */}
+          {footerCols.map((col) => (
+            <div key={col.title}>
+              <div className="text-[9px] font-mono font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">
+                {col.title}
+              </div>
+              <div className="space-y-2.5">
+                {col.links.map((link, i) => (
+                  <Link
+                    key={i}
+                    href={link.href}
+                    className="block text-[12px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* Bottom Separator */}
-        <div className="mt-8 pt-6 border-t border-[var(--border-subtle)]">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-mono-xs text-[var(--text-muted)] opacity-40">
-              Institutional AI Governance · SHA-256 Verified · SOC2 Type II
-            </div>
-            <div className="text-mono-xs text-[var(--text-muted)] opacity-40">
-              v1.0.0
-            </div>
+        <div className="pt-8 border-t border-[var(--border-subtle)] flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-[10px] font-mono text-[var(--text-muted)] opacity-50">
+            Facttic.AI © 2026 · All Rights Reserved
+          </div>
+          <div className="flex items-center gap-6 text-[10px] font-mono text-[var(--text-muted)] opacity-40">
+            <span>SHA-256 Verified</span>
+            <span>·</span>
+            <span>SOC2 Type II</span>
+            <span>·</span>
+            <span>v1.0.0</span>
           </div>
         </div>
       </div>

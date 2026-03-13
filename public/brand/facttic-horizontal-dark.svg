@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80">
+  <defs>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@600&amp;display=swap');</style>
+  </defs>
+  <rect x="4"  y="27" width="31" height="8"  fill="#2563EB"/>
+  <rect x="4"  y="39" width="22" height="7"  fill="rgba(255,255,255,0.65)"/>
+  <rect x="28" y="39" width="7"  height="7"  fill="#2563EB" opacity="0.85"/>
+  <rect x="4"  y="50" width="14" height="7"  fill="rgba(255,255,255,0.22)"/>
+  <text x="52" y="57" font-family="Inter, Poppins, system-ui, sans-serif" font-weight="600" font-size="36" letter-spacing="-0.03em" fill="#FFFFFF">Facttic</text>
+</svg>
