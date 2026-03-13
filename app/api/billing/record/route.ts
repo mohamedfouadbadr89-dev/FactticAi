@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { withAuth } from '@/lib/authGuard';
-import { resolveOrgContext } from '@/lib/orgResolver';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { recordBillingEvent } from '@/lib/billingResolver';
+import { authorize, type Role } from '@/lib/rbac';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/logger';
 
@@ -10,15 +10,15 @@ import { logger } from '@/lib/logger';
  * 
  * Secure billing ingestion endpoint.
  */
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: Request, { orgId, role }: AuthContext) => {
   try {
-    const auth = await withAuth(req);
-
-    if (auth.error || !auth.user) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
+    // Billing requires at minimum 'analyst' role
+    try {
+      authorize(role as Role, 'analyst');
+    } catch {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
     }
 
-    const { org_id } = await resolveOrgContext(auth.user.id);
     const body = await req.json();
     const { type, units, metadata } = body;
 
@@ -30,11 +30,11 @@ export async function POST(req: Request) {
     }
 
     if (units > 100) {
-      logger.warn('Billing anomaly detected: High EU spike', { org_id, units });
-      Sentry.captureMessage(`Billing anomaly EU spike: ${units} units for org ${org_id}`, 'warning');
+      logger.warn('Billing anomaly detected: High EU spike', { orgId, units });
+      Sentry.captureMessage(`Billing anomaly EU spike: ${units} units for org ${orgId}`, 'warning');
     }
 
-    const result = await recordBillingEvent(org_id, type, units, metadata);
+    const result = await recordBillingEvent(orgId, type, units, metadata);
 
     return NextResponse.json({
       success: true,
@@ -50,4 +50,4 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ error: message }, { status });
   }
-}
+});

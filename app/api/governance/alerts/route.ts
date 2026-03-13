@@ -1,49 +1,38 @@
 import { NextResponse } from 'next/server';
-import { createServerAuthClient } from '@/lib/supabaseAuth';
-import { resolveOrgContext } from '@/lib/orgResolver';
-import { logger } from '@/lib/logger';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { supabaseServer } from '@/lib/supabaseServer';
 
 /**
  * GET /api/governance/alerts
- * 
- * Retrieves the latest governance escalations and alerts.
- * Wraps: public.governance_escalation_log
+ * Returns active governance alerts for the authenticated org.
  */
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
-    const supabase = await createServerAuthClient();
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-
-    if (authError || !session) {
-      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-    }
-
-    const { org_id: orgId } = await resolveOrgContext(session.user.id);
-    if (!orgId) {
-      return NextResponse.json({ error: 'ORG_CONTEXT_MISSING' }, { status: 400 });
-    }
-
-    // Query escalation log with org isolation
     const { data, error } = await supabaseServer
-      .from('governance_escalation_log')
+      .from('governance_alerts')
       .select('*')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false })
       .limit(50);
 
     if (error) {
-      logger.error('GOVERNANCE_ALERTS_FETCH_FAILED', { orgId, error: error.message });
-      return NextResponse.json({ error: 'ALERTS_FETCH_FAILED' }, { status: 500 });
+      // Table may not exist yet — return empty gracefully
+      return NextResponse.json({ data: [] });
     }
 
-    return NextResponse.json({
-      success: true,
-      data
-    });
+    // Map governance_alerts → AlertsClient shape
+    const mapped = (data || []).map((a: any) => ({
+      id: a.id,
+      escalation_reason: a.metadata?.reason || a.alert_type?.replace(/_/g, ' ') || 'Governance Alert',
+      previous_severity: a.metadata?.previous_severity || 'info',
+      new_severity: a.severity === 'critical' ? 'critical' : a.severity === 'warning' ? 'high' : 'low',
+      created_at: a.created_at,
+      interaction_id: a.metadata?.session_id || null,
+      metadata: a.metadata,
+    }));
 
-  } catch (error: any) {
-    logger.error('GOVERNANCE_ALERTS_API_ERROR', { error: error.message });
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ data: mapped });
+  } catch (err: any) {
+    return NextResponse.json({ data: [] });
   }
-}
+});

@@ -1,24 +1,15 @@
 import { NextResponse } from 'next/server';
-import { withAuth } from '@/lib/authGuard';
-import { resolveOrgContext } from '@/lib/orgResolver';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { resolveAgentContext } from '@/lib/agentResolver';
 
 /**
  * API: /api/agents/[id]
  * Description: Retrieves a single agent, validated by organization ownership and active status.
  */
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withAuth(async (req: Request, { orgId, params }: AuthContext) => {
   try {
-    const auth = await withAuth(req);
-
-    if (auth.error || !auth.user) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
-    }
-
-    const { org_id } = await resolveOrgContext(auth.user.id);
-    const { id } = await params;
-
-    const agent = await resolveAgentContext(id, org_id);
+    const { id } = params;
+    const agent = await resolveAgentContext(id, orgId);
 
     return NextResponse.json({ agent });
 
@@ -29,4 +20,4 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       { status }
     );
   }
-}
+});

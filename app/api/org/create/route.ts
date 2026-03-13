@@ -1,5 +1,7 @@
 import { supabaseServer } from '@/lib/supabaseServer';
 import { NextResponse } from 'next/server';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
+import { authorize, type Role } from '@/lib/rbac';
 
 /**
  * API Org Create
@@ -7,8 +9,15 @@ import { NextResponse } from 'next/server';
  * Endpoint to register new organizations.
  * LEVEL 1 Execution.
  */
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: Request, { role }: AuthContext) => {
   try {
+    // Only owners can create new organizations
+    try {
+      authorize(role as Role, 'owner');
+    } catch {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
+
     const body = await req.json();
     const { name } = body;
 
@@ -28,4 +37,4 @@ export async function POST(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});

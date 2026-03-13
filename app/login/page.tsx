@@ -1,98 +1,75 @@
 'use client';
 
-import { useState } from'react';
-import { createBrowserClient } from'@supabase/auth-helpers-nextjs';
-import { useRouter } from'next/navigation';
-import { motion, AnimatePresence } from'framer-motion';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createBrowserClient } from '@supabase/ssr';
 
 export default function LoginPage() {
- const [email, setEmail] = useState('');
- const [password, setPassword] = useState('');
- const [error, setError] = useState<string | null>(null);
- const [loading, setLoading] = useState(false);
- const router = useRouter();
- 
- // Create a supabase client on the browser with the modern API
- const supabase = createBrowserClient(
- process.env.NEXT_PUBLIC_SUPABASE_URL!,
- process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
- );
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
- const handleLogin = async (e: React.FormEvent) => {
- e.preventDefault();
- setLoading(true);
- setError(null);
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
- const { error: authError } = await supabase.auth.signInWithPassword({
- email,
- password,
- });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
- if (authError) {
- setError(authError.message);
- setLoading(false);
- } else {
- router.push('/dashboard');
- router.refresh();
- }
- };
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
- return (
- <main className="bg-[var(--parch)] min-h-screen">
- <div className="login-wrapper">
- 
+    if (error) {
+      setError(error.message);
+      setIsLoading(false);
+    } else {
+      router.push('/dashboard');
+      router.refresh();
+    }
+  };
 
- <motion.div 
- initial={{ opacity: 0, y: 20 }}
- animate={{ opacity: 1, y: 0 }}
- className="login-card"
- >
- <div className="logo-section">
- <div className="logo-text">FACTTIC_GOVERNANCE</div>
- <div >AUTH_FOUNDATION_v1.0</div>
- </div>
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)] p-6">
+      <div className="w-full max-w-md section-card p-8 rounded-2xl shadow-xl">
+        <div className="mb-8 text-center border-b border-[var(--border-primary)] pb-6">
+          <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">Log In</h1>
+          <p className="text-sm font-medium text-[var(--text-secondary)]">Access the Governance Terminal</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="p-4 text-sm font-bold text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg">
+              {error}
+            </div>
+          )}
+          <div className="space-y-5">
+            <div>
+              <label htmlFor="email" className="block text-[10px] font-black uppercase tracking-widest mb-1.5 text-[var(--text-secondary)]">Email</label>
+              <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="admin@facttic.ai"
+                className="w-full border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] p-3 rounded-lg text-sm focus:outline-none focus:border-[var(--accent)] transition-colors" />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-[10px] font-black uppercase tracking-widest mb-1.5 text-[var(--text-secondary)]">Password</label>
+              <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••"
+                className="w-full border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] p-3 rounded-lg text-sm focus:outline-none focus:border-[var(--accent)] transition-colors" />
+            </div>
+          </div>
+          <button type="submit" disabled={isLoading}
+            className="w-full bg-[var(--accent)] text-[var(--bg-primary)] font-black uppercase tracking-widest text-[10px] px-6 py-4 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50">
+            {isLoading ? 'Authenticating...' : 'Sign In'}
+          </button>
 
- <form onSubmit={handleLogin}>
- <div className="form-group">
- <label>Identity (Email)</label>
- <input 
- type="email" 
- value={email} 
- onChange={(e) => setEmail(e.target.value)} 
- placeholder="operator@facttic.ai"
- required 
- />
- </div>
- <div className="form-group">
- <label>Security Key (Password)</label>
- <input 
- type="password" 
- value={password} 
- onChange={(e) => setPassword(e.target.value)}
- placeholder="••••••••" 
- required 
- />
- </div>
+        </form>
 
- <button type="submit" disabled={loading}>
- {loading ?'AUTHENTICATING...' :'ACCESS DASHBOARD'}
- </button>
- </form>
-
- <AnimatePresence>
- {error && (
- <motion.div 
- initial={{ opacity: 0, height: 0 }}
- animate={{ opacity: 1, height:'auto' }}
- exit={{ opacity: 0, height: 0 }}
- className="error-message"
- >
- {error}
- </motion.div>
- )}
- </AnimatePresence>
- </motion.div>
- </div>
- </main>
- );
+        <div className="text-center pt-6 mt-6 border-t border-[var(--border-primary)]">
+          <a href="/forgot-password" className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors">
+            Recover Credentials
+          </a>
+        </div>
+      </div>
+    </div>
+  );
 }

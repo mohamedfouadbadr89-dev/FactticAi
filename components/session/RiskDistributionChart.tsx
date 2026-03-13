@@ -2,6 +2,7 @@
 
 import React from'react';
 import { motion } from'framer-motion';
+import { CountUp } from "@/components/ui/CountUp";
 
 interface RiskDistributionChartProps {
  turns: { incremental_risk: number; turn_index: number }[];
@@ -24,8 +25,8 @@ export const RiskDistributionChart: React.FC<RiskDistributionChartProps> = ({ tu
  return (
  <div key={i} className="flex-1 flex flex-col justify-end group transition-opacity">
  {/* Tooltip-like value */}
- <div className="opacity-0 group-hover:opacity-100 transition-opacity text-[8px] font-mono text-neutral-500 text-center mb-1">
- {(turn.incremental_risk * 100).toFixed(0)}%
+ <div className="opacity-0 group-hover:opacity-100 transition-opacity text-[8px] font-mono text-[var(--text-secondary)] text-center mb-1">
+ <CountUp value={turn.incremental_risk * 100} decimals={0} />%
  </div>
  
  <motion.div 
@@ -47,7 +48,7 @@ export const RiskDistributionChart: React.FC<RiskDistributionChartProps> = ({ tu
  })}
  </div>
  
- <div className="mt-6 flex justify-between items-center text-[9px] font-mono text-neutral-400 uppercase tracking-widest border-t border-neutral-100 pt-4">
+ <div className="mt-6 flex justify-between items-center text-[9px] font-mono text-[var(--text-secondary)] uppercase tracking-widest border-t border-[var(--border-primary)] pt-4">
  <span>Temporal Risk Delta</span>
  <div className="flex gap-4">
  <div className="flex items-center gap-1">

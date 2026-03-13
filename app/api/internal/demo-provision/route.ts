@@ -3,6 +3,8 @@ import { isFeatureEnabled } from '@/config/featureFlags';
 import { supabaseServer } from '@/lib/supabaseServer';
 import { PilotManager } from '@/lib/pilotManager';
 import { logger } from '@/lib/logger';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
+import { authorize, type Role } from '@/lib/rbac';
 
 /**
  * Internal API: /api/internal/demo-provision
@@ -10,9 +12,16 @@ import { logger } from '@/lib/logger';
  * Logic to auto-provision a sandbox org for sales demos and Enterprise pilots.
  * TRACEABILITY: Tier 3 Market Activation (v3.3)
  */
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: Request, { role }: AuthContext) => {
   try {
-    // 1. Feature Flag Guard
+    // 1. Auth + RBAC — admin or owner only
+    try {
+      authorize(role as Role, 'admin');
+    } catch {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
+
+    // 2. Feature Flag Guard
     if (!isFeatureEnabled('DEMO_AUTO_PROVISION_ENABLED')) {
       return NextResponse.json({ error: "Demo provisioning disabled" }, { status: 403 });
     }
@@ -23,7 +32,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing org_name or admin_email" }, { status: 400 });
     }
 
-    // 2. Create Organization
+    // 3. Create Organization
     const { data: org, error: orgError } = await supabaseServer
       .from('organizations')
       .insert({
@@ -35,10 +44,10 @@ export async function POST(req: Request) {
 
     if (orgError) throw orgError;
 
-    // 3. Activate 14-day Pilot Logic
+    // 4. Activate 14-day Pilot Logic
     await PilotManager.activatePilot(org.id);
 
-    // 4. Record Audit Log
+    // 5. Record Audit Log
     await supabaseServer.from('audit_logs').insert({
       org_id: org.id,
       action: 'DEMO_ORG_PROVISIONED',
@@ -55,4 +64,4 @@ export async function POST(req: Request) {
     logger.error('Demo provisioning failed', { error: error.message });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});

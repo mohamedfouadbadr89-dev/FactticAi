@@ -10,9 +10,9 @@ interface Props {
 
 export function ComingSoonBlock({ moduleName, status, activationMessage }: Props) {
  return (
- <div className="relative group overflow-hidden bg-[var(--white)] border border-[var(--rule)] p-8 rounded-[8px] flex flex-col justify-between min-h-[240px] transition-all hover:bg-[var(--parch-2)] shadow-sm">
+ <div className="relative group overflow-hidden bg-[var(--card-bg)] border border-[var(--border-primary)] p-8 rounded-[8px] flex flex-col justify-between min-h-[240px] transition-all hover:bg-[var(--bg-secondary)] shadow-sm">
  {/* Soft Decorative Flare */}
- <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--navy)]/5 blur-3xl rounded-full -mr-16 -mt-16 pointer-events-none group-hover:bg-[var(--navy)]/10 transition-colors" />
+ <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/5 blur-3xl rounded-full -mr-16 -mt-16 pointer-events-none group-hover:bg-[var(--accent)]/10 transition-colors" />
  
  <div className="relative z-10">
  <div className="flex justify-between items-start mb-6">
@@ -24,7 +24,7 @@ export function ComingSoonBlock({ moduleName, status, activationMessage }: Props
  </div>
  </div>
  
- <div className="bg-[var(--white)] border border-[var(--rule)] px-3 py-1 rounded text-[8px] font-black uppercase tracking-tighter text-[var(--navy)] transition-colors duration-300">
+ <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] px-3 py-1 rounded text-[8px] font-black uppercase tracking-tighter text-[var(--accent)] transition-colors duration-300">
  Institutional Roadmap
  </div>
  </div>
@@ -41,7 +41,7 @@ export function ComingSoonBlock({ moduleName, status, activationMessage }: Props
 
  <div className="relative z-10 mt-6 flex gap-2 items-center">
  <div className="h-[3px] w-12 rounded-full overflow-hidden">
- <div className="h-full bg-[var(--navy)] w-1/4 transition-colors duration-300" />
+ <div className="h-full bg-[var(--accent)] w-1/4 transition-colors duration-300" />
  </div>
  <span className="text-[9px] font-bold uppercase tracking-widest">Phase 4 Activation Level</span>
  </div>

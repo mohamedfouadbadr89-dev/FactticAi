@@ -3,4 +3,6 @@ export interface TurnRiskScore {
   factors: Record<string, any>
   confidence: number
   timestamp: string
+  creation_date?: string
+  model_id?: string
 }

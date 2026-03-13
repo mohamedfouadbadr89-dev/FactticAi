@@ -4,12 +4,12 @@
  * Deterministic role checking for Level 1.
  */
 
-export type Role = 'owner' | 'admin' | 'member' | 'viewer';
+export type Role = 'owner' | 'admin' | 'analyst' | 'viewer';
 
 const ROLE_HIERARCHY: Record<Role, number> = {
   owner: 3,
   admin: 2,
-  member: 1,
+  analyst: 1,
   viewer: 0,
 };
 

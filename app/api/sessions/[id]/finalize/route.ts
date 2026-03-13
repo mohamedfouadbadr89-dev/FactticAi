@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerAuthClient } from '@/lib/supabaseAuth';
-import { withAuth } from '@/lib/authGuard';
-import { resolveOrgContext } from '@/lib/orgResolver';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { supabaseServer } from '@/lib/supabaseServer';
 import { logger } from '@/lib/logger';
 
@@ -10,25 +8,10 @@ import { logger } from '@/lib/logger';
  * 
  * Finalizes a session, updates its status and total aggregated risk.
  */
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withAuth(async (req: Request, { orgId, params }: AuthContext) => {
   try {
-    const { id: sessionId } = await params;
-    const supabase = await createServerAuthClient();
+    const { id: sessionId } = params;
     const body = await req.json();
-    
-    // 1. Auth & Session Extraction
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    
-    if (authError || !session) {
-      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-    }
-
-    const { org_id: orgId } = await resolveOrgContext(session.user.id);
-
-    if (!orgId) {
-      return NextResponse.json({ error: 'ORG_CONTEXT_MISSING' }, { status: 400 });
-    }
-
     const { total_risk } = body;
 
     if (total_risk === undefined) {
@@ -74,4 +57,4 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     logger.error('FINALIZE_API_ERROR', { error: error.message });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});

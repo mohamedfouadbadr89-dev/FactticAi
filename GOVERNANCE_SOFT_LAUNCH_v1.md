@@ -3,7 +3,7 @@
 **Status**: [V1_CONTROLLED_PRODUCTION]
 
 ## 1. Institutional Summary
-The system has been transition to **Controlled Production Validation**. All primary governance gates are active, and the `PredictiveEngine` is now emitting active alerts.
+The system has been transition to **Controlled Production Validation**. All primary governance gates are active, and the `PredictiveDriftEngine` is now emitting active alerts.
 
 | Metric | Baseline | current | status |
 |--------|----------|---------|--------|

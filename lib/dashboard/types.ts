@@ -14,8 +14,10 @@ export interface HealthData {
 
 export interface DriftData {
   current: string;
-  avg_30d: string;
+  avg_30d?: string;
+  avg_period?: string;
   baseline: string;
+  history?: any[];
 }
 
 export interface AlertItem {
@@ -52,4 +54,35 @@ export interface DashboardData {
   alerts: AlertItem[];
   risks: RiskMetric[];
   investigations: InvestigationRow[];
+  voice_drift?: {
+    avg_risk_30d: number;
+    percentage_change: number;
+    trend: number[];
+  };
+  intelligence?: {
+    pii_exposed_today: number;
+    compliance_drift_score: number;
+    recent_violations: { id: string; type: string; timestamp: string; }[];
+    pii_trend: number[];
+    drift_alerts?: number;
+    model_count?: number;
+  };
+  // V1 Product Metrics (Phase 56)
+  health_score?: number;
+  risk_level?: "low" | "moderate" | "high" | "critical";
+  metrics?: any;
+  governance?: {
+    blocked_responses: number;
+    total_intercepts: number;
+    policy_violations: number;
+  };
+  gateway?: {
+    total_requests: number;
+    active_providers: number;
+  };
+  agents?: {
+    active_agents: number;
+    total_steps: number;
+    incidents: number;
+  };
 }

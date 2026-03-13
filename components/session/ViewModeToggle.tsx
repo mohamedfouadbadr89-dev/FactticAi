@@ -9,13 +9,13 @@ interface ViewModeToggleProps {
 
 export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ mode, onChange }) => {
  return (
- <div className="flex bg-neutral-100 p-1 rounded-sm border border-neutral-200">
+ <div className="flex bg-[var(--bg-primary)] p-1 rounded-sm border border-[var(--border-primary)]">
  <button 
  onClick={() => onChange('executive')}
  className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-tighter transition-all rounded-sm ${
  mode ==='executive' 
  ?'' 
- :'text-neutral-500 hover:text-neutral-700'
+ :'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
  }`}
  >
  Executive
@@ -25,7 +25,7 @@ export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ mode, onChange }
  className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-tighter transition-all rounded-sm ${
  mode ==='technical' 
  ?'' 
- :'text-neutral-500 hover:text-neutral-700'
+ :'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
  }`}
  >
  Technical

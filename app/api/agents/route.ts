@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { withAuth } from '@/lib/authGuard';
-import { resolveOrgContext } from '@/lib/orgResolver';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { supabaseServer } from '@/lib/supabaseServer';
 import { createAuthenticatedClient } from '@/lib/supabaseClient';
 import { extractToken } from '@/core/auth';
@@ -8,20 +7,11 @@ import { extractToken } from '@/core/auth';
 /**
  * API: /api/agents
  */
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
-    const auth = await withAuth(req);
-
-    if (auth.error || !auth.user) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
-    }
-
-    // Extract raw JWT to build user-scoped client bound by RLS
     const token = extractToken(req);
     const supabaseUserClient = createAuthenticatedClient(token!);
     
-    // RLS Drift Control: We do NOT append .eq('org_id') here.
-    // The Postgres RLS policy automatically filters based on auth.uid()
     const { data: agents, error } = await supabaseUserClient
       .from('agents')
       .select('*')
@@ -37,21 +27,13 @@ export async function GET(req: Request) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
-    const auth = await withAuth(req);
-
-    if (auth.error || !auth.user) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
-    }
-
-    const { org_id } = await resolveOrgContext(auth.user.id);
     const body = await req.json();
     const { name, type, version, prompt_snapshot, config_snapshot, is_active } = body;
 
-    // Validate required fields
     if (!name || !type || !version || !prompt_snapshot || !config_snapshot) {
       return NextResponse.json(
         { error: "Missing required fields: name, type, version, prompt_snapshot, config_snapshot" },
@@ -59,9 +41,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Call RPC as per brief: POST /api/agents → call RPC only.
     const { data: agentId, error } = await supabaseServer.rpc('create_agent', {
-      p_org_id: org_id,
+      p_org_id: orgId,
       p_name: name,
       p_type: type,
       p_version: version,
@@ -84,4 +65,4 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-}
+});

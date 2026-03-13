@@ -69,7 +69,7 @@ export function OrganizationClient() {
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
  <div className="md:col-span-2 space-y-6">
  <div className="section-card p-8 transition-colors duration-300">
- <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--ink-soft)] mb-6 border-l-2 border-[var(--navy)] px-3 transition-colors duration-300">Entity Profile</h3>
+ <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-6 border-l-2 border-[var(--accent)] px-3 transition-colors duration-300">Entity Profile</h3>
  <div className="grid grid-cols-2 gap-8">
  <div>
  <label className="block text-[10px] font-black uppercase tracking-widest mb-1.5">Legal Name</label>
@@ -83,17 +83,17 @@ export function OrganizationClient() {
  </div>
 
  <div className="section-card p-8 transition-colors duration-300">
- <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--ink-soft)] mb-6 border-l-2 border-[var(--navy)] px-3 transition-colors duration-300">Agent Fleet Versions</h3>
+ <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-6 border-l-2 border-[var(--accent)] px-3 transition-colors duration-300">Agent Fleet Versions</h3>
  <div className="space-y-4">
  {['Core Engine','Risk Attribution','RCA Pipeline'].map((agent) => (
- <div key={agent} className="flex items-center justify-between p-4 bg-[var(--parch)] border border-[var(--rule)] rounded-xl hover:border-[var(--navy)] transition-colors group">
+ <div key={agent} className="flex items-center justify-between p-4 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl hover:border-[var(--accent)] transition-colors group">
  <div className="flex items-center gap-4">
- <div className="w-8 h-8 rounded-lg bg-[var(--white)] border border-[var(--rule)] flex items-center justify-center transition-colors duration-300">
- <div className="w-2 h-2 bg-[var(--navy)] rounded-full group-hover:animate-pulse transition-colors duration-300" />
+ <div className="w-8 h-8 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-primary)] flex items-center justify-center transition-colors duration-300">
+ <div className="w-2 h-2 bg-[var(--accent)] rounded-full group-hover:animate-pulse transition-colors duration-300" />
  </div>
- <span className="text-sm font-bold text-[var(--navy)] transition-colors duration-300">{agent}</span>
+ <span className="text-sm font-bold text-[var(--accent)] transition-colors duration-300">{agent}</span>
  </div>
- <span className="text-[10px] font-black text-[var(--navy)] bg-[var(--white)] border border-[var(--rule)] px-3 py-1 rounded-sm uppercase tracking-widest transition-colors duration-300">v1.2.4-PROD</span>
+ <span className="text-[10px] font-black text-[var(--accent)] bg-[var(--bg-primary)] border border-[var(--border-primary)] px-3 py-1 rounded-sm uppercase tracking-widest transition-colors duration-300">v1.2.4-PROD</span>
  </div>
  ))}
  </div>
@@ -102,12 +102,12 @@ export function OrganizationClient() {
 
  <div className="space-y-6">
  {/* Subscription State - Institutional Gradients */}
- <div className="bg-gradient-to-br from-[var(--navy)] to-[var(--navy-2)] rounded-[12px] p-8 text-[var(--gold)] shadow-lg relative overflow-hidden transition-colors duration-300">
- <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--gold)]/10 blur-2xl rounded-full -mr-16 -mt-16 transition-colors duration-300" />
- <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--parch-2)] mb-4 relative z-10 opacity-70 transition-colors duration-300">Subscription State</h3>
- <div className="text-3xl font-black mb-2 relative z-10 tracking-tighter text-[var(--parch)] transition-colors duration-300">Enterprise</div>
- <div className="text-[10px] font-bold text-[var(--parch-2)] opacity-60 mb-6 uppercase tracking-widest relative z-10 transition-colors duration-300">Institutional Access</div>
- <button className="w-full bg-[var(--gold)] border border-[var(--rule)] text-[var(--navy)] font-black uppercase tracking-widest text-[10px] py-3 rounded-lg hover:opacity-90 transition-colors shadow-xl relative z-10">
+ <div className="bg-[var(--accent)] rounded-[12px] p-8 text-[var(--bg-primary)] shadow-lg relative overflow-hidden transition-colors duration-300">
+ <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--warning)]/10 blur-2xl rounded-full -mr-16 -mt-16 transition-colors duration-300" />
+ <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--bg-secondary)] mb-4 relative z-10 opacity-70 transition-colors duration-300">Subscription State</h3>
+ <div className="text-3xl font-black mb-2 relative z-10 tracking-tighter text-[var(--bg-primary)] transition-colors duration-300">Enterprise</div>
+ <div className="text-[10px] font-bold text-[var(--bg-secondary)] opacity-60 mb-6 uppercase tracking-widest relative z-10 transition-colors duration-300">Institutional Access</div>
+ <button className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] text-[var(--accent)] font-black uppercase tracking-widest text-[10px] py-3 rounded-lg hover:opacity-90 transition-colors shadow-xl relative z-10">
  Manage License
  </button>
  </div>

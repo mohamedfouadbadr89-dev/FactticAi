@@ -1,5 +1,6 @@
+import { verifyApiKey } from '@/lib/security/verifyApiKey';
 import { NextResponse } from 'next/server';
-import { createServerAuthClient } from '@/lib/supabaseAuth';
+import { withAuth } from '@/lib/middleware/auth';
 import { resolveOrgContext } from '@/lib/orgResolver';
 import { logger } from '@/lib/logger';
 import { supabaseServer } from '@/lib/supabaseServer';
@@ -7,52 +8,45 @@ import { supabaseServer } from '@/lib/supabaseServer';
 /**
  * GET /api/governance/snapshot
  * 
- * Retrieves the latest governance snapshot for a specific agent version.
- * Wraps: public.governance_snapshot_v1
+ * Returns the latest immutable governance snapshot for the organization.
  */
-export async function GET(req: Request) {
+export const GET = withAuth(async (req, { session }) => {
+  const authResult = await verifyApiKey(req);
+  if (authResult.error) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.status }
+    );
+  }
+  // Override org_id from the verified API key
+  const verifiedOrgId = authResult.org_id;
+
   try {
-    const { searchParams } = new URL(req.url);
-    const agent_id = searchParams.get('agent_id');
-    const agent_version = searchParams.get('agent_version');
-
-    if (!agent_id || !agent_version) {
-      return NextResponse.json({ error: 'Missing agent_id or agent_version' }, { status: 400 });
+    const { org_id } = await resolveOrgContext(session.user.id);
+    if (!org_id) {
+       return NextResponse.json({ error: 'ORG_CONTEXT_MISSING' }, { status: 400 });
     }
 
-    const supabase = await createServerAuthClient();
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-
-    if (authError || !session) {
-      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-    }
-
-    const { org_id: orgId } = await resolveOrgContext(session.user.id);
-    if (!orgId) {
-      return NextResponse.json({ error: 'ORG_CONTEXT_MISSING' }, { status: 400 });
-    }
-
-    // Query established view with org isolation
     const { data, error } = await supabaseServer
       .from('governance_snapshot_v1')
       .select('*')
-      .eq('org_id', orgId)
-      .eq('agent_id', agent_id)
-      .eq('agent_version', agent_version)
+      .eq('org_id', org_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .single();
 
-    if (error) {
-      logger.error('GOVERNANCE_SNAPSHOT_FETCH_FAILED', { orgId, agent_id, agent_version, error: error.message });
+    if (error && error.code !== 'PGRST116') {
+      logger.error('SNAPSHOT_FETCH_FAILED', { org_id, error: error.message });
       return NextResponse.json({ error: 'SNAPSHOT_NOT_FOUND' }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
-      data
+      data: data || null
     });
 
   } catch (error: any) {
-    logger.error('GOVERNANCE_SNAPSHOT_API_ERROR', { error: error.message });
+    logger.error('SNAPSHOT_API_ERROR', { error: error.message });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});

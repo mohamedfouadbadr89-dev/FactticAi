@@ -65,8 +65,8 @@ export default function SessionDetailsPage() {
 
  if (loading) {
  return (
- <div className="min-h-screen bg-white flex items-center justify-center p-8">
- <div className="text-neutral-400 font-mono animate-pulse uppercase tracking-widest text-sm text-center">
+ <div className="min-h-screen bg-[var(--card-bg)] flex items-center justify-center p-8">
+ <div className="text-[var(--text-secondary)] font-mono animate-pulse uppercase tracking-widest text-sm text-center">
  <div className="mb-4 text-[var(--parch)] font-bold opacity-30">
  INTEL_LAYER_ACTIVE
  </div>
@@ -78,7 +78,7 @@ export default function SessionDetailsPage() {
 
  if (error || !session) {
  return (
- <div className="min-h-screen bg-white flex items-center justify-center p-8">
+ <div className="min-h-screen bg-[var(--card-bg)] flex items-center justify-center p-8">
  <div className="max-w-md w-full border border-red-500/30 bg-red-500/5 p-6 rounded text-center">
  <h2 className="text-red-400 font-bold uppercase tracking-tighter mb-2">
  Access Denied / Error
@@ -88,7 +88,7 @@ export default function SessionDetailsPage() {
  </p>
  <button
  onClick={() => router.push('/dashboard')}
- className="text-xs font-bold text-[var(--parch)] uppercase tracking-widest border border-white/20 px-4 py-2 hover:bg-white/10 transition-colors"
+ className="text-xs font-bold text-[var(--parch)] uppercase tracking-widest border border-white/20 px-4 py-2 hover:bg-[var(--card-bg)]/10 transition-colors"
  >
  Return to Dashboard
  </button>
@@ -98,13 +98,13 @@ export default function SessionDetailsPage() {
  }
 
  return (
- <div className="min-h-screen bg-[#F8FAFC] text-neutral-900 selection:bg-[var(--gold-soft)]">
- <header className="border-b border-neutral-200 bg-white sticky top-0 z-30 backdrop-blur-md">
+ <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] selection:bg-[var(--gold-soft)]">
+ <header className="border-b border-[var(--border-primary)] bg-[var(--card-bg)] sticky top-0 z-30 backdrop-blur-md">
  <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
  <div className="flex items-center gap-4">
  <button
  onClick={() => router.push('/dashboard')}
- className="text-neutral-400 hover:text-neutral-900 transition-colors"
+ className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
  >
  ←
  </button>
@@ -113,7 +113,7 @@ export default function SessionDetailsPage() {
  <h1 className="text-lg font-bold uppercase tracking-tighter leading-none">
  Session Inspector
  </h1>
- <span className="text-[10px] font-mono text-neutral-400 tracking-widest">
+ <span className="text-[10px] font-mono text-[var(--text-secondary)] tracking-widest">
  {id}
  </span>
  </div>
@@ -125,7 +125,7 @@ export default function SessionDetailsPage() {
  <div className="h-8 w-[1px]" />
 
  <div className="text-right">
- <span className="block text-[10px] font-mono text-neutral-400 uppercase tracking-widest leading-none mb-1">
+ <span className="block text-[10px] font-mono text-[var(--text-secondary)] uppercase tracking-widest leading-none mb-1">
  Total Risk
  </span>
  <span
@@ -157,12 +157,12 @@ export default function SessionDetailsPage() {
  onInspect={(turn) => setSelectedTurn(turn)}
  />
  ) : (
- <div className="bg-white border border-neutral-200 p-8 rounded-lg">
+ <div className="bg-[var(--card-bg)] border border-[var(--border-primary)] p-8 rounded-lg">
  <h3 className="text-xl font-bold mb-4">
  Executive Narrative
  </h3>
 
- <p className="text-neutral-600 text-sm">
+ <p className="text-[var(--text-secondary)] text-sm">
  This session generated a cumulative risk of{''}
  {(session.total_risk * 100).toFixed(1)}%.
  </p>
@@ -172,7 +172,11 @@ export default function SessionDetailsPage() {
  </div>
  </main>
 
- <RcaDrawer turn={selectedTurn} onClose={() => setSelectedTurn(null)} />
+  <RcaDrawer 
+    sessionId={id}
+    turn={selectedTurn} 
+    onClose={() => setSelectedTurn(null)} 
+  />
  </div>
  );
 }

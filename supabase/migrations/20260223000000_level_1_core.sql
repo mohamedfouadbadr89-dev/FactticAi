@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS public.org_members (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     org_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
-    role TEXT NOT NULL CHECK (role IN ('owner', 'admin', 'member', 'viewer')),
+    role TEXT NOT NULL CHECK (role IN ('owner', 'admin', 'analyst', 'viewer')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(user_id, org_id)
 );

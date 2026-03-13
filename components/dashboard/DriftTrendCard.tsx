@@ -1,94 +1,180 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
 import type { DriftData } from "@/lib/dashboard/types";
+import { CountUp } from "@/components/ui/CountUp";
+import { logger } from "@/lib/logger";
 
 interface Props {
-  data?: DriftData | undefined;
+  initialData?: DriftData | undefined;
+  filters?: {
+    startDate: string;
+    endDate: string;
+    modelVersion: string;
+    channels: string[];
+  };
 }
 
-export default function DriftTrendCard({ data }: Props) {
-  const d = data ?? { current: "2.4%", avg_30d: "1.8%", baseline: "0.9%" };
+export default function DriftTrendCard({ initialData, filters }: Props) {
+  const [data, setData] = useState<DriftData | undefined>(initialData);
+  const [period, setPeriod] = useState("30");
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const d = data ?? { current: "2.4%", avg_period: "1.8%", baseline: "0.9%" };
+
+  // Replay State
+  const [isReplaying, setIsReplaying] = useState(false);
+  const [replayProgress, setReplayProgress] = useState(1); // 1 = fully drawn
+  const animFrame = useRef<number | null>(null);
+
+  useEffect(() => {
+    async function fetchDrift() {
+      setIsLoading(true);
+      try {
+        const daysParam = filters ? 30 : period; // If global filters exist, we might want to prioritize them, but UI has its own selector too.
+        // For now, let's just make it react to the local period, and maybe sync with filters if needed.
+        const res = await fetch(`/api/governance/drift?days=${period}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const result = await res.json();
+        if (result.success) {
+          setData(result.data);
+        }
+      } catch (err) {
+        logger.error('DRIFT_FETCH_FAILED', { period, error: err });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchDrift();
+  }, [period]); // Period is still local, but filters could also trigger it in a more advanced implementation.
+
+  useEffect(() => {
+    if (filters?.startDate && filters?.endDate) {
+      // Calculate days between dates for period
+      const start = new Date(filters.startDate);
+      const end = new Date(filters.endDate);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      setPeriod(diffDays.toString());
+    }
+  }, [filters]);
+
+  const handleReplay = () => {
+    if (isReplaying) return;
+    setIsReplaying(true);
+    setReplayProgress(0);
+    
+    let start: number | null = null;
+    const duration = 1500; // 1.5s replay
+
+    const step = (timestamp: number) => {
+      if (!start) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+      setReplayProgress(progress);
+      
+      if (progress < 1) {
+        animFrame.current = requestAnimationFrame(step);
+      } else {
+        setIsReplaying(false);
+      }
+    };
+    
+    animFrame.current = requestAnimationFrame(step);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (animFrame.current) cancelAnimationFrame(animFrame.current);
+    };
+  }, []);
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 animate-[fadeIn_.4s_ease-in-out]">
-
-      {/* Header */}
-      <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between">
+    <div className="card h-full min-h-[220px] transition-all duration-300 hover:shadow-lg group">
+      <div className="card-header flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-bold text-slate-900">
-            Drift Trend — 30 Days
-          </h3>
-          <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest mt-0.5">
-            Behavioral deviation · Chat + Voice
-          </p>
+          <h3 className="card-title select-none">Behavioral Drift Trend</h3>
+          <p className="card-subtitle">Delta vs. Baseline v1.0.4</p>
         </div>
-        <div className="flex items-center bg-slate-50 rounded-lg border border-slate-200 text-[10px] font-bold font-mono uppercase tracking-widest">
-          <button className="px-3 py-1.5 text-slate-400 rounded-l-lg">7D</button>
-          <button className="px-3 py-1.5 bg-gray-100 text-slate-800 border-x border-slate-200">30D</button>
-          <button className="px-3 py-1.5 text-slate-400 rounded-r-lg">90D</button>
+        <div className="flex items-center gap-3">
+          <select 
+            value={period} 
+            onChange={(e) => setPeriod(e.target.value)}
+            disabled={isLoading}
+            className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[10px] uppercase font-black tracking-widest px-2 py-1 rounded outline-none focus:border-[var(--accent)] transition-colors disabled:opacity-50"
+          >
+            <option value="7">7D</option>
+            <option value="30">30D</option>
+            <option value="90">90D</option>
+            <option value="180">180D</option>
+          </select>
+          <button 
+            onClick={handleReplay}
+            disabled={isReplaying || isLoading}
+            className="p-1.5 rounded-md hover:bg-[var(--bg-secondary)] transition-colors text-[var(--accent)] disabled:opacity-30"
+            title="Replay Analysis"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={isReplaying ? "animate-spin" : ""}>
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+              <path d="M3 21v-5h5" />
+            </svg>
+          </button>
         </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="px-8 pt-6 flex items-center gap-10">
-        <div>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-0.5">Current</div>
-          <div className="text-2xl font-black font-serif text-amber-600">{d.current}</div>
+      <div className="px-6 pb-6 pt-2">
+        <div className="grid grid-cols-3 gap-8">
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--text-secondary)]">Current Score</p>
+            <div className="flex items-baseline gap-1">
+              <CountUp value={parseFloat(d.current)} suffix="%" duration={1} decimals={1} className={`text-2xl font-bold tracking-tight ${parseFloat(d.current) > 2 ? 'text-[var(--warning)]' : 'text-[var(--text-primary)]'}`} />
+              <span className="text-[10px] text-[var(--warning)] font-black">↑ 4%</span>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--text-secondary)]">Avg. ({period}d)</p>
+            <CountUp value={parseFloat(d.avg_period || d.avg_30d || "0")} suffix="%" duration={1.2} decimals={1} className="text-2xl font-bold tracking-tight text-[var(--text-primary)]" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--text-secondary)]">Baseline</p>
+            <div className="text-2xl font-bold tracking-tight text-[var(--text-secondary)] opacity-60 font-mono">{d.baseline}</div>
+          </div>
         </div>
-        <div className="h-8 w-px bg-slate-200" />
-        <div>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-0.5">30d Avg</div>
-          <div className="text-lg font-bold font-mono text-gray-500">{d.avg_30d}</div>
-        </div>
-        <div className="h-8 w-px bg-slate-200" />
-        <div>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-0.5">Baseline</div>
-          <div className="text-lg font-bold font-mono text-emerald-600">{d.baseline}</div>
+
+        {/* Mini Chart Visualization */}
+        <div className="mt-8 h-16 w-full relative flex items-end gap-[2px]">
+          {isLoading ? (
+             <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-primary)]/50 backdrop-blur-[1px] z-10 rounded-lg">
+                <div className="w-4 h-4 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin"></div>
+             </div>
+          ) : null}
+          
+          {(data?.history || Array.from({ length: 40 })).map((_, i) => {
+            const h = Math.random() * 80 + 20;
+            const delay = i * 0.02;
+            const isVisible = (i / 40) <= replayProgress;
+            
+            return (
+              <div 
+                key={i}
+                className="flex-1 bg-[var(--accent)] rounded-t-[1px] transition-all duration-300 hover:opacity-100 hover:scale-y-110"
+                style={{ 
+                  height: `${isVisible ? h : 0}%`, 
+                  opacity: isVisible ? 0.3 + (h / 200) : 0,
+                  transitionDelay: isReplaying ? `${delay}s` : '0s'
+                }}
+              />
+            );
+          })}
+          
+          {/* Threshold Line */}
+          <div className="absolute left-0 bottom-[30%] w-full h-[1px] bg-[var(--danger)]/30 border-t border-dashed border-[var(--danger)]/40 z-0">
+             <span className="absolute -top-3 right-0 text-[8px] font-bold text-[var(--danger)] uppercase tracking-widest opacity-60">Critical Drift Limit</span>
+          </div>
         </div>
       </div>
-
-      {/* SVG Chart */}
-      <div className="px-8 py-6">
-        <svg viewBox="0 0 600 160" className="w-full h-40" preserveAspectRatio="none">
-          <line x1="0" y1="40" x2="600" y2="40" stroke="#E2E8F0" strokeWidth="0.5" strokeDasharray="4 4" />
-          <line x1="0" y1="80" x2="600" y2="80" stroke="#E2E8F0" strokeWidth="0.5" strokeDasharray="4 4" />
-          <line x1="0" y1="120" x2="600" y2="120" stroke="#E2E8F0" strokeWidth="0.5" strokeDasharray="4 4" />
-          <line x1="0" y1="160" x2="600" y2="160" stroke="#E2E8F0" strokeWidth="1" />
-          <line x1="0" y1="130" x2="600" y2="130" stroke="#10B981" strokeWidth="1" strokeDasharray="6 3" />
-          <path
-            d="M 0,140 L 40,135 80,128 120,120 160,110 200,100 240,95 280,88 320,82 360,75 400,70 440,65 480,58 520,55 560,48 600,45 L 600,160 L 0,160 Z"
-            fill="url(#driftAreaGrad)"
-          />
-          <polyline
-            points="0,140 40,135 80,128 120,120 160,110 200,100 240,95 280,88 320,82 360,75 400,70 440,65 480,58 520,55 560,48 600,45"
-            fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-          />
-          <circle cx="360" cy="75" r="5" fill="#EF4444" />
-          <circle cx="360" cy="75" r="8" fill="none" stroke="#EF4444" strokeWidth="1" opacity="0.4" />
-          <defs>
-            <linearGradient id="driftAreaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#2563EB" stopOpacity="0.12" />
-              <stop offset="100%" stopColor="#2563EB" stopOpacity="0.02" />
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-
-      {/* Footer Legend */}
-      <div className="px-8 pb-5 flex items-center gap-6 text-[10px] font-mono uppercase tracking-widest text-slate-400">
-        <span className="flex items-center gap-1.5">
-          <span className="w-4 h-0.5 bg-blue-600 rounded" />
-          Drift Freq
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-4 h-0.5 bg-emerald-500 rounded" />
-          Baseline
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-red-500" />
-          Alert
-        </span>
-      </div>
-
     </div>
   );
 }

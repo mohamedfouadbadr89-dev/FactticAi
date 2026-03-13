@@ -31,7 +31,7 @@ export class SSOMapper {
     const org_id = claims.org_id;
 
     // 3. Map Role Claim to Internal RBAC
-    let role: Role = 'member';
+    let role: Role = 'analyst';
     if (claims.role === 'owner' || claims.role === 'admin') {
       role = claims.role as Role;
     } else if (claims.role === 'viewer') {

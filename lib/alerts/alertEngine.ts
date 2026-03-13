@@ -1,0 +1,111 @@
+import { supabaseServer } from '../supabaseServer';
+import { logger } from '../logger';
+import { GovernanceEvent } from '../evidence/evidenceLedger';
+
+export type AlertSeverity = 'low' | 'medium' | 'critical';
+
+export interface AlertSignal {
+  orgId: string;
+  type: string;
+  severity?: AlertSeverity;
+  message: string;
+  risk_score?: number;
+  metadata?: any;
+}
+
+/**
+ * Alert Notification Engine
+ * 
+ * CORE PRINCIPLE: Classify and persist governance alerts for institutional visibility.
+ */
+export class AlertEngine {
+  /**
+   * Evaluates a governance event and creates an incident if thresholds are breached.
+   */
+  static async evaluate(event: GovernanceEvent): Promise<void> {
+    try {
+      const { risk_score, violations, session_id } = event;
+      let incidentSeverity = null;
+      let violationType = 'General Risk';
+
+      if (risk_score >= 80) {
+        incidentSeverity = 'CRITICAL';
+      } else if (risk_score >= 60) {
+        incidentSeverity = 'HIGH';
+      } else if (violations && violations.length > 0) {
+        incidentSeverity = 'POLICY';
+        violationType = 'Policy Violation';
+      }
+
+      if (incidentSeverity) {
+        const { error } = await supabaseServer
+          .from('facttic_incidents')
+          .insert({
+            incident_id: crypto.randomUUID(),
+            session_id: session_id,
+            org_id: event.org_id,
+            risk_score: risk_score,
+            violation_type: violationType,
+            status: 'ACTIVE',
+            timestamp: new Date().toISOString()
+          });
+
+        if (error) throw error;
+
+        logger.info('INCIDENT_CREATED', { session_id, severity: incidentSeverity, risk_score });
+      }
+    } catch (err: any) {
+      logger.error('ALERT_EVALUATE_ERROR', { error: err.message });
+    }
+  }
+
+  /**
+   * Triggers a new governance alert based on a risk signal.
+   */
+  static async triggerAlert(signal: AlertSignal): Promise<void> {
+    try {
+      const severity = signal.severity || this.classifySeverity(signal.risk_score || 0);
+
+      const { error } = await supabaseServer
+        .from('alerts')
+        .insert({
+          org_id: signal.orgId,
+          alert_type: signal.type,
+          severity: severity,
+          message: signal.message,
+          metadata: signal.metadata || {}
+        });
+
+      if (error) {
+        logger.error('ALERT_PERSISTENCE_FAILED', { orgId: signal.orgId, error: error.message });
+        return;
+      }
+
+      logger.info('GOVERNANCE_ALERT_TRIGGERED', { orgId: signal.orgId, type: signal.type, severity });
+
+      // Automation: Critial alerts could trigger external webhooks or emails in a real system
+      if (severity === 'critical') {
+        this.escalateCriticalAlert(signal);
+      }
+
+    } catch (err: any) {
+      logger.error('ALERT_ENGINE_ERROR', { error: err.message });
+    }
+  }
+
+  /**
+   * Helper to classify severity based on risk metrics.
+   */
+  private static classifySeverity(riskScore: number): AlertSeverity {
+    if (riskScore >= 0.7) return 'critical';
+    if (riskScore >= 0.3) return 'medium';
+    return 'low';
+  }
+
+  private static escalateCriticalAlert(signal: AlertSignal) {
+    logger.warn('PRI_CRITICAL: Automated escalation triggered for governance breach.', { 
+      orgId: signal.orgId, 
+      type: signal.type 
+    });
+  }
+}
