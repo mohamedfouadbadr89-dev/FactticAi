@@ -46,18 +46,18 @@
 
 .theme-light {
   /* Surface Layers */
-  --surface-0: #F7F5F0;
+  --surface-0: #F1F5F9;
   --surface-1: #FFFFFF;
-  --surface-2: #EFECEA;
-  --surface-3: #E8E5E0;
+  --surface-2: #E8EDF5;
+  --surface-3: #DDE4EF;
 
   /* Text */
-  --text-primary: #1A1A2E;
-  --text-secondary: #2D2D44;
-  --text-muted: #6B7280;
+  --text-primary: #0F172A;
+  --text-secondary: #1E293B;
+  --text-muted: #64748B;
 
   /* Borders */
-  --border-subtle: #E6E2DC;
+  --border-subtle: #CBD5E1;
   --border-strong: rgba(26, 26, 46, 0.15);
 
   /* Shadows */

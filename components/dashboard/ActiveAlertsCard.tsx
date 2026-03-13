@@ -1,5 +1,8 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import type { AlertItem } from "@/lib/dashboard/types";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Props {
   data?: AlertItem[] | undefined;
@@ -17,6 +20,8 @@ const rowInteractionClass: Record<string, string> = {
   Low: "hover:bg-[var(--bg-secondary)] transition-colors duration-200 rounded-lg",
 };
 
+const PAGE_SIZE = 3;
+
 export default function ActiveAlertsCard({ data }: Props) {
   const alerts = data ?? [
     { id: "INV-440", title: "Data Exfiltration Risk", description: "Outbound payload exceeded threshold on Node F-01", meta: "INV-440 · 2m ago · Chat", severity: "High" as const },
@@ -24,8 +29,12 @@ export default function ActiveAlertsCard({ data }: Props) {
     { id: "INV-438", title: "Hallucination Spike", description: "LLM router confidence dropped below safe threshold", meta: "INV-438 · 1h ago · Chat", severity: "High" as const },
   ];
 
+  const [page, setPage] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(alerts.length / PAGE_SIZE));
+  const pageAlerts = alerts.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
   return (
-    <div className="card animate-[fadeIn_.4s_ease-in-out]">
+    <div className="card animate-[fadeIn_.4s_ease-in-out] flex flex-col">
 
       {/* Header */}
       <div className="card-header flex items-center justify-between">
@@ -36,15 +45,15 @@ export default function ActiveAlertsCard({ data }: Props) {
       </div>
 
       {/* Body */}
-      <div className="px-6">
+      <div className="px-6 flex-1">
         {alerts.length === 0 ? (
           <div className="py-8 text-center text-sm text-[var(--text-secondary)]">No active alerts</div>
         ) : (
-          alerts.map((alert, idx) => (
+          pageAlerts.map((alert, idx) => (
             <div
               key={alert.id}
               className={`flex justify-between items-start py-4 px-3 -mx-3 mb-1 ${rowInteractionClass[alert.severity] ?? "hover:bg-[var(--bg-secondary)] transition-colors duration-200"} ${
-                idx < alerts.length - 1 && alert.severity !== "High" && alert.severity !== "Med" ? "border-b border-[var(--border-primary)]" : ""
+                idx < pageAlerts.length - 1 && alert.severity !== "High" && alert.severity !== "Med" ? "border-b border-[var(--border-primary)]" : ""
               }`}
               style={alert.severity === "High" ? { "--pulse-color": "rgba(220, 38, 38, 0.4)" } as React.CSSProperties : {}}
             >
@@ -60,6 +69,31 @@ export default function ActiveAlertsCard({ data }: Props) {
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="px-6 py-3 border-t border-[var(--border-color)] flex items-center justify-between mt-auto">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
+            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, alerts.length)} of {alerts.length}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="p-1.5 rounded-lg border border-[var(--border-primary)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page === totalPages - 1}
+              className="p-1.5 rounded-lg border border-[var(--border-primary)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

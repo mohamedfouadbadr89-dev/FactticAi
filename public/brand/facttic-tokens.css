@@ -1,0 +1,37 @@
+/**
+ * Facttic Brand Tokens — Signal Stack v1.0
+ * Production-ready CSS custom properties
+ */
+
+:root {
+  /* ─── Color System ──────────────────────────── */
+  --facttic-blue:        #2563EB;   /* Primary Blue — accent, bar 1, shard */
+  --facttic-navy:        #0A1628;   /* Deep Navy — dark bg */
+  --facttic-dark-blue:   #0F1E38;   /* Dark Blue — secondary dark bg */
+  --facttic-card:        #162444;   /* Dark Neutral — card surfaces */
+  --facttic-parch:       #F7F5F0;   /* Light Neutral — light bg */
+  --facttic-ink:         #1A1A2E;   /* Primary Ink — light mode text */
+  --facttic-white:       #FFFFFF;   /* White — dark mode text + icon fills */
+
+  /* ─── Typography ────────────────────────────── */
+  --facttic-font:        'Inter', 'Poppins', system-ui, -apple-system, sans-serif;
+  --facttic-weight-logo: 600;
+  --facttic-tracking:    -0.03em;
+
+  /* ─── Icon Opacity Layers ───────────────────── */
+  --facttic-bar2-dark:   rgba(255, 255, 255, 0.65);
+  --facttic-bar2-light:  rgba(26,  26,  46,  0.65);
+  --facttic-bar3-dark:   rgba(255, 255, 255, 0.22);
+  --facttic-bar3-light:  rgba(26,  26,  46,  0.22);
+  --facttic-shard:       rgba(37,  99,  235, 0.85);
+
+  /* ─── Divider ───────────────────────────────── */
+  --facttic-divider-dark:  rgba(255, 255, 255, 0.20);
+  --facttic-divider-light: rgba(0,   0,   0,   0.15);
+
+  /* ─── Spacing ───────────────────────────────── */
+  --facttic-icon-gap-divider:   24px;  /* icon → divider */
+  --facttic-divider-gap-wm:     20px;  /* divider → wordmark */
+  --facttic-compact-gap:        12px;  /* icon → wordmark (compact) */
+  --facttic-safe-zone:          4px;   /* min padding = height of bar 3 */
+}

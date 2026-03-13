@@ -14,6 +14,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const syncAttempted = useRef(false);
 
   useEffect(() => {
@@ -41,7 +42,12 @@ export default function DashboardLayout({
             onClick={() => setIsSidebarOpen(false)} 
           />
         )}
-        <DashboardSidebar isOpen={isSidebarOpen} close={() => setIsSidebarOpen(false)} />
+        <DashboardSidebar
+          isOpen={isSidebarOpen}
+          close={() => setIsSidebarOpen(false)}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
+        />
         <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
           <EnterpriseTopbar onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
           <Breadcrumbs />
