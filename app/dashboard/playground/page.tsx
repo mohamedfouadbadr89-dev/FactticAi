@@ -1,29 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import PromptRunner from '@/components/playground/PromptRunner';
 import GovernanceResults from '@/components/playground/GovernanceResults';
 import { ShieldCheck, Info } from 'lucide-react';
-import { createBrowserClient } from '@supabase/ssr';
 
 export default function PlaygroundPage() {
-  const [orgId, setOrgId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any | null>(null);
 
-  useEffect(() => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const id = session?.user?.user_metadata?.org_id;
-      if (id) setOrgId(id);
-    });
-  }, []);
-
   const handleRunGovernance = async (config: any) => {
-    if (!orgId) return;
     setLoading(true);
     setResults(null);
     const sessionId = crypto.randomUUID();
@@ -36,7 +22,6 @@ export default function PlaygroundPage() {
         body: JSON.stringify({
           prompt: config.prompt,
           model: config.model,
-          org_id: orgId,
           session_id: sessionId,
         })
       });
