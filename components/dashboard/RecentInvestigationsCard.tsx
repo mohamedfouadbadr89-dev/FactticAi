@@ -1,6 +1,9 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import type { InvestigationRow } from "@/lib/dashboard/types";
 import { CountUp } from "@/components/ui/CountUp";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Props {
   data?: InvestigationRow[] | undefined;
@@ -20,8 +23,14 @@ const defaultRows: InvestigationRow[] = [
   { id: "INV-435", name: "Compliance Drift — SOC2", channel: "Voice", phase: "Phase 4", status: "Closed", rca: "99%", rcaColor: "text-emerald-600", assigned: "J. Liu", updated: "1d ago" },
 ];
 
+const PAGE_SIZE = 5;
+
 export default function RecentInvestigationsCard({ data }: Props) {
   const rows = data ?? defaultRows;
+  const [page, setPage] = useState(0);
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const pageRows = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   return (
     <div className="card overflow-hidden animate-[fadeIn_.4s_ease-in-out]">
@@ -47,28 +56,28 @@ export default function RecentInvestigationsCard({ data }: Props) {
               <tr className="border-b border-[var(--border-color)]">
                 <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">ID</th>
                 <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">Investigation Name</th>
-                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">Channel</th>
-                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">Phase</th>
+                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold col-phase">Channel</th>
+                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold col-phase">Phase</th>
                 <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">Status</th>
                 <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">RCA Conf.</th>
-                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold">Assigned</th>
+                <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold col-assigned">Assigned</th>
                 <th className="px-6 py-3 text-[10px] tracking-[1.5px] uppercase text-[var(--text-muted)] font-semibold text-right">Last Updated</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-color)] text-[13px] text-[var(--text-secondary)]">
-              {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-[#FAFBFC] transition-colors duration-150">
+              {pageRows.map((row) => (
+                <tr key={row.id} className="hover:bg-[var(--bg-secondary)] transition-colors duration-150">
                   <td className="px-6 py-4 font-mono font-medium text-[var(--text-primary)]">{row.id}</td>
                   <td className="px-6 py-4 font-medium text-[var(--text-primary)]">{row.name}</td>
-                  <td className="px-6 py-4">{row.channel}</td>
-                  <td className="px-6 py-4">{row.phase}</td>
+                  <td className="px-6 py-4 col-phase">{row.channel}</td>
+                  <td className="px-6 py-4 col-phase">{row.phase}</td>
                   <td className="px-6 py-4">
                     <span className={`${statusClass[row.status] ?? "bg-[var(--bg-secondary)] text-[var(--text-secondary)]"} text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-[20px]`}>
                       {row.status}
                     </span>
                   </td>
                   <td className={`px-6 py-4 font-mono font-medium ${row.rcaColor}`}><CountUp value={parseFloat(row.rca)} />%</td>
-                  <td className="px-6 py-4 text-[var(--text-primary)]">{row.assigned}</td>
+                  <td className="px-6 py-4 text-[var(--text-primary)] col-assigned">{row.assigned}</td>
                   <td className="px-6 py-4 font-mono text-right">{row.updated}</td>
                 </tr>
               ))}
@@ -76,6 +85,44 @@ export default function RecentInvestigationsCard({ data }: Props) {
           </table>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="px-6 py-4 border-t border-[var(--border-color)] flex items-center justify-between">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
+            Page {page + 1} of {totalPages}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="p-1.5 rounded-lg border border-[var(--border-primary)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button
+                key={i}
+                onClick={() => setPage(i)}
+                className={`w-7 h-7 rounded-lg text-[10px] font-black transition-all ${
+                  i === page
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'border border-[var(--border-primary)] text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)]'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page === totalPages - 1}
+              className="p-1.5 rounded-lg border border-[var(--border-primary)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

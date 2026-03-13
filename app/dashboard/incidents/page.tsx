@@ -1,3 +1,4 @@
+import { createServerAuthClient } from '@/lib/supabaseAuth'
 import { resolveOrgContext } from '@/lib/orgResolver'
 import IncidentControls from '@/components/incidents/IncidentControls'
 import { ShieldAlert } from 'lucide-react'
@@ -21,22 +22,26 @@ export default async function IncidentsPage() {
     let orgId: string | null = null
 
     try {
-      const orgContext = await resolveOrgContext('user-1234')
-      orgId = orgContext.org_id
+      const authClient = await createServerAuthClient()
+      const { data: { user } } = await authClient.auth.getUser()
+      if (user) {
+        const orgContext = await resolveOrgContext(user.id)
+        orgId = orgContext.org_id
+      }
     } catch {
-
       const { data: fallback } = await supabaseServer
         .from('org_members')
         .select('org_id')
         .limit(1)
         .single()
-
       orgId = fallback?.org_id || null
     }
+
     if (orgId) {
       const { data } = await supabaseServer
         .from('incidents')
         .select('*')
+        .eq('org_id', orgId)
         .order('timestamp', { ascending: false })
         .limit(200)
 

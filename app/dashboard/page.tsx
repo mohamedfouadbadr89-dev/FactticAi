@@ -118,11 +118,14 @@ export default function DashboardPage() {
           <RiskBreakdownCard data={data?.risks} />
         </div>
 
-        {/* Voice + Governance */}
+        {/* Voice Drift + Governance State */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <VoiceDriftCard data={data?.voice_drift} />
           <GovernanceStateCard orgId={orgId ?? ""} />
-          <GovernanceSnapshotCard />
         </div>
+
+        {/* Governance Snapshot */}
+        <GovernanceSnapshotCard />
 
         {/* Intelligence Layer */}
         <IntelligenceDashboard data={data?.intelligence} />

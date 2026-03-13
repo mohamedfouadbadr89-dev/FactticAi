@@ -77,6 +77,8 @@
   --card-bg: var(--surface-1);
   --skeleton-base: #E8E5E0;
   --skeleton-highlight: #FFFFFF;
+  /* Alias for legacy border-color references */
+  --border-color: var(--border-subtle);
 }
 
 /* =============================================
@@ -116,6 +118,8 @@
   --card-bg: var(--surface-1);
   --skeleton-base: rgba(255, 255, 255, 0.05);
   --skeleton-highlight: rgba(255, 255, 255, 0.12);
+  /* Alias for legacy border-color references */
+  --border-color: var(--border-subtle);
 }
 
 html, body {

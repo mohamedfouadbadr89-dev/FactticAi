@@ -32,7 +32,6 @@ import {
   Pie
 } from 'recharts';
 import { logger } from '@/lib/logger';
-import { createBrowserClient } from '@supabase/ssr';
 
 interface ComplianceSignal {
   id: string;
@@ -52,30 +51,17 @@ interface LedgerEvent {
 
 export default function ComplianceDashboard() {
   const router = useRouter();
-  const [orgId, setOrgId] = useState<string | null>(null);
   const [signals, setSignals] = useState<ComplianceSignal[]>([]);
   const [ledgerEvents, setLedgerEvents] = useState<LedgerEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
-  useEffect(() => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const id = session?.user?.user_metadata?.org_id;
-      if (id) setOrgId(id);
-      else setLoading(false);
-    });
-  }, []);
-
-  const fetchData = async (id: string) => {
+  const fetchData = async () => {
     setLoading(true);
     try {
       const [signalsRes, ledgerRes] = await Promise.all([
-        fetch(`/api/compliance/signals?org_id=${id}&limit=50`),
-        fetch(`/api/compliance/ledger?org_id=${id}&limit=50`)
+        fetch('/api/compliance/signals?limit=50'),
+        fetch('/api/compliance/ledger?limit=50')
       ]);
 
       const signalsData = await signalsRes.json();
@@ -91,8 +77,8 @@ export default function ComplianceDashboard() {
   };
 
   useEffect(() => {
-    if (orgId) fetchData(orgId);
-  }, [orgId]);
+    fetchData();
+  }, []);
 
   const handleExport = async () => {
     setExporting(true);
@@ -101,7 +87,6 @@ export default function ComplianceDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          org_id: orgId!,
           types: ['ledger', 'compliance', 'risk'],
           format: 'JSON',
           date_start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -115,7 +100,7 @@ export default function ComplianceDashboard() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Compliance_Audit_${orgId}.json`;
+      a.download = `Compliance_Audit.json`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -177,7 +162,7 @@ export default function ComplianceDashboard() {
           <button onClick={() => router.push('/dashboard/alerts')} className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">Alerts →</button>
           <button onClick={() => router.push('/dashboard/incidents')} className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">Incidents →</button>
           <button
-            onClick={() => { if (orgId) fetchData(orgId); }}
+            onClick={() => fetchData()}
             disabled={loading}
             className="flex items-center gap-2 px-5 py-3 bg-white/5 border border-white/10 rounded-xl text-xs font-bold hover:bg-white/10 transition-all uppercase tracking-widest disabled:opacity-50"
           >

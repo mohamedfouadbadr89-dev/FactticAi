@@ -11,24 +11,26 @@ interface Props {
 }
 
 export default function ExecutiveHealthCard({ data }: Props) {
+  const isLive = !!data;
   const d = data ?? {
-    governance_score: 84,
-    sessions_today: 428,
-    voice_calls: 87,
-    drift_freq: "2.4%",
+    governance_score: 100,
+    sessions_today: 0,
+    voice_calls: 0,
+    drift_freq: "0.0%",
     rca_confidence: "91%",
-    policy_adherence: "96.2% compliant",
-    behavioral_drift: "Monitor",
-    open_alerts: 3,
+    policy_adherence: "100% compliant",
+    behavioral_drift: "Stable",
+    open_alerts: 0,
     tamper_integrity: "Verified",
   };
 
+  // Show the real score — confidence is shown as a secondary badge only
+  const displayedScore = d.governance_score;
   const confidence = computeHealthConfidence(d.sessions_today);
-  const displayedScore = Math.round(d.governance_score * confidence);
-  const isAdjusted = confidence < 1.0;
+  const isLowSignal = d.sessions_today < 50;
 
   return (
-    <div 
+    <div
       className="health-card relative overflow-hidden rounded-xl bg-gradient-to-br from-[var(--accent)] to-[color-mix(in_srgb,var(--accent)_70%,black)] dark:from-[color-mix(in_srgb,var(--accent)_80%,black)] dark:to-[color-mix(in_srgb,var(--accent)_60%,black)] p-8 text-white transition-all duration-300 animate-[fadeIn_.4s_ease-in-out]"
     >
       <div className="absolute inset-0 bg-[var(--card-bg)]/5 rounded-2xl pointer-events-none" />
@@ -36,19 +38,27 @@ export default function ExecutiveHealthCard({ data }: Props) {
 
         {/* LEFT — Score */}
         <div className="flex flex-col items-center justify-center relative group/health">
-          <span 
+          <span
             className="text-[52px] font-bold tracking-tight"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
             <CountUp value={displayedScore} />
           </span>
           <span className="text-lg text-white/70 mt-1">/ 100</span>
-          
-          {isAdjusted && (
+
+          {/* Live vs fallback badge */}
+          <div className="mt-2 flex items-center gap-1.5">
+            <div className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-400 animate-pulse' : 'bg-white/30'}`} />
+            <span className="text-[9px] font-black uppercase tracking-widest text-white/60">
+              {isLive ? 'Live' : 'No Data'}
+            </span>
+          </div>
+
+          {isLowSignal && isLive && (
             <div className="absolute -top-2 -right-2 flex flex-col items-center group">
               <Info className="w-3 h-3 text-white/40 hover:text-white/80 transition-colors cursor-help" />
-              <div className="absolute bottom-full mb-2 hidden group-hover:block w-48 p-2 bg-black/80 backdrop-blur-sm border border-white/10 rounded-lg text-[10px] font-medium leading-tight text-center shadow-xl z-50">
-                Confidence adjusted to {Math.round(confidence * 100)}% based on signal volume ({d.sessions_today} interactions).
+              <div className="absolute bottom-full mb-2 hidden group-hover:block w-52 p-2 bg-black/80 backdrop-blur-sm border border-white/10 rounded-lg text-[10px] font-medium leading-tight text-center shadow-xl z-50">
+                Low signal volume ({d.sessions_today} interactions). Score confidence: {Math.round(confidence * 100)}%.
               </div>
             </div>
           )}

@@ -54,18 +54,12 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
         .neq('status', 'closed')
     ]);
 
-    if (snapshotError || predictionError || alertsError || eventsError) {
-      logger.error('DASHBOARD_STATS_FETCH_FAILED', {
-        orgId,
-        snapshotError: snapshotError?.message,
-        eventsError: eventsError?.message,
-      });
-      return NextResponse.json({ error: 'DATA_FETCH_FAILED' }, { status: 500 });
-    }
-    // incidentsError is non-fatal — table may not exist yet (Phase 5)
-    if (incidentsError) {
-      logger.warn('DASHBOARD_INCIDENTS_UNAVAILABLE', { orgId, error: incidentsError?.message });
-    }
+    // Log individual failures but continue — degrade gracefully
+    if (snapshotError) logger.warn('DASHBOARD_SNAPSHOT_UNAVAILABLE', { orgId, error: snapshotError.message });
+    if (predictionError) logger.warn('DASHBOARD_PREDICTIONS_UNAVAILABLE', { orgId, error: predictionError.message });
+    if (alertsError) logger.warn('DASHBOARD_ALERTS_UNAVAILABLE', { orgId, error: alertsError.message });
+    if (eventsError) logger.warn('DASHBOARD_EVENTS_UNAVAILABLE', { orgId, error: eventsError.message });
+    if (incidentsError) logger.warn('DASHBOARD_INCIDENTS_UNAVAILABLE', { orgId, error: incidentsError?.message });
 
     // 2. Process Data
     const latestSnapshot = snapshots?.[0];
