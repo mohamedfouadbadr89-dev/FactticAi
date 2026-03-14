@@ -1,20 +1,16 @@
 import { NextResponse } from 'next/server';
 import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { supabaseServer } from '@/lib/supabaseServer';
-import { createAuthenticatedClient } from '@/lib/supabaseClient';
-import { extractToken } from '@/core/auth';
 
 /**
  * API: /api/agents
  */
 export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
-    const token = extractToken(req);
-    const supabaseUserClient = createAuthenticatedClient(token!);
-    
-    const { data: agents, error } = await supabaseUserClient
+    const { data: agents, error } = await supabaseServer
       .from('agents')
-      .select('*')
+      .select('id, org_id, name, type, version, is_active, created_at')
+      .eq('org_id', orgId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
