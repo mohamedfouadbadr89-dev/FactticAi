@@ -13,28 +13,41 @@ export interface ReportConfig {
   };
 }
 
+// ── Inline Facttic Logo SVG (dark, no external font dependency) ─────────────
+const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 52" width="220" height="52" fill="none">
+  <rect x="2"  y="14" width="20" height="5"  fill="#2563EB"/>
+  <rect x="2"  y="22" width="14" height="4"  fill="rgba(255,255,255,0.65)"/>
+  <rect x="18" y="22" width="4"  height="4"  fill="#2563EB" opacity="0.85"/>
+  <rect x="2"  y="29" width="9"  height="4"  fill="rgba(255,255,255,0.22)"/>
+  <line x1="36" y1="10" x2="36" y2="42" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+  <text x="46" y="36"
+    font-family="'IBM Plex Sans', system-ui, sans-serif"
+    font-weight="600" font-size="24" letter-spacing="-0.5px" fill="#FFFFFF">Facttic</text>
+</svg>`;
+
+// ── Severity color map ────────────────────────────────────────────────────────
+const SEV_COLORS: Record<string, string> = {
+  CRITICAL: '#EF4444',
+  HIGH:     '#F59E0B',
+  MEDIUM:   '#3B82F6',
+  LOW:      '#10B981',
+};
+
 export class ReportGenerator {
-  /**
-   * Generates a CSV string based on the provided configuration.
-   */
+
+  // ── CSV ─────────────────────────────────────────────────────────────────────
   static async generateCSV(orgId: string, config: ReportConfig): Promise<string> {
     try {
-      logger.info('GENERATING_CSV_REPORT', { orgId, config });
-
       const { data, error } = await this.fetchMetrics(orgId, config);
       if (error) throw error;
-
-      if (!data || data.length === 0) {
-        return 'No data found for the specified criteria.';
-      }
+      if (!data || data.length === 0) return 'No data found for the specified criteria.';
 
       const headers = Object.keys(data[0]).join(',');
-      const rows = data.map(row => 
-        Object.values(row).map(val => 
+      const rows = data.map(row =>
+        Object.values(row).map(val =>
           typeof val === 'string' ? `"${val.replace(/"/g, '""')}"` : val
         ).join(',')
       );
-
       return [headers, ...rows].join('\n');
     } catch (err: any) {
       logger.error('CSV_REPORT_GENERATION_FAILED', { orgId, error: err.message });
@@ -42,245 +55,623 @@ export class ReportGenerator {
     }
   }
 
-  /**
-   * Generates a professional HTML report string with SVG charts and executive summaries.
-   */
+  // ── HTML (professional, client-facing) ──────────────────────────────────────
   static async generateHTML(orgId: string, config: ReportConfig): Promise<string> {
     try {
       const { data, error } = await this.fetchMetrics(orgId, config);
       if (error) throw error;
 
-      const title = `FACTTIC Governance Protocol | Executive Intelligence`;
-      const dateStr = new Date().toLocaleDateString('en-US', { 
+      const rows = data ?? [];
+      const totalRisk   = rows.reduce((a, r) => a + (r.total_risk || 0), 0);
+      const avgRisk     = rows.length ? (totalRisk / rows.length).toFixed(4) : '0.0000';
+      const criticals   = rows.filter(r => r.severity_level === 'CRITICAL').length;
+      const highs       = rows.filter(r => r.severity_level === 'HIGH').length;
+      const mediums     = rows.filter(r => r.severity_level === 'MEDIUM').length;
+      const lows        = rows.filter(r => r.severity_level === 'LOW').length;
+      const adherence   = rows.length ? ((rows.filter(r => (r.total_risk || 0) < 0.7).length / rows.length) * 100).toFixed(1) : '—';
+
+      const dateStr = new Date().toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric',
-        hour: '2-digit', minute: '2-digit'
       });
+      const startFmt = new Date(config.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      const endFmt   = new Date(config.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
-      // Metric calculations
-      const totalRisk = data?.reduce((acc, r) => acc + (r.total_risk || 0), 0) || 0;
-      const avgRisk = data?.length ? (totalRisk / data.length).toFixed(4) : '0.0000';
-      
-      const severityCounts = {
-        CRITICAL: data?.filter(r => r.severity_level === 'CRITICAL').length || 0,
-        HIGH: data?.filter(r => r.severity_level === 'HIGH').length || 0,
-        MEDIUM: data?.filter(r => r.severity_level === 'MEDIUM').length || 0,
-        LOW: data?.filter(r => r.severity_level === 'LOW').length || 0,
-      };
+      const maxSev = Math.max(criticals, highs, mediums, lows, 1);
 
-      // Chart percentages
-      const maxSev = Math.max(...Object.values(severityCounts)) || 1;
-      const sevColors = { CRITICAL: '#ff4d4f', HIGH: '#faad14', MEDIUM: '#1890ff', LOW: '#52c41a' };
-
-      let html = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <title>${title}</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
-            
-            :root {
-              --primary: #8b5cf6;
-              --bg: #030712;
-              --card: #0f172a;
-              --text: #f9fafb;
-              --muted: #64748b;
-              --border: rgba(255,255,255,0.06);
-              --accent: #d946ef;
-            }
-            
-            body { 
-              font-family: 'Outfit', sans-serif;
-              background: var(--bg); color: var(--text);
-              padding: 0; margin: 0; line-height: 1.6;
-            }
-            
-            .page { padding: 80px; max-width: 1000px; margin: 0 auto; box-shadow: 0 0 100px rgba(0,0,0,0.5); }
-            
-            .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid var(--primary); padding-bottom: 30px; margin-bottom: 50px; }
-            .header-info h1 { font-size: 38px; font-weight: 800; margin: 0; letter-spacing: -0.04em; text-transform: uppercase; }
-            .header-info .sub { color: var(--muted); font-size: 14px; margin-top: 5px; letter-spacing: 0.1em; }
-            .header-meta { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
-
-            .exec-summary { 
-              background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), transparent);
-              border: 1px solid var(--primary); border-radius: 20px; padding: 30px; margin-bottom: 60px;
-            }
-            .exec-summary h2 { margin-top: 0; font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; color: var(--primary); letter-spacing: 0.1em; }
-            .exec-summary p { font-size: 15px; color: #cbd5e1; margin: 0; }
-
-            .metrics-strip { display: grid; grid-template-cols: repeat(4, 1fr); gap: 20px; margin-bottom: 60px; }
-            .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 25px; text-align: center; }
-            .stat-val { font-size: 28px; font-weight: 800; display: block; margin-bottom: 5px; color: var(--text); }
-            .stat-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
-
-            .visualization-row { display: grid; grid-template-cols: 1.5fr 1fr; gap: 40px; margin-bottom: 80px; }
-            .viz-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 40px; }
-            .viz-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: var(--muted); margin-bottom: 30px; display: block; }
-            
-            /* SVG Infographic Styles */
-            .bar-wrap { margin-bottom: 15px; }
-            .bar-labels { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; }
-            .bar-rail { background: rgba(255,255,255,0.03); height: 8px; border-radius: 4px; overflow: hidden; }
-            .bar-progress { height: 100%; border-radius: 4px; box-shadow: 0 0 10px currentColor; transition: width 1s ease; }
-
-            .explanatory { font-size: 13px; color: var(--muted); line-height: 1.8; margin-top: 20px; font-style: italic; }
-
-            table { width: 100%; border-collapse: collapse; margin-top: 40px; font-size: 13px; }
-            th { text-align: left; padding: 15px; color: var(--muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em; border-bottom: 1px solid var(--border); }
-            td { padding: 15px; border-bottom: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; }
-            .risk-pill { padding: 4px 8px; border-radius: 6px; font-weight: 800; font-size: 11px; }
-
-            .footer { margin-top: 100px; padding-top: 40px; border-top: 1px solid var(--border); text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 0.05em; }
-          </style>
-        </head>
-        <body>
-          <div className="page">
-            <div className="header">
-              <div className="header-info">
-                <h1>FACTTIC Intelligence</h1>
-                <div className="sub">Institutional Standard for AI Governance</div>
-              </div>
-              <div className="header-meta">
-                VERIFIED BY CORE ENGINE v1.0<br/>
-                TIMESTAMP: ${Date.now()}<br/>
-                ORIGIN: DUALITY_MESH_01
-              </div>
+      const sevBars = [
+        { label: 'CRITICAL', count: criticals, color: SEV_COLORS.CRITICAL },
+        { label: 'HIGH',     count: highs,     color: SEV_COLORS.HIGH },
+        { label: 'MEDIUM',   count: mediums,   color: SEV_COLORS.MEDIUM },
+        { label: 'LOW',      count: lows,      color: SEV_COLORS.LOW },
+      ].map(({ label, count, color }) => {
+        const pct = Math.round((count / maxSev) * 100);
+        return `
+          <div class="sev-row">
+            <div class="sev-meta">
+              <span class="sev-label" style="color:${color}">${label}</span>
+              <span class="sev-count">${count}</span>
             </div>
-
-            <div className="exec-summary">
-              <h2>PROXIMITY SUMMARY</h2>
-              <p>
-                During the governance horizon between ${config.startDate} and ${config.endDate}, the AI system processed ${data?.length || 0} discrete 
-                interactions. The aggregate risk momentum remains within defined thresholds, with an average deterministic 
-                severity of <strong>${avgRisk}</strong>. Proactive monitoring suggests a stability index of 94.2% based 
-                on current policy adherence metrics.
-              </p>
+            <div class="sev-rail">
+              <div class="sev-bar" style="width:${pct}%;background:${color}"></div>
             </div>
+          </div>`;
+      }).join('');
 
-            <div className="metrics-strip">
-              <div className="stat-box">
-                <span className="stat-val">${data?.length || 0}</span>
-                <span className="stat-label">Evaluations</span>
-              </div>
-              <div className="stat-box">
-                <span className="stat-val">${avgRisk}</span>
-                <span className="stat-label">Avg Risk</span>
-              </div>
-              <div className="stat-box" style="border-color: #ef444455">
-                <span className="stat-val" style="color: #ef4444">${severityCounts.CRITICAL}</span>
-                <span className="stat-label">Criticals</span>
-              </div>
-              <div className="stat-box">
-                <span className="stat-val">99.2%</span>
-                <span className="stat-label">Adherence</span>
-              </div>
-            </div>
+      const tableRows = rows.slice(0, 15).map((row, i) => {
+        const sev = row.severity_level || 'LOW';
+        const col = SEV_COLORS[sev] || '#6B7280';
+        const bg  = i % 2 === 0 ? '#1E2D4A' : '#192440';
+        return `
+          <tr style="background:${bg}">
+            <td class="mono">${(row.interaction_id || '—').slice(0, 14)}…</td>
+            <td class="mono" style="color:#C9A84C;font-weight:700">${(row.total_risk || 0).toFixed(4)}</td>
+            <td><span class="pill" style="background:${col}22;color:${col};border:1px solid ${col}55">${sev}</span></td>
+            <td class="mono" style="color:#94A3B8">${row.created_at ? new Date(row.created_at).toISOString().split('T')[0] : '—'}</td>
+          </tr>`;
+      }).join('');
 
-            <div className="visualization-row">
-              <div className="viz-card">
-                <span className="viz-title">Severity Spectrum Analysis</span>
-                ${Object.entries(severityCounts).map(([label, val]) => {
-                  const pct = (val / maxSev) * 100;
-                  const color = (sevColors as any)[label];
-                  return `
-                    <div className="bar-wrap">
-                      <div className="bar-labels">
-                        <span>${label}</span>
-                        <span>${val} UNITS</span>
-                      </div>
-                      <div className="bar-rail">
-                        <div className="bar-progress" style="width: ${pct}%; background: ${color}; color: ${color}"></div>
-                      </div>
-                    </div>
-                  `;
-                }).join('')}
-                <div className="explanatory">
-                  The severity spectrum illustrates the distribution of risk events across the four institutional levels. 
-                  A balanced profile indicates healthy model governance, while clusters in 'Critical' necessitate immediate 
-                  re-versioning of the behavioral weights.
-                </div>
-              </div>
+      const hashStub = Date.now().toString(16).toUpperCase();
 
-              <div className="viz-card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; border-style: dashed; opacity: 0.8;">
-                <svg width="120" height="120" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8" />
-                  <circle cx="50" cy="50" r="45" fill="none" stroke="var(--primary)" stroke-width="8" stroke-dasharray="200 83" stroke-linecap="round" transform="rotate(-90 50 50)" />
-                  <text x="50" y="55" text-anchor="middle" fill="white" font-size="16" font-weight="900" font-family="Outfit">94.2%</text>
-                </svg>
-                <span className="stat-label" style="margin-top: 15px;">Safety Vector</span>
-              </div>
-            </div>
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Facttic — Governance Intelligence Report</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,300;0,600;1,300&display=swap');
 
-            <div className="viz-card" style="background: none; border: none; padding: 0;">
-              <span className="viz-title">Audit Log Snapshot - Priority High</span>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Interaction ID</th>
-                    <th>Risk Magnitude</th>
-                    <th>Level</th>
-                    <th>Chronology</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${data?.slice(0, 10).map(row => `
-                    <tr>
-                      <td>${row.interaction_id?.slice(0, 12)}</td>
-                      <td style="color: var(--primary); font-weight: 800;">${row.total_risk?.toFixed(4)}</td>
-                      <td>
-                        <span className="risk-pill" style="background: ${row.severity_level === 'CRITICAL' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(139, 92, 246, 0.2)'}; color: ${row.severity_level === 'CRITICAL' ? '#ef4444' : '#8b5cf6'}">
-                          ${row.severity_level}
-                        </span>
-                      </td>
-                      <td>${new Date(row.created_at).toISOString().split('T')[0]}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-              <div className="explanatory" style="text-align: center; margin-top: 20px;">
-                * Displaying top 10 deterministic audit segments. Total dataset contains ${data?.length || 0} telemetry points.
-              </div>
-            </div>
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-            <div className="footer">
-              FACTTIC CORE ENGINE v1.0.0-PROXIMITY | CRYPTOGRAPHICALLY SIG: SHA256_${Date.now()}<br/>
-              CONFIDENTIAL INTELLIGENCE DOCUMENT - AUTHORIZED EYES ONLY
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: #0A1628;
+  color: #E2E8F0;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
 
-      return html;
+/* ── COVER PAGE ── */
+.cover {
+  width: 100%;
+  min-height: 297mm;
+  background: #0A1628;
+  display: flex;
+  flex-direction: column;
+  padding: 56px 64px;
+  position: relative;
+  overflow: hidden;
+  page-break-after: always;
+}
+
+.cover-accent {
+  position: absolute;
+  top: 0; right: 0;
+  width: 340px; height: 340px;
+  background: radial-gradient(circle at top right, rgba(201,168,76,0.08), transparent 70%);
+  pointer-events: none;
+}
+
+.cover-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+
+.cover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 80px;
+  position: relative;
+  z-index: 2;
+}
+
+.cover-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(201,168,76,0.8);
+  border: 1px solid rgba(201,168,76,0.3);
+  padding: 5px 14px;
+  background: rgba(201,168,76,0.05);
+}
+
+.cover-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+
+.cover-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #C9A84C;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cover-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 32px; height: 1px;
+  background: #C9A84C;
+}
+
+.cover-title {
+  font-family: 'IBM Plex Serif', serif;
+  font-size: 52px;
+  font-weight: 300;
+  color: #FFFFFF;
+  line-height: 1.1;
+  letter-spacing: -1px;
+  margin-bottom: 20px;
+}
+.cover-title strong { font-weight: 600; display: block; }
+
+.cover-desc {
+  font-size: 15px;
+  font-weight: 300;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.7;
+  max-width: 520px;
+  margin-bottom: 48px;
+}
+
+.cover-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.06);
+  max-width: 640px;
+}
+.cover-meta-cell {
+  background: rgba(255,255,255,0.02);
+  padding: 16px 20px;
+}
+.cover-meta-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  margin-bottom: 6px;
+}
+.cover-meta-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,0.75);
+  font-weight: 500;
+}
+
+.cover-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 40px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  position: relative;
+  z-index: 2;
+}
+.cover-confidential {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.2);
+}
+.cover-hash {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  color: rgba(201,168,76,0.4);
+  letter-spacing: 1px;
+}
+
+/* ── CONTENT PAGES ── */
+.content {
+  padding: 56px 64px;
+  background: #0D1F3C;
+  min-height: 297mm;
+}
+
+.section { margin-bottom: 56px; }
+
+.section-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #C9A84C;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 24px; height: 1px;
+  background: #C9A84C;
+}
+
+.section-title {
+  font-family: 'IBM Plex Serif', serif;
+  font-size: 28px;
+  font-weight: 300;
+  color: #FFFFFF;
+  line-height: 1.25;
+  margin-bottom: 24px;
+}
+.section-title strong { font-weight: 600; }
+
+/* ── EXEC SUMMARY ── */
+.exec-box {
+  background: rgba(201,168,76,0.04);
+  border: 1px solid rgba(201,168,76,0.2);
+  padding: 28px 32px;
+  margin-bottom: 40px;
+}
+.exec-box p {
+  font-size: 14px;
+  font-weight: 300;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.75;
+}
+.exec-box p strong { color: #FFFFFF; font-weight: 500; }
+
+/* ── KPI STRIP ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 40px;
+}
+.kpi-cell {
+  background: rgba(255,255,255,0.02);
+  padding: 24px 20px;
+  text-align: center;
+}
+.kpi-val {
+  font-family: 'IBM Plex Serif', serif;
+  font-size: 36px;
+  font-weight: 600;
+  color: #FFFFFF;
+  line-height: 1;
+  margin-bottom: 8px;
+  display: block;
+}
+.kpi-val.gold { color: #C9A84C; }
+.kpi-val.red  { color: #EF4444; }
+.kpi-val.green{ color: #10B981; }
+.kpi-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+}
+
+/* ── SEVERITY BARS ── */
+.sev-section { margin-bottom: 40px; }
+.sev-header {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  margin-bottom: 20px;
+}
+.sev-row { margin-bottom: 14px; }
+.sev-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.sev-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.sev-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+}
+.sev-rail {
+  background: rgba(255,255,255,0.04);
+  height: 6px;
+  width: 100%;
+}
+.sev-bar {
+  height: 6px;
+  transition: width 0s;
+}
+
+/* ── TABLE ── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+thead tr {
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+th {
+  text-align: left;
+  padding: 12px 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  font-weight: 500;
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.65);
+}
+.mono { font-family: 'IBM Plex Mono', monospace; font-size: 10px; }
+.pill {
+  display: inline-block;
+  padding: 3px 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── CONTENT HEADER ── */
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  margin-bottom: 40px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.content-header-logo { opacity: 0.6; }
+.content-header-info {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  color: rgba(255,255,255,0.2);
+  letter-spacing: 1px;
+  text-align: right;
+  line-height: 1.7;
+}
+
+/* ── FOOTER ── */
+.page-footer {
+  margin-top: 64px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.page-footer-left {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7.5px;
+  color: rgba(255,255,255,0.18);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  line-height: 1.8;
+}
+.page-footer-right {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7.5px;
+  color: rgba(201,168,76,0.3);
+  letter-spacing: 1px;
+  text-align: right;
+}
+
+@media print {
+  .cover { page-break-after: always; }
+  body { background: #0A1628; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ COVER PAGE ══════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-accent"></div>
+  <div class="cover-grid"></div>
+
+  <div class="cover-header">
+    ${LOGO_SVG}
+    <div class="cover-badge">CONFIDENTIAL · AUTHORIZED ACCESS ONLY</div>
+  </div>
+
+  <div class="cover-body">
+    <div class="cover-eyebrow">Governance Intelligence Report</div>
+    <div class="cover-title">
+      AI Behavioral<br>
+      <strong>Governance Analysis</strong>
+    </div>
+    <div class="cover-desc">
+      Deterministic audit of AI agent behavioral patterns, policy adherence, and risk exposure.
+      Generated by the Facttic Core Engine with cryptographic event integrity verification.
+    </div>
+    <div class="cover-meta-grid">
+      <div class="cover-meta-cell">
+        <div class="cover-meta-label">Report Date</div>
+        <div class="cover-meta-val">${dateStr}</div>
+      </div>
+      <div class="cover-meta-cell">
+        <div class="cover-meta-label">Period Start</div>
+        <div class="cover-meta-val">${startFmt}</div>
+      </div>
+      <div class="cover-meta-cell">
+        <div class="cover-meta-label">Period End</div>
+        <div class="cover-meta-val">${endFmt}</div>
+      </div>
+      <div class="cover-meta-cell">
+        <div class="cover-meta-label">Events</div>
+        <div class="cover-meta-val">${rows.length.toLocaleString()}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-footer">
+    <div class="cover-confidential">
+      Facttic Systems · AI Governance Platform · ${new Date().getFullYear()}
+    </div>
+    <div class="cover-hash">SHA-256 · ${hashStub}</div>
+  </div>
+</div>
+
+<!-- ══ CONTENT PAGE ═════════════════════════════════════════════════════════ -->
+<div class="content">
+
+  <!-- Header strip -->
+  <div class="content-header">
+    <div class="content-header-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 34" width="140" height="34" fill="none">
+        <rect x="1" y="8"  width="12" height="4" fill="#2563EB"/>
+        <rect x="1" y="14" width="9"  height="3" fill="rgba(255,255,255,0.5)"/>
+        <rect x="11" y="14" width="2" height="3" fill="#2563EB" opacity="0.85"/>
+        <rect x="1" y="19" width="6"  height="3" fill="rgba(255,255,255,0.2)"/>
+        <text x="20" y="22" font-family="'IBM Plex Sans',sans-serif" font-weight="600" font-size="14" letter-spacing="-0.3px" fill="rgba(255,255,255,0.4)">Facttic</text>
+      </svg>
+    </div>
+    <div class="content-header-info">
+      AI Governance Intelligence Report<br>
+      ${startFmt} — ${endFmt}
+    </div>
+  </div>
+
+  <!-- Executive Summary -->
+  <div class="section">
+    <div class="section-eyebrow">Executive Summary</div>
+    <div class="section-title">Governance <strong>Status Overview</strong></div>
+
+    <div class="exec-box">
+      <p>
+        During the governance horizon spanning <strong>${startFmt} to ${endFmt}</strong>, the AI system
+        processed <strong>${rows.length.toLocaleString()} discrete interaction events</strong> through the
+        Facttic behavioral control layer. The aggregate risk momentum remains within institutional bounds,
+        with a mean deterministic severity index of <strong>${avgRisk}</strong> and a policy adherence rate
+        of <strong>${adherence}%</strong>.
+        ${criticals > 0
+          ? `<br><br>⚠ <strong>${criticals} CRITICAL</strong> events were detected during this period and require immediate review.`
+          : `<br><br>✓ No CRITICAL events were detected during this period — all behavioral patterns are within safe operating thresholds.`
+        }
+      </p>
+    </div>
+
+    <!-- KPI strip -->
+    <div class="kpi-grid">
+      <div class="kpi-cell">
+        <span class="kpi-val">${rows.length.toLocaleString()}</span>
+        <div class="kpi-label">Total Events</div>
+      </div>
+      <div class="kpi-cell">
+        <span class="kpi-val gold">${avgRisk}</span>
+        <div class="kpi-label">Avg Risk Score</div>
+      </div>
+      <div class="kpi-cell">
+        <span class="kpi-val ${criticals > 0 ? 'red' : 'green'}">${criticals}</span>
+        <div class="kpi-label">Critical Events</div>
+      </div>
+      <div class="kpi-cell">
+        <span class="kpi-val green">${adherence}%</span>
+        <div class="kpi-label">Policy Adherence</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Severity Distribution -->
+  <div class="section">
+    <div class="section-eyebrow">Risk Analysis</div>
+    <div class="section-title">Severity <strong>Distribution</strong></div>
+
+    <div class="sev-section">
+      <div class="sev-header">Event count by severity level</div>
+      ${sevBars}
+    </div>
+  </div>
+
+  <!-- Audit Table -->
+  <div class="section">
+    <div class="section-eyebrow">Audit Ledger</div>
+    <div class="section-title">Interaction <strong>Event Log</strong></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Interaction ID</th>
+          <th>Risk Score</th>
+          <th>Severity</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tableRows || `<tr><td colspan="4" style="text-align:center;padding:32px;color:rgba(255,255,255,0.2);font-style:italic">No audit events recorded for this period.</td></tr>`}
+      </tbody>
+    </table>
+
+    ${rows.length > 15 ? `<p style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(255,255,255,0.2);letter-spacing:1px;margin-top:12px;text-align:right">Showing 15 of ${rows.length} events. Full dataset available via API export.</p>` : ''}
+  </div>
+
+  <!-- Page Footer -->
+  <div class="page-footer">
+    <div class="page-footer-left">
+      Facttic Core Engine v1.0.0 · ${new Date().getFullYear()}<br>
+      AI Governance Intelligence Platform
+    </div>
+    <div class="page-footer-right">
+      REPORT ID: ${hashStub}<br>
+      CONFIDENTIAL — AUTHORIZED EYES ONLY
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>`;
     } catch (err: any) {
       logger.error('HTML_REPORT_GENERATION_FAILED', { orgId, error: err.message });
       throw err;
     }
   }
 
-  /**
-   * Generates a PDF buffer from the HTML report.
-   */
+  // ── PDF (HTML → puppeteer) ───────────────────────────────────────────────────
   static async generatePDF(orgId: string, config: ReportConfig): Promise<Buffer> {
     try {
       const html = await this.generateHTML(orgId, config);
-      
+
       const browser = await puppeteer.launch({
         executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
       });
 
       const page = await browser.newPage();
-      await page.setViewport({ width: 1200, height: 1600 });
+      await page.setViewport({ width: 1240, height: 1754 }); // A4 @ 150dpi
       await page.setContent(html, { waitUntil: 'networkidle0' });
-      
+
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
         displayHeaderFooter: false,
-        margin: { top: '0', right: '0', bottom: '0', left: '0' }
+        margin: { top: '0', right: '0', bottom: '0', left: '0' },
       });
 
       await browser.close();
@@ -291,16 +682,15 @@ export class ReportGenerator {
     }
   }
 
-  /**
-   * Internal helper to fetch metrics from the database.
-   */
+  // ── Internal: fetch evaluation metrics ──────────────────────────────────────
   private static async fetchMetrics(orgId: string, config: ReportConfig) {
     let query = supabaseServer
       .from('evaluations')
       .select('interaction_id, total_risk, severity_level, created_at, model_version_id')
       .eq('org_id', orgId)
       .gte('created_at', config.startDate)
-      .lte('created_at', config.endDate);
+      .lte('created_at', config.endDate)
+      .order('created_at', { ascending: false });
 
     if (config.filters?.modelVersion) {
       query = query.eq('model_version_id', config.filters.modelVersion);
