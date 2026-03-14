@@ -47,39 +47,47 @@ function Dropdown({
     <div ref={ref} className="relative">
       <button
         onClick={() => (isOpen ? onClose() : onOpen())}
-        className="flex items-center gap-1 nav-link text-mono-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+        style={{
+          fontFamily: "'IBM Plex Mono',monospace",
+          fontSize: 10,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          color: isOpen ? "#C9A84C" : "var(--text-secondary)",
+          transition: "color 0.15s",
+        }}
+        onMouseEnter={e => { if (!isOpen) (e.currentTarget as HTMLElement).style.color = "var(--text-primary)"; }}
+        onMouseLeave={e => { if (!isOpen) (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)"; }}
         aria-expanded={isOpen}
       >
         {label}
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
-          className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-        >
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "none" }}>
           <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
       {isOpen && (
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-          {/* Arrow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1.5 w-3 h-3 bg-[var(--bg-elevated)] border-t border-l border-[var(--border-primary)] rotate-45 z-10" />
-
-          <div className="relative bg-[var(--bg-elevated)] border border-[var(--border-primary)] rounded-xl shadow-2xl overflow-hidden">
-            <div className="p-1.5">
+          <div style={{ position: "absolute", top: 0, left: "50%", transform: "translate(-50%, -6px) rotate(45deg)", width: 12, height: 12, background: "var(--surface-2)", borderTop: "1px solid var(--border-subtle)", borderLeft: "1px solid var(--border-subtle)", zIndex: 10 }} />
+          <div style={{ position: "relative", background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: 12, boxShadow: "0 24px 48px rgba(0,0,0,0.15)", overflow: "hidden" }}>
+            <div style={{ padding: 6 }}>
               {items.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={onClose}
-                  className="flex flex-col gap-0.5 px-3.5 py-3 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors group"
+                  style={{ display: "flex", flexDirection: "column", gap: 2, padding: "10px 14px", borderRadius: 8, textDecoration: "none", transition: "background 0.15s" }}
+                  className="hover:bg-[var(--surface-1)] group"
                 >
-                  <span className="text-[12px] font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }} className="group-hover:text-[#C9A84C] transition-colors">
                     {item.label}
                   </span>
-                  <span className="text-[10px] font-mono text-[var(--text-muted)]">
+                  <span style={{ fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: "var(--text-muted)" }}>
                     {item.desc}
                   </span>
                 </Link>
@@ -99,14 +107,15 @@ export function MarketingNav() {
   const isActive = (href: string) => pathname === href;
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-[var(--border-subtle)] backdrop-blur-md backdrop-saturate-150 bg-[var(--surface-1)]/95">
+    <nav
+      className="sticky top-0 z-50 backdrop-blur-md backdrop-saturate-150"
+      style={{ background: "var(--surface-1)", borderBottom: "1px solid var(--border-subtle)" }}
+    >
       <div className="max-w-[1400px] mx-auto px-8 py-4 flex justify-between items-center">
-        {/* Logo */}
         <Link href="/" className="hover:opacity-80 transition-opacity flex items-center">
           <FactticLogo variant="horizontal" theme="auto" width={140} />
         </Link>
 
-        {/* Nav Links */}
         <div className="hidden md:flex items-center gap-8">
           <Dropdown
             label="Platform"
@@ -115,7 +124,6 @@ export function MarketingNav() {
             onOpen={() => setOpen("platform")}
             onClose={() => setOpen(null)}
           />
-
           <Dropdown
             label="Resources"
             items={resourcesDropdown}
@@ -123,28 +131,30 @@ export function MarketingNav() {
             onOpen={() => setOpen("resources")}
             onClose={() => setOpen(null)}
           />
-
           <Link
             href="/pricing"
-            className={`nav-link text-mono-xs transition-colors ${isActive("/pricing") ? "text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
+            style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", transition: "color 0.15s", color: isActive("/pricing") ? "#C9A84C" : "var(--text-secondary)" }}
+            onMouseEnter={e => { if (!isActive("/pricing")) (e.currentTarget as HTMLElement).style.color = "var(--text-primary)"; }}
+            onMouseLeave={e => { if (!isActive("/pricing")) (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)"; }}
           >
             Pricing
           </Link>
-
           <Link
             href="/blog"
-            className={`nav-link text-mono-xs transition-colors ${isActive("/blog") ? "text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
+            style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", transition: "color 0.15s", color: isActive("/blog") ? "#C9A84C" : "var(--text-secondary)" }}
+            onMouseEnter={e => { if (!isActive("/blog")) (e.currentTarget as HTMLElement).style.color = "var(--text-primary)"; }}
+            onMouseLeave={e => { if (!isActive("/blog")) (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)"; }}
           >
             Blog
           </Link>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-4">
           <ThemeToggle />
           <Link
             href="/login"
-            className="press-depth px-6 py-2.5 bg-[var(--accent)] text-white text-mono-xs border-none hover:opacity-90 transition-opacity"
+            style={{ background: "#C9A84C", color: "#0A1628", fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", padding: "8px 20px", textDecoration: "none", transition: "opacity 0.15s" }}
+            className="hover:opacity-90"
           >
             Dashboard
           </Link>

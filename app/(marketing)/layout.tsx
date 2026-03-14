@@ -74,7 +74,7 @@ export default function MarketingLayout({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="min-h-screen flex flex-col bg-[var(--surface-0)] text-[var(--text-primary)]">
+      <div className="min-h-screen flex flex-col">
         <MarketingNav />
         <main className="flex-1">{children}</main>
         <Footer />
