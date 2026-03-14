@@ -13,13 +13,20 @@ import { logger } from '@/lib/logger';
 
 export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
+    const { searchParams } = new URL(req.url);
+    const agentId = searchParams.get('agent_id');
+
     const supabase = await createServerAuthClient();
-    const { data, error } = await supabase
+    let query = supabase
       .from('sessions')
       .select('*')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false })
       .limit(50);
+
+    if (agentId) query = query.eq('agent_id', agentId);
+
+    const { data, error } = await query;
 
     if (error) {
       logger.error('SESSIONS_FETCH_FAILED', { orgId, error: error.message });

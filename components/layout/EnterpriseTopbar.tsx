@@ -9,6 +9,7 @@ import { useSimulation } from "@/lib/dashboard/SimulationContext";
 import GlobalSearch from "@/components/ui/GlobalSearch";
 import { useInteractionMode } from "@/store/interactionMode";
 import { Menu } from "lucide-react";
+import AgentSwitcher from "@/components/dashboard/AgentSwitcher";
 
 export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
   const { mode: channel, setMode: setChannel } = useInteractionMode();
@@ -59,14 +60,9 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="hidden md:flex bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg px-4 py-2 items-center gap-3">
-          <span className="text-xs uppercase tracking-widest text-[var(--text-secondary)]">Org</span>
-          <span className="text-sm font-semibold text-[var(--text-secondary)]">
-            Facttic Systems Inc.
-          </span>
-        </div>
+        <AgentSwitcher />
 
-        <div className="h-6 w-px bg-[var(--bg-primary)] mx-4" />
+        <div className="h-6 w-px bg-[var(--bg-primary)] mx-3" />
 
         <div className="hidden sm:flex bg-[var(--bg-primary)] rounded-xl p-1 gap-1">
           <button
