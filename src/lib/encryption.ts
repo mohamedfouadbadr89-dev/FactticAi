@@ -2,7 +2,7 @@ import crypto from 'crypto';
 
 /**
  * Standard BYOK Encryption utilities utilizing AES-256-GCM.
- * Ensures Facttic platform handles conversational payloads with zero-knowledge
+ * Ensures Facttic AI Governance Platform handles conversational payloads with zero-knowledge
  * resting state if a customer key is provided.
  */
 

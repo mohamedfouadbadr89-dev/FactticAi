@@ -261,7 +261,7 @@ export const marketingData = {
   systemOverview: {
     eyebrow: "System Mechanics",
     title: "Governance Engine Architecture",
-    description: "The Facttic platform operates as a deterministic interceptor layer between enterprise applications and stochastic intelligence models. It enforces policy at the protocol level, ensuring every interaction is verified against institutional constraints.",
+    description: "The Facttic AI Governance Platform operates as a deterministic interceptor layer between enterprise applications and stochastic intelligence models. It enforces policy at the protocol level, ensuring every interaction is verified against institutional constraints.",
     stats: [
       { label: "Interceptor Latency", value: "< 5ms" },
       { label: "Policy Resolution", value: "Deterministic" },

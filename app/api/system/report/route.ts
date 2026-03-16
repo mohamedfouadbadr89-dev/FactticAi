@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
-import { GovernancePipeline } from '@/lib/governancePipeline';
+import { GovernancePipeline } from '@/lib/governance/governancePipeline';
 import { verifyApiKey } from '@/lib/security/verifyApiKey';
 import { headers } from 'next/headers';
 
@@ -108,9 +108,10 @@ export async function GET(req: Request) {
   try {
     const govStartTime = Date.now();
     const govResult = await GovernancePipeline.execute({
-      org_id: 'system_diagnostic_test', // Mock org ID
+      org_id: 'system_diagnostic_test',
+      user_id: 'system-diagnostic',  // System-identity principal for health checks
       prompt: 'hello'
-    });
+    }) as any;
     const govEndTime = Date.now();
 
     const pipeline_latency_ms = govEndTime - govStartTime;

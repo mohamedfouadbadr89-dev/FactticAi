@@ -1,4 +1,4 @@
-import { GovernancePipeline } from '../governancePipeline';
+import { GovernancePipeline } from '../governance/governancePipeline';
 import { supabaseServer } from '../supabaseServer';
 import { SCENARIOS } from './scenarios';
 

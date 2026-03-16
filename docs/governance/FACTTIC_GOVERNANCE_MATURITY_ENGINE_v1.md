@@ -1,7 +1,7 @@
 # Governance Maturity Engine
 
 ## Overview
-The **Governance Maturity Engine** provides a quantitative assessment of an organization's AI governance posture. It aggregates signals from across the Facttic platform to compute an authoritative "Maturity Index" (0-100), enabling executive benchmarking and strategic growth planning.
+The **Governance Maturity Engine** provides a quantitative assessment of an organization's AI governance posture. It aggregates signals from across the Facttic AI Governance Platform to compute an authoritative "Maturity Index" (0-100), enabling executive benchmarking and strategic growth planning.
 
 ## The Maturity Model
 

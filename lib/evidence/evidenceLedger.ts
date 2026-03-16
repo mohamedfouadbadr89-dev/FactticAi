@@ -35,6 +35,7 @@ export interface GovernanceEvent {
   guardrail_signals?: any
   latency?: number
   model_response?: string | null
+  queue_job_id?: string
 }
 
 export interface LedgedEvent extends GovernanceEvent {
@@ -114,13 +115,22 @@ function computeEventHash(fields: HashFields): string {
 /**
  * HMAC-SHA256 signature over the event_hash.
  * Binds the hash to the org secret — tampering the hash invalidates the signature.
+ *
+ * SECURITY: No fallback is allowed. If GOVERNANCE_SECRET is absent the function
+ * throws unconditionally regardless of NODE_ENV. A forged signature produced with
+ * a publicly known fallback value is indistinguishable from a valid one, making
+ * ledger integrity verification a security fiction.
  */
 function computeSignature(eventHash: string, orgId: string): string {
   const secret = process.env.GOVERNANCE_SECRET;
-  if (!secret && process.env.NODE_ENV === 'production') {
-    throw new Error('CRITICAL_SECURITY_FAILURE: GOVERNANCE_SECRET missing in production');
+  if (!secret) {
+    throw new Error(
+      'CRITICAL_SECURITY_FAILURE: GOVERNANCE_SECRET is not configured. ' +
+      'The governance ledger cannot produce valid HMAC signatures without this secret. ' +
+      'Set GOVERNANCE_SECRET in your environment before starting the application.'
+    );
   }
-  return createHmac('sha256', secret || 'development_fallback_secret')
+  return createHmac('sha256', secret)
     .update(eventHash)
     .digest('hex');
 }
@@ -306,7 +316,22 @@ export const EvidenceLedger = {
   }> {
     try {
 
-      const secret = process.env.GOVERNANCE_SECRET || 'development_fallback_secret'
+      // GOVERNANCE_SECRET strict guard
+      // No fallback is permitted. The secret is passed as p_secret to the
+      // append_governance_ledger() DB RPC which uses it for the DB-side HMAC.
+      // If the secret is missing, both the app-side and DB-side signatures
+      // would use 'development_fallback_secret' — a value publicly known from
+      // this source code repository — making every ledger event forgeable.
+      const secret = process.env.GOVERNANCE_SECRET;
+      if (!secret) {
+        throw new Error(
+          'CRITICAL_SECURITY_FAILURE: GOVERNANCE_SECRET is not configured. ' +
+          'EvidenceLedger.write() cannot proceed — the p_secret parameter passed to ' +
+          'append_governance_ledger() would be a publicly known fallback value, ' +
+          'making all HMAC signatures on the governance ledger forgeable. ' +
+          'Set GOVERNANCE_SECRET in your environment before starting the application.'
+        );
+      }
       const violationsStr = JSON.stringify(event.violations || [])
       
       const { data, error } = await supabaseServer.rpc('append_governance_ledger', {
@@ -322,7 +347,8 @@ export const EvidenceLedger = {
         p_guardrail_signals: event.guardrail_signals || {},
         p_latency: event.latency || 0,
         p_model_response: event.model_response || null,
-        p_secret: secret
+        p_secret: secret,
+        p_queue_job_id: event.queue_job_id || null
       })
 
       if (error) throw error

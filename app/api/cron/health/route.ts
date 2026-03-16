@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { logger } from "@/lib/logger"
 
-import { GovernancePipeline } from "@/lib/governancePipeline"
+import { GovernancePipeline } from '@/lib/governance/governancePipeline'
 import { EvidenceLedger } from "@/lib/evidence/evidenceLedger"
 
 import { supabase } from "@/lib/supabase"
@@ -36,8 +36,9 @@ export async function POST(req: Request) {
     const governanceResult = await GovernancePipeline.execute({
       prompt,
       org_id,
+      user_id: 'system-cron-health',  // System-identity principal for cron health jobs
       session_id,
-    })
+    }) as any
 
     /* ===============================
        WRITE EVENT TO LEDGER

@@ -1,7 +1,50 @@
+"use client";
+
 import React from "react";
 import { CountUp } from "@/components/ui/CountUp";
+import { useSnapshotMetrics } from "@/lib/dashboard/useSnapshotMetrics";
+
+/**
+ * LiveCount
+ * Renders a CountUp value when data is ready, a skeleton shimmer during load,
+ * and an em dash when data is unavailable — all without touching the layout.
+ */
+function LiveCount({
+  value,
+  loading,
+  error,
+  decimals,
+  suffix = "",
+}: {
+  value: number | null;
+  loading: boolean;
+  error: boolean;
+  decimals?: number;
+  suffix?: string;
+}) {
+  if (loading) {
+    return (
+      <span
+        className="inline-block rounded bg-[var(--bg-secondary)] animate-pulse"
+        style={{ width: "3rem", height: "1rem", verticalAlign: "middle" }}
+        aria-label="Loading…"
+      />
+    );
+  }
+  if (error || value === null) {
+    return <span className="text-[var(--text-secondary)]">—</span>;
+  }
+  return (
+    <>
+      <CountUp value={value} {...(decimals !== undefined ? { decimals } : {})} />
+      {suffix}
+    </>
+  );
+}
 
 export default function GovernanceSnapshotCard() {
+  const { metrics, loading, error } = useSnapshotMetrics();
+
   return (
     <div className="card animate-[fadeIn_.4s_ease-in-out]">
 
@@ -11,14 +54,14 @@ export default function GovernanceSnapshotCard() {
           Governance Snapshot — Phase 1–6
         </h3>
         <span className="bg-[var(--bg-secondary)] text-[var(--text-secondary)] text-xs px-3 py-1 rounded-full font-medium">
-          Executive View · Feb 26, 2026
+          Executive View · Live
         </span>
       </div>
 
       {/* Body — 3-Column Grid */}
       <div className="snapshot-grid">
 
-        {/* Column 1 — Phase Coverage */}
+        {/* Column 1 — Phase Coverage (structural, not DB-derived) */}
         <div>
           <h4 className="text-[10px] font-bold font-mono uppercase tracking-widest text-[var(--text-secondary)] mb-4">
             Phase Coverage
@@ -51,7 +94,7 @@ export default function GovernanceSnapshotCard() {
           </ul>
         </div>
 
-        {/* Column 2 — System Integrity */}
+        {/* Column 2 — System Integrity (structural status labels) */}
         <div>
           <h4 className="text-[10px] font-bold font-mono uppercase tracking-widest text-[var(--text-secondary)] mb-4">
             System Integrity
@@ -84,7 +127,7 @@ export default function GovernanceSnapshotCard() {
           </ul>
         </div>
 
-        {/* Column 3 — 30-Day Summary */}
+        {/* Column 3 — 30-Day Summary (LIVE — Supabase aggregates) */}
         <div>
           <h4 className="text-[10px] font-bold font-mono uppercase tracking-widest text-[var(--text-secondary)] mb-4">
             30-Day Summary
@@ -92,19 +135,39 @@ export default function GovernanceSnapshotCard() {
           <ul>
             <li className="flex justify-between py-2 border-b border-[var(--border-color)]">
               <span className="text-sm text-[var(--text-secondary)]">Total Sessions</span>
-              <span className="text-sm font-bold text-[var(--text-primary)]"><CountUp value={12847} /></span>
+              <span className="text-sm font-bold text-[var(--text-primary)]">
+                <LiveCount value={metrics?.total_sessions ?? null} loading={loading} error={error} />
+              </span>
             </li>
             <li className="flex justify-between py-2 border-b border-[var(--border-color)]">
-              <span className="text-sm text-[var(--text-secondary)]">Escalations</span>
-              <span className="text-sm font-bold text-[var(--warning)]"><CountUp value={23} /></span>
+              <span className="text-sm text-[var(--text-secondary)]">Governance Events</span>
+              <span className="text-sm font-bold text-[var(--warning)]">
+                <LiveCount value={metrics?.governance_events ?? null} loading={loading} error={error} />
+              </span>
             </li>
             <li className="flex justify-between py-2 border-b border-[var(--border-color)]">
-              <span className="text-sm text-[var(--text-secondary)]">Avg. RCA Time</span>
-              <span className="text-sm font-bold text-[var(--text-primary)]"><CountUp value={4.2} decimals={1} />m</span>
+              <span className="text-sm text-[var(--text-secondary)]">Incidents</span>
+              <span className="text-sm font-bold text-[var(--danger)]">
+                <LiveCount value={metrics?.incidents ?? null} loading={loading} error={error} />
+              </span>
             </li>
             <li className="flex justify-between py-2 border-b border-[var(--border-color)]">
-              <span className="text-sm text-[var(--text-secondary)]">Policy Violations</span>
-              <span className="text-sm font-bold text-[var(--danger)]"><CountUp value={3} /></span>
+              <span className="text-sm text-[var(--text-secondary)]">Organizations</span>
+              <span className="text-sm font-bold text-[var(--text-primary)]">
+                <LiveCount value={metrics?.organizations ?? null} loading={loading} error={error} />
+              </span>
+            </li>
+            <li className="flex justify-between py-2 border-b border-[var(--border-color)]">
+              <span className="text-sm text-[var(--text-secondary)]">Failed Events</span>
+              <span className="text-sm font-bold text-[var(--danger)]">
+                <LiveCount value={metrics?.failed_jobs ?? null} loading={loading} error={error} />
+              </span>
+            </li>
+            <li className="flex justify-between py-2 border-b border-[var(--border-color)]">
+              <span className="text-sm text-[var(--text-secondary)]">Replayed Failed Jobs</span>
+              <span className="text-sm font-bold text-[var(--warning)]">
+                <LiveCount value={metrics?.replayed_jobs ?? null} loading={loading} error={error} />
+              </span>
             </li>
             <li className="flex justify-between py-2 border-b border-[var(--border-color)]">
               <span className="text-sm text-[var(--text-secondary)]">Uptime SLA</span>

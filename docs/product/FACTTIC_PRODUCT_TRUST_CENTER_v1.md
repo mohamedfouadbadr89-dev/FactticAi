@@ -1,6 +1,6 @@
 # Facttic Trust Center
 
-The Trust Center is a dedicated transparency interface designed for enterprise stakeholders to understand the governance guarantees, security controls, and data handling practices of the Facttic AI platform.
+The Trust Center is a dedicated transparency interface designed for enterprise stakeholders to understand the governance guarantees, security controls, and data handling practices of the Facttic AI Governance Platform.
 
 ## Enterprise Positioning
 Facttic is positioned as a **Sovereign AI Governance Control Layer**. Unlike traditional monitoring tools, Facttic sits directly in the execution path, providing real-time deterministic control over AI interactions.

@@ -1,6 +1,6 @@
 # Governance Policy Management
 
-This document details the lifecycle and management of governance policies within the Facttic AI platform.
+This document details the lifecycle and management of governance policies within the Facttic AI Governance Platform.
 
 ## Policy Lifecycle
 

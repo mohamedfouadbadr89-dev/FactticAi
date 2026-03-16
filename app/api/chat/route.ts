@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withAuth, AuthContext } from '@/lib/middleware/auth';
-import { GovernancePipeline } from '@/lib/governancePipeline';
+import { GovernancePipeline } from '@/lib/governance/governancePipeline';
 import { EvidenceLedger } from '@/lib/evidence/evidenceLedger';
 import { logger } from '@/lib/logger';
 import { supabaseServer } from '@/lib/supabaseServer';
@@ -13,7 +13,7 @@ import crypto from 'crypto';
  * Auth: Supabase session cookie via withAuth() — orgId resolved automatically
  * Body: { prompt, model?, session_id? }
  */
-export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
+export const POST = withAuth(async (req: Request, { orgId, userId }: AuthContext) => {
   const t0 = Date.now();
 
   try {
@@ -47,12 +47,12 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
       }, { status: 429 });
     }
 
-    // 1. Governance Pipeline
     const result = await GovernancePipeline.execute({
       org_id: orgId,
+      user_id: userId,
       session_id: sessionId,
       prompt,
-    });
+    }) as any;
 
     const latency = Date.now() - t0;
 

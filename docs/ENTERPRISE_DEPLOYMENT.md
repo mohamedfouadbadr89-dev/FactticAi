@@ -26,7 +26,7 @@ Designed for enterprise scaling and compliance thresholds (SOC2/HIPAA) utilizing
 3. `terraform init` -> `terraform plan -var="tenant_name=your_org"` -> `terraform apply`.
 
 ## Single Sign-On (SSO) Synchronization
-Organizations accessing Facttic through an Enterprise License can construct rigid Authorization loops binding Facttic platform profiles natively to IdP providers such as Okta and Azure AD.
+Organizations accessing Facttic through an Enterprise License can construct rigid Authorization loops binding Facttic AI Governance Platform profiles natively to IdP providers such as Okta and Azure AD.
 
 - Admin configurations are managed within the Facttic dashboard: `/dashboard/settings/sso`.
 - Provide Facttic's ACS Assertion endpoint `https://[org].facttic.ai/api/auth/callback` to the IdP.

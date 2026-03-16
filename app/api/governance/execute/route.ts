@@ -1,6 +1,6 @@
 import { verifyApiKey } from '@/lib/security/verifyApiKey';
 import { NextResponse } from 'next/server';
-import { GovernancePipeline } from '@/lib/governancePipeline';
+import { GovernancePipeline } from '@/lib/governance/governancePipeline';
 import { resolveOrgContext } from '@/lib/orgResolver';
 import { logger } from '@/lib/logger';
 import { EvidenceLedger } from '@/lib/evidence/evidenceLedger';
@@ -22,8 +22,9 @@ export async function POST(req: Request) {
       { status: authResult.status }
     );
   }
-  // Override org_id from the verified API key
+  // org_id and user_id from verified API key — never trusted from payload
   const verifiedOrgId = authResult.org_id;
+  const verifiedUserId = authResult.user_id ?? 'api-key-principal';
 
   const t0 = Date.now();
   let orgId = '';
@@ -67,11 +68,11 @@ export async function POST(req: Request) {
      * 1 — Execute Governance Pipeline
      */
     const result = await GovernancePipeline.execute({
-      org_id,
+      org_id: verifiedOrgId,
+      user_id: verifiedUserId,
       prompt,
-      response: undefined,
       session_id: sessionId
-    });
+    }) as any;
 
     let modelResponse: string | null = null;
     let ledgerEntry = null;

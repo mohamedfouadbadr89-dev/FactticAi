@@ -450,7 +450,7 @@ export default function MarketingPage() {
           <div>
             <div className="hp-cta-lbl">Ready to Govern Your AI?</div>
             <h2 className="hp-cta-title">Your AI agents are live.<br /><strong>Is your governance?</strong></h2>
-            <p className="hp-cta-sub">Join enterprise teams who've moved beyond observability into true behavioral control. Request access to the Facttic platform — or schedule a walkthrough with our governance architects.</p>
+            <p className="hp-cta-sub">Join enterprise teams who've moved beyond observability into true behavioral control. Request access to the Facttic AI Governance Platform — or schedule a walkthrough with our governance architects.</p>
           </div>
           <div className="hp-cta-right">
             <div className="hp-cta-form">

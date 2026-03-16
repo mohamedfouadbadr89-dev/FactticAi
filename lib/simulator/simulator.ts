@@ -1,6 +1,6 @@
 import { SCENARIOS } from '../testing/scenarios';
 import { supabaseServer } from '../supabaseServer';
-import { GovernancePipeline } from '../governancePipeline';
+import { GovernancePipeline } from '../governance/governancePipeline';
 import { EvidenceLedger } from '../evidence/evidenceLedger';
 import crypto from 'crypto';
 
@@ -26,10 +26,11 @@ export class TrafficSimulator {
       // Execute governance pipeline directly (no HTTP round-trip)
       const evaluation = await GovernancePipeline.execute({
         org_id: orgId,
+        user_id: 'system-simulator',  // Registered system principal — bypasses org_members lookup
         prompt,
         response,
         session_id: sessionId
-      });
+      }) as any;
 
       // Persist outcome to evidence ledger
       let ledgerId: string | null = null;

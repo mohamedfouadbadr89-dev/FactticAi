@@ -1,4 +1,4 @@
-import { GovernancePipeline, type PipelineContext, type GovernanceExecutionResult } from '@/lib/governancePipeline';
+import { GovernancePipeline, type PipelineContext, type GovernanceExecutionResult } from '@/lib/governance/governancePipeline';
 import { CURRENT_REGION } from '@/config/regions';
 import { fileURLToPath } from 'url';
 
@@ -28,9 +28,20 @@ async function certifyDeterminism() {
     regionId: CURRENT_REGION
   };
 
-  await GovernancePipeline.run(baseContext);
+  // NOTE: Legacy .run(context) archived. Idempotency test uses execute() on the modular pipeline.
+  await (GovernancePipeline as any).execute({
+    org_id: baseContext.orgId,
+    user_id: baseContext.userId,
+    prompt: JSON.stringify(baseContext.payload),
+    session_id: baseContext.eventId
+  });
   try {
-    await GovernancePipeline.run(baseContext);
+    await (GovernancePipeline as any).execute({
+      org_id: baseContext.orgId,
+      user_id: baseContext.userId,
+      prompt: JSON.stringify(baseContext.payload),
+      session_id: baseContext.eventId
+    });
     console.log('❌ Idempotency: FAILED (Duplicate accepted)');
   } catch (e: any) {
     console.log(`✅ Idempotency: PASSED (${e.message})`);
@@ -43,7 +54,13 @@ async function certifyDeterminism() {
       eventId: `evt_repro_v451_${i}_${Date.now()}`
     };
 
-    const res: GovernanceExecutionResult = await GovernancePipeline.run(context);
+    const res = await (GovernancePipeline as any).execute({
+      org_id: context.orgId,
+      user_id: context.userId,
+      prompt: JSON.stringify(context.payload),
+      session_id: context.eventId
+    });
+    const resResult: GovernanceExecutionResult = { success: res.success, hash: res.session_id, latency: res.latency, integrityHash: res.session_id };
     integrityResults.push(res.integrityHash || 'FAILED');
   }
 

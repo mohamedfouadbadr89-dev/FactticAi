@@ -1,4 +1,4 @@
-# FACTTIC PLATFORM — FULL SYSTEM ARCHITECTURE AUDIT
+# Facttic AI Governance Platform — FULL SYSTEM ARCHITECTURE AUDIT
 
 **Date:** 2026-03-07
 **Auditor:** Principal Software Architect
@@ -1234,5 +1234,5 @@ Rendered in Live Telemetry Feed
 
 ---
 
-*End of Architecture Audit — Facttic Platform v1 — 2026-03-07*
+*End of Architecture Audit — Facttic AI Governance Platform v1 — 2026-03-07*
 *Read-only analysis. No code was modified.*

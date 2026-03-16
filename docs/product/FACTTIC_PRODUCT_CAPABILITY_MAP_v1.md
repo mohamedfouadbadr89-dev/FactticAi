@@ -1,7 +1,7 @@
 # FACTTIC PRODUCT CAPABILITY MAP_v1
 
 ## 1. Platform Overview
-This document provides a comprehensive capability map comparing Facttic (formerly Vayro AI) against leading AI governance, testing, and observability platforms in the ecosystem. The goal is to identify core differentiators, particularly within multimodal (Chat + Voice) runtime environments, and expose gaps in competitive offerings.
+This document provides a comprehensive capability map comparing Facttic AI Governance Platform against leading AI governance, testing, and observability platforms in the ecosystem. The goal is to identify core differentiators, particularly within multimodal (Chat + Voice) runtime environments, and expose gaps in competitive offerings.
 
 Competitors analyzed:
 - Coval

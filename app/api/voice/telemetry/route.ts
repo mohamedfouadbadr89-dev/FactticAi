@@ -31,14 +31,16 @@ export async function POST(req: Request) {
     )
 
     const { data: { session } } = await supabase.auth.getSession()
-    // For service-to-service calls (telemetry), we shouldn't necessarily block on a UI session,
-    // but preserving the original architecture checks for security.
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Voice telemetry requires an authenticated user session.
+    // user_id propagates into GovernancePipeline.execute() so every telemetry-
+    // driven governance execution passes the Zero-Trust authorizeOrgAccess() gate.
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const user_id = session.user.id
 
     const { data: orgMember, error } = await supabase
       .from('org_members')
       .select('org_id')
-      .eq('user_id', session.user.id)
+      .eq('user_id', user_id)
       .limit(1)
       .single()
 
@@ -89,9 +91,10 @@ export async function POST(req: Request) {
           content: line
         }))
 
-        // Run governance pipeline
-        // (Since GovernancePipeline currently accepts prompt, we supply the full transcript as the prompt to analyze)
+        // Run governance pipeline against the voice transcript.
+        // user_id is sourced from the authenticated session — Zero-Trust gate enforced.
         await GovernancePipeline.execute({
+          user_id,                    // ✅ Authenticated user — Zero-Trust gate enforced
           org_id: orgMember.org_id,
           session_id: parsed.data.session_id,
           prompt: parsed.data.transcript

@@ -29,6 +29,17 @@ export async function POST(req: Request) {
       { cookies: { get: (name) => cookieStore.get(name)?.value } }
     )
 
+    // ── Authentication Gate ───────────────────────────────────────────────────
+    // user_id is REQUIRED by GovernancePipeline.execute() to pass the
+    // Zero-Trust authorizeOrgAccess() verification. Voice stream events
+    // must originate from an authenticated session — no anonymous governance.
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const user_id = session.user.id
+    // ─────────────────────────────────────────────────────────────────────────
+
     const body = await req.json()
     const parsed = StreamEventSchema.safeParse(body)
     if (!parsed.success) {
@@ -84,13 +95,17 @@ export async function POST(req: Request) {
     const hasIssues = voiceAnalysis.barge || voiceAnalysis.collision.hasCollision || voiceAnalysis.latency.isHighLatency;
     if (hasIssues || parsed.data.transcript_delta.trim().length > 0) {
       await GovernancePipeline.execute({
+        user_id,                      // ✅ Authenticated user — Zero-Trust gate enforced
         org_id: orgId,
         session_id: parsed.data.session_id,
         prompt: `[AUDIO_EVENT] Speaker: ${parsed.data.speaker} | Transcript: ${parsed.data.transcript_delta}`,
         model: 'voice-streaming-engine-v1',
-        voice_latency_ms: voiceAnalysis.latency.isHighLatency ? voiceAnalysis.latency.latency_ms : undefined,
-        voice_collision_index: voiceAnalysis.collision.hasCollision ? voiceAnalysis.collision.collisionDelta : undefined,
-        voice_barge_in_detected: voiceAnalysis.barge
+        // Conditional spread satisfies exactOptionalPropertyTypes — optional voice
+        // params are only present in the object when they carry a defined value.
+        // collision_index is the correct field name from overTalkAnalyzer (not collisionDelta).
+        ...(voiceAnalysis.latency.isHighLatency  && { voice_latency_ms:        voiceAnalysis.latency.latency_ms }),
+        ...(voiceAnalysis.collision.hasCollision && { voice_collision_index:   voiceAnalysis.collision.collision_index }),
+        ...(voiceAnalysis.barge                  && { voice_barge_in_detected: true }),
       })
     }
 

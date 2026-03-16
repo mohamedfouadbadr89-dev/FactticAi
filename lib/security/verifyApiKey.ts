@@ -24,7 +24,7 @@ export async function verifyApiKey(req: Request) {
     // Query API key
     const { data, error } = await supabaseServer
       .from("api_keys")
-      .select("id, org_id, hashed_key")
+      .select("id, org_id, hashed_key, user_id")
       .eq("hashed_key", hashedKey)
       .limit(1)
       .maybeSingle();
@@ -41,6 +41,7 @@ export async function verifyApiKey(req: Request) {
     return {
       org_id: data.org_id,
       key_id: data.id,
+      user_id: (data as any).user_id ?? null,
       status: 200,
     };
 

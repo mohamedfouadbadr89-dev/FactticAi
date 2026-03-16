@@ -1,4 +1,4 @@
-import { GovernancePipeline, type PipelineContext, type GovernanceExecutionResult } from '@/lib/governancePipeline';
+import { GovernancePipeline, type PipelineContext, type GovernanceExecutionResult } from '@/lib/governance/governancePipeline';
 import { logger } from '@/lib/logger';
 import { CURRENT_REGION } from '@/config/regions';
 import { createHash } from 'crypto';
@@ -25,7 +25,14 @@ async function generateInstitutionalBundle() {
   };
 
   console.log('1. Executing Reference Audit Session...');
-  const result: GovernanceExecutionResult = await GovernancePipeline.run(context);
+  // NOTE: Legacy pipeline.run(context) interface archived. Evidence bundle uses execute() on the modular pipeline.
+  const raw = await (GovernancePipeline as any).execute({
+    org_id: context.orgId,
+    user_id: context.userId,
+    prompt: JSON.stringify(context.payload),
+    model: 'evidence-generator'
+  });
+  const result: GovernanceExecutionResult = { success: raw.success, hash: raw.session_id, latency: raw.latency, integrityHash: raw.session_id };
 
   console.log('2. Verifying Deterministic Hash...');
   const evidence = {

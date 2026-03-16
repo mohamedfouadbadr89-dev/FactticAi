@@ -1,6 +1,6 @@
 import { verifyApiKey } from '@/lib/security/verifyApiKey';
 import { NextResponse } from 'next/server';
-import { GovernancePipeline } from '@/lib/governancePipeline';
+import { GovernancePipeline } from '@/lib/governance/governancePipeline';
 import { logger } from '@/lib/logger';
 
 /**
@@ -16,8 +16,9 @@ export async function POST(req: Request) {
       { status: authResult.status }
     );
   }
-  // Override org_id from the verified API key
+  // org_id and user_id from verified API key — never trusted from payload
   const verifiedOrgId = authResult.org_id;
+  const verifiedUserId = authResult.user_id ?? 'api-key-principal';
 
   try {
     const body = await req.json();
@@ -27,9 +28,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'org_id is required' }, { status: 400 });
     }
 
-    // Centralized Pipeline Execution
+    // Centralized Pipeline Execution (org_id from verified key, not payload)
     const result = await GovernancePipeline.execute({
-      org_id,
+      org_id: verifiedOrgId,
+      user_id: verifiedUserId,
       session_id,
       prompt,
       response
