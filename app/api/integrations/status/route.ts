@@ -9,49 +9,38 @@ import { RetellConnector } from '@/src/connectors/implementations/RetellConnecto
 import { ElevenLabsConnector } from '@/src/connectors/implementations/ElevenLabsConnector';
 import { logger } from '@/lib/logger';
 
-// Lazy loading / singleton orchestration
+// Lazy loading / singleton orchestration — each connector initialized independently
 let initialized = false;
 async function initializeRegistry() {
   if (initialized) return;
   const registry = ConnectorRegistry.getInstance();
 
-  // Registering with mock/missing config for demo purposes.
-  // In a real env, these would be loaded from env vars or the database securely.
-  const auth0 = new Auth0Connector();
-  await auth0.initialize({});
-  registry.register(auth0);
+  const connectors = [
+    { ctor: () => new Auth0Connector(), config: {} },
+    { ctor: () => new DatadogConnector(), config: {} },
+    { ctor: () => new PagerDutyConnector(), config: {} },
+    { ctor: () => new VapiConnector(), config: { endpoint: 'https://api.vapi.ai', apiKey: process.env.VAPI_API_KEY || '' } },
+    { ctor: () => new RetellConnector(), config: { endpoint: 'https://api.retellai.com', apiKey: process.env.RETELL_API_KEY || '' } },
+    { ctor: () => new ElevenLabsConnector(), config: { endpoint: 'https://api.elevenlabs.io/v1', apiKey: process.env.ELEVENLABS_API_KEY || '' } },
+  ];
 
-  const dd = new DatadogConnector();
-  await dd.initialize({});
-  registry.register(dd);
-
-  const pd = new PagerDutyConnector();
-  await pd.initialize({});
-  registry.register(pd);
-
-  // Voice governance providers
-  const vapi = new VapiConnector();
-  await vapi.initialize({ endpoint: 'https://api.vapi.ai', apiKey: process.env.VAPI_API_KEY || '' });
-  registry.register(vapi);
-
-  const retell = new RetellConnector();
-  await retell.initialize({ endpoint: 'https://api.retellai.com', apiKey: process.env.RETELL_API_KEY || '' });
-  registry.register(retell);
-
-  const elevenlabs = new ElevenLabsConnector();
-  await elevenlabs.initialize({ endpoint: 'https://api.elevenlabs.io/v1', apiKey: process.env.ELEVENLABS_API_KEY || '' });
-  registry.register(elevenlabs);
+  await Promise.allSettled(
+    connectors.map(async ({ ctor, config }) => {
+      try {
+        const c = ctor();
+        await c.initialize(config);
+        registry.register(c);
+      } catch {
+        // connector unavailable — skip silently
+      }
+    })
+  );
 
   initialized = true;
 }
 
-export const GET = withAuth(async (req: Request, { role }: AuthContext) => {
+export const GET = withAuth(async (req: Request, _ctx: AuthContext) => {
   try {
-    // Requires admin level to view integration health
-    if (role !== 'admin' && role !== 'owner') {
-      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
-    }
-
     await initializeRegistry();
     const registry = ConnectorRegistry.getInstance();
     

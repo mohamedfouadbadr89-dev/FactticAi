@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { useAgent, Agent } from "@/lib/dashboard/AgentContext";
 import { ChevronDown, Bot, Mic, MessageSquare, Plus, RefreshCw } from "lucide-react";
 
@@ -23,19 +24,20 @@ export default function AgentSwitcher() {
       ? <Mic style={{ width: size, height: size }} />
       : <MessageSquare style={{ width: size, height: size }} />;
 
-  // No agents yet — show placeholder
+  // No agents yet — link to AI Providers page
   if (!loading && agents.length === 0) {
     return (
-      <div
-        className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dashed cursor-pointer"
+      <Link
+        href="/dashboard/agents"
+        className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dashed transition-colors"
         style={{ borderColor: "var(--border-primary)", color: "var(--text-muted)" }}
-        title="No agents registered yet"
+        title="Connect your first AI agent"
       >
-        <Bot style={{ width: 13, height: 13 }} />
+        <Plus style={{ width: 12, height: 12 }} />
         <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.05em" }}>
-          No Agents
+          Connect Agent
         </span>
-      </div>
+      </Link>
     );
   }
 
