@@ -11,7 +11,11 @@ const TelemetrySchema = z.object({
   packet_loss:           z.number().min(0).max(100),
   interruptions:         z.number().int().min(0),
   audio_integrity_score: z.number().min(0).max(100),
+  provider:              z.string().optional(),
+  transcript:            z.string().optional(),
 })
+
+import { GovernancePipeline } from '@/lib/governance/governancePipeline'
 
 export async function POST(req: Request) {
   try {
@@ -22,11 +26,13 @@ export async function POST(req: Request) {
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       { cookies: { get: (name) => cookieStore.get(name)?.value } }
     )
 
     const { data: { session } } = await supabase.auth.getSession()
+    // For service-to-service calls (telemetry), we shouldn't necessarily block on a UI session,
+    // but preserving the original architecture checks for security.
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { data: orgMember, error } = await supabase
@@ -44,12 +50,66 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid payload', details: parsed.error.format() }, { status: 400 })
     }
 
-    const report = await VoiceTelemetryEngine.recordMetrics({
+    // Step 1 - Create voice session
+    const { data: voiceSession, error: vsError } = await supabase
+      .from('voice_sessions')
+      .insert({ session_id: parsed.data.session_id, provider: parsed.data.provider || 'unknown' })
+      .select()
+      .single()
+
+    if (vsError) {
+      console.warn('[Voice Telemetry] Failed to create voice_session:', vsError)
+    }
+
+    if (voiceSession) {
+      // Step 2 - Insert voice metrics
+      await supabase
+        .from('voice_metrics')
+        .insert({
+          voice_session_id: voiceSession.id,
+          latency_ms: parsed.data.latency_ms,
+          packet_loss: parsed.data.packet_loss,
+          interruptions: parsed.data.interruptions,
+          audio_integrity_score: parsed.data.audio_integrity_score
+        })
+
+      // Step 3 - Insert transcript if present
+      if (parsed.data.transcript) {
+        await supabase
+          .from('voice_transcripts')
+          .insert({
+            voice_session_id: voiceSession.id,
+            transcript: parsed.data.transcript,
+            transcript_source: parsed.data.provider || 'unknown'
+          })
+          
+        // Step 4 - Convert transcript to NormalizedMessage
+        const messages = parsed.data.transcript.split('\n').map((line: string) => ({
+          role: line.startsWith('Agent') ? 'assistant' : 'user',
+          content: line
+        }))
+
+        // Run governance pipeline
+        // (Since GovernancePipeline currently accepts prompt, we supply the full transcript as the prompt to analyze)
+        await GovernancePipeline.execute({
+          org_id: orgMember.org_id,
+          session_id: parsed.data.session_id,
+          prompt: parsed.data.transcript
+        })
+      }
+    }
+
+    // Still record to old metrics store to not break old dashboard cards completely
+    await VoiceTelemetryEngine.recordMetrics({
       org_id: orgMember.org_id,
-      ...parsed.data,
+      session_id: parsed.data.session_id,
+      latency_ms: parsed.data.latency_ms,
+      packet_loss: parsed.data.packet_loss,
+      interruptions: parsed.data.interruptions,
+      audio_integrity_score: parsed.data.audio_integrity_score
     })
 
-    return NextResponse.json({ success: true, report })
+    return NextResponse.json({ status: 'voice telemetry recorded' })
   } catch (err: any) {
     console.error('[Voice Telemetry POST]', err)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })

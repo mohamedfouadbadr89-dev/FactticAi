@@ -1,0 +1,102 @@
+import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { checkRateLimit, rateLimitedResponse } from '@/lib/security/rateLimiter'
+import { z } from 'zod'
+import { GovernancePipeline } from '@/lib/governance/governancePipeline'
+
+import voiceAnalyzerOrchestrator from "@/lib/governance/analyzers/voiceAnalyzerOrchestrator"
+
+const StreamEventSchema = z.object({
+  session_id:       z.string().min(1),
+  speaker:          z.string(),
+  start_ms:         z.number().int().min(0),
+  end_ms:           z.number().int().min(0),
+  transcript_delta: z.string(),
+  latency_ms:       z.number().int().min(0).optional(),
+})
+
+export async function POST(req: Request) {
+  try {
+    const ip = req.headers.get('x-forwarded-for') ?? 'unknown'
+    const rl = checkRateLimit(ip, '/api/voice/stream')
+    if (!rl.allowed) return rateLimitedResponse(rl.retryAfterMs)
+
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { get: (name) => cookieStore.get(name)?.value } }
+    )
+
+    const body = await req.json()
+    const parsed = StreamEventSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid payload', details: parsed.error.format() }, { status: 400 })
+    }
+    
+    // Step 2 — Resolve voice session
+    const { data: voiceSession, error: vsError } = await supabase
+      .from('voice_sessions')
+      .select('id, org_id:sessions(org_id)')
+      .eq('session_id', parsed.data.session_id)
+      .single()
+      
+    if (vsError || !voiceSession) {
+      return NextResponse.json({ error: 'Voice session not found' }, { status: 404 })
+    }
+    
+    const orgId = (voiceSession.org_id as any)?.org_id || 'unknown'
+
+    // Step 3 — Insert stream event
+    const { data: insertedEvent, error: insertError } = await supabase
+      .from('voice_stream_events')
+      .insert({
+        voice_session_id: voiceSession.id,
+        speaker: parsed.data.speaker,
+        start_ms: parsed.data.start_ms,
+        end_ms: parsed.data.end_ms,
+        transcript_delta: parsed.data.transcript_delta,
+        latency_ms: parsed.data.latency_ms || 0
+      })
+      .select()
+      .single()
+
+    if (insertError) {
+      console.warn('[Voice Stream] Failed to insert stream event:', insertError)
+    }
+    
+    // Run the new Voice Stream Analyzers (Barge-in, Overtalk, Latency)
+    // We fetch the history for the current session to compute overlap
+    const { data: historyEvents } = await supabase
+      .from('voice_stream_events')
+      .select('speaker, start_ms, end_ms, latency_ms')
+      .eq('voice_session_id', voiceSession.id)
+      .order('created_at', { ascending: false })
+      .limit(10)
+      
+    // Execute voice-specific analyzers
+    const allEvents: any[] = [parsed.data, ...(historyEvents || [])];
+    const voiceAnalysis = await voiceAnalyzerOrchestrator(allEvents)
+    
+    // Trigger Governance Pipeline if there are any collisions or if text needs checking
+    // We proxy it to the main governance pipeline to guarantee it appears in forensic events.
+    const hasIssues = voiceAnalysis.barge || voiceAnalysis.collision.hasCollision || voiceAnalysis.latency.isHighLatency;
+    if (hasIssues || parsed.data.transcript_delta.trim().length > 0) {
+      await GovernancePipeline.execute({
+        org_id: orgId,
+        session_id: parsed.data.session_id,
+        prompt: `[AUDIO_EVENT] Speaker: ${parsed.data.speaker} | Transcript: ${parsed.data.transcript_delta}`,
+        model: 'voice-streaming-engine-v1',
+        voice_latency_ms: voiceAnalysis.latency.isHighLatency ? voiceAnalysis.latency.latency_ms : undefined,
+        voice_collision_index: voiceAnalysis.collision.hasCollision ? voiceAnalysis.collision.collisionDelta : undefined,
+        voice_barge_in_detected: voiceAnalysis.barge
+      })
+    }
+
+    return NextResponse.json({ status: 'stream event recorded' })
+  } catch (err: any) {
+    console.error('[Voice Stream POST]', err)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
+}

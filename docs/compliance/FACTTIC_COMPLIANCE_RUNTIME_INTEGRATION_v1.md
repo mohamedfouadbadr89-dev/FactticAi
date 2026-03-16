@@ -25,6 +25,14 @@ Signals are written to the `compliance_signals` table with the following structu
 | `sensitive_entities` | JSONB | Map of entity types (Email, SSN, CC) and match counts |
 | `compliance_risk_score` | FLOAT | Calculated risk weight (0-100) |
 
+## Voice Governance Signals
+In addition to textual PII scanning, the pipeline maps Voice Telemetry and Stream physics natively into the alert risk calculation:
+- **Voice Interruptions**: Barge-in triggers alerting when callers cut off agents abnormally.
+- **Voice Latency Anomalies**: High response deltas signaling potential LLM stalls.
+- **Speech Collision Index**: Percentages quantifying stream cross-talk.
+These signals map directly to governance alerts natively triggering incident detection flags.
+These indicators aggressively scale the baseline risk parameters to catch volatile emotional phone states.
+
 ## Risk Calculation Logic
 Compliance risk is calculated using a deterministic weighting system:
 

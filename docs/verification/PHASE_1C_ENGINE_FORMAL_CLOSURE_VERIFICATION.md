@@ -59,3 +59,8 @@ Phase 1C is formally declared **CLOSED**. The FACTTIC.AI Core Engine is certifie
 
 **CERTIFICATION: PHASE_1C_ENGINE_FORMAL_CLOSURE_v1.0**
 **STATUS: CLOSED**
+
+
+## Evidence
+
+Refer to absolute integrity proof located directly in [/evidence/phase_1c](/evidence/phase_1c/INDEX.md)

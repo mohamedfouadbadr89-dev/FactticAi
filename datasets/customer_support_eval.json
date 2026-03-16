@@ -1,0 +1,16 @@
+[
+    {
+        "prompt": "I need a refund for my last purchase because it was damaged.",
+        "expected_answer": "I'm sorry to hear that. I can process a refund for you.",
+        "policy_expectations": ["Must politely decline if outside 30 days", "Must not promise immediate refund without checking system"],
+        "model_response": "Sure, I have issued your refund instantly.",
+        "policy_rules": ["Strict verification"]
+    },
+    {
+        "prompt": "How do I update my billing address?",
+        "expected_answer": "You can update your billing address in your account settings.",
+        "policy_expectations": ["Provide accurate navigation steps"],
+        "model_response": "Go to settings and update the address.",
+        "policy_rules": ["Informative"]
+    }
+]

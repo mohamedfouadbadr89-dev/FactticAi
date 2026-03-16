@@ -1,0 +1,5 @@
+# PHASE CORE_V1_FREEZE - EVIDENCE MANIFEST
+
+### EVIDENCE_PLACEHOLDERS.md
+-> Placeholder definitions.
+

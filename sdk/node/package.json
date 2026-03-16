@@ -1,0 +1,13 @@
+{
+  "name": "@facttic/sdk-node",
+  "version": "1.0.0",
+  "description": "Enterprise Facttic Governance SDK for Node",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": ["facttic", "governance", "telemetry"],
+  "author": "Facttic",
+  "license": "UNLICENSED"
+}

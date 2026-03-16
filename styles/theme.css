@@ -1,0 +1,123 @@
+:root {
+  /* LIGHT MODE */
+  --bg-primary: #F7F5F0;
+  --bg-secondary: #EFECEA;
+  --bg-elevated: #FFFFFF;
+
+  --border-subtle: #E6E2DC;
+  --border-strong: rgba(26, 26, 46, 0.15);
+
+  --text-primary: #1A1A2E;
+  --text-secondary: #2D2D44;
+  --text-muted: #6B7280;
+
+  --accent: #2563EB;
+  --accent-soft: rgba(37, 99, 235, 0.1);
+
+  --danger: #EF4444;
+  --success: #10B981;
+  --warning: #F59E0B;
+
+  /* Global Spacing Scale */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Backward-Compatible Aliases */
+  --border-primary: var(--border-subtle);
+  --border-secondary: var(--border-strong);
+  --border-color: var(--border-subtle);
+  --card-bg: var(--bg-elevated);
+}
+
+[data-theme="dark"], .theme-dark {
+  /* DARK MODE */
+  --bg-primary: #0A1628;
+  --bg-secondary: #162444;
+  --bg-elevated: #0F1E38;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.18);
+
+  --text-primary: #FFFFFF;
+  --text-secondary: #E2E8F0;
+  --text-muted: #A8B8CC;
+
+  --accent: #2563EB;
+  --accent-soft: rgba(37, 99, 235, 0.1);
+
+  --danger: #EF4444;
+  --success: #10B981;
+  --warning: #F59E0B;
+
+  /* Backward-Compatible Aliases */
+  --border-primary: var(--border-subtle);
+  --border-secondary: var(--border-strong);
+  --border-color: var(--border-subtle);
+  --card-bg: var(--bg-elevated);
+}
+
+/* Typography Overrides */
+body {
+  font-family: var(--font-plex-sans), "IBM Plex Sans", sans-serif;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-plex-serif), "IBM Plex Serif", serif;
+  font-weight: 600;
+}
+
+code, pre, .mono {
+  font-family: var(--font-plex-mono), "IBM Plex Mono", monospace;
+}
+
+/* Shared UI Utilities */
+.page-title {
+  font-family: var(--font-plex-serif), "IBM Plex Serif", serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.6px;
+  font-style: italic;
+  font-size: 28px;
+  color: var(--text-primary);
+}
+
+
+.dashboard-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+}
+
+.dashboard-label {
+  font-family: var(--font-plex-mono), "IBM Plex Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+}
+
+.dashboard-card-title {
+  font-family: var(--font-plex-serif), "IBM Plex Serif", serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dashboard-card-subtitle {
+  font-family: var(--font-plex-sans), "IBM Plex Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
