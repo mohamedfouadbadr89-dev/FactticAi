@@ -188,18 +188,28 @@ export default function AgentSwitcher() {
             })}
           </div>
 
-          {/* Footer — add agent link */}
-          <div className="px-4 py-3 border-t" style={{ borderColor: "var(--border-primary)" }}>
+          {/* Footer — connect + manage */}
+          <div className="px-4 py-3 border-t flex items-center justify-between" style={{ borderColor: "var(--border-primary)" }}>
             <a
-              href="/dashboard/agents"
-              className="flex items-center gap-2 text-xs transition-colors"
-              style={{ color: "var(--text-muted)", textDecoration: "none", fontFamily: "var(--font-mono)", letterSpacing: "0.05em" }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--accent)"}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"}
+              href="/dashboard/connect"
+              className="flex items-center gap-1.5 text-xs transition-colors"
+              style={{ color: "var(--accent)", textDecoration: "none", fontFamily: "var(--font-mono)", letterSpacing: "0.05em", fontWeight: 700 }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.75"}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
               onClick={() => setOpen(false)}
             >
               <Plus style={{ width: 11, height: 11 }} />
-              Manage Agents
+              Connect Agent
+            </a>
+            <a
+              href="/dashboard/agents"
+              className="flex items-center gap-1.5 text-xs transition-colors"
+              style={{ color: "var(--text-muted)", textDecoration: "none", fontFamily: "var(--font-mono)", letterSpacing: "0.05em" }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--text-primary)"}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"}
+              onClick={() => setOpen(false)}
+            >
+              Manage All →
             </a>
           </div>
         </div>
