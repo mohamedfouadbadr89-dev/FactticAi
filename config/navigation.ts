@@ -19,7 +19,8 @@ import {
   AlertCircle,
   BarChart,
   User,
-  CreditCard 
+  CreditCard,
+  Mic2
 } from "lucide-react";
 
 export const navGroups = [
@@ -43,6 +44,7 @@ export const navGroups = [
     group: "MONITORING",
     items: [
       { label: "Live Monitor", href: "/dashboard/observability", icon: Activity, id: "nav-live-monitor" },
+      { label: "Voice Monitor", href: "/dashboard/voice", icon: Mic2, id: "nav-voice-monitor" },
       { label: "Drift Intelligence", href: "/dashboard/compliance", icon: Network, id: "nav-drift-intelligence" },
       { label: "Alerts", href: "/dashboard/alerts", icon: Bell, id: "nav-alerts" },
     ]
