@@ -22,61 +22,82 @@ export type AuthenticatedHandler = (
  */
 export function withAuth(handler: AuthenticatedHandler) {
   return async (req: Request, routeContext: any) => {
-    try {
-      const supabase = await createServerAuthClient();
-      
-      // Attempt to get session from supabase auth (standard cookie-based)
-      let {
-        data: { session },
-        error: authError,
-      } = await supabase.auth.getSession();
+    // Hard 12-second timeout on the entire authenticated handler to prevent
+    // indefinite hangs from DB connection saturation or Supabase latency
+    const timeoutPromise = new Promise<NextResponse>((resolve) =>
+      setTimeout(() => {
+        logger.error('AUTH_HANDLER_TIMEOUT', { url: req.url });
+        resolve(NextResponse.json({ error: 'Request timeout' }, { status: 504 }));
+      }, 12000)
+    );
 
-      // Fallback: Check for Authorization header if no session
-      if (!session || authError) {
-        const authHeader = req.headers.get('Authorization');
-        if (authHeader?.startsWith('Bearer ')) {
-          const token = authHeader.split(' ')[1];
-          const { data, error } = await supabase.auth.getUser(token);
-          if (data?.user && !error) {
-            // Mock a session-like object for the handler context
-            session = { user: data.user } as any;
+    const handlerPromise = (async () => {
+      try {
+        const supabase = await createServerAuthClient();
+
+        // Attempt to get session from supabase auth (standard cookie-based)
+        let {
+          data: { session },
+          error: authError,
+        } = await supabase.auth.getSession();
+
+        // Fallback: Check for Authorization header if no session
+        if (!session || authError) {
+          const authHeader = req.headers.get('Authorization');
+          if (authHeader?.startsWith('Bearer ')) {
+            const token = authHeader.split(' ')[1];
+            const { data, error } = await supabase.auth.getUser(token);
+            if (data?.user && !error) {
+              // Mock a session-like object for the handler context
+              session = { user: data.user } as any;
+            }
           }
         }
-      }
 
-      if (!session) {
-        logger.warn('UNAUTHORIZED_ACCESS_ATTEMPT', { url: req.url });
+        if (!session) {
+          logger.warn('UNAUTHORIZED_ACCESS_ATTEMPT', { url: req.url });
+          return NextResponse.json(
+            { error: 'UNAUTHORIZED' },
+            { status: 401 }
+          );
+        }
+
+        // resolveOrgContext wraps a DB query — add a 5s timeout to prevent hanging
+        const orgCtx = await Promise.race([
+          resolveOrgContext(session.user.id),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('ORG_RESOLVE_TIMEOUT')), 5000)
+          ),
+        ]);
+
+        const { org_id, role } = orgCtx;
+
+        if (!org_id) {
+          logger.error('ORG_CONTEXT_MISSING', { userId: session.user.id });
+          return NextResponse.json(
+            { error: 'ORG_CONTEXT_MISSING' },
+            { status: 400 }
+          );
+        }
+
+        return await handler(req, {
+          userId: session.user.id,
+          orgId: org_id,
+          role,
+          session,
+          params: routeContext?.params || {}
+        });
+      } catch (err: unknown) {
+        logger.error('AUTH_MIDDLEWARE_ERROR', {
+          error: err instanceof Error ? err.message : 'UNKNOWN_ERROR',
+        });
         return NextResponse.json(
-          { error: 'UNAUTHORIZED' },
-          { status: 401 }
+          { error: 'Internal Server Error' },
+          { status: 500 }
         );
       }
+    })();
 
-      const { org_id, role } = await resolveOrgContext(session.user.id);
-
-      if (!org_id) {
-        logger.error('ORG_CONTEXT_MISSING', { userId: session.user.id });
-        return NextResponse.json(
-          { error: 'ORG_CONTEXT_MISSING' },
-          { status: 400 }
-        );
-      }
-
-      return await handler(req, {
-        userId: session.user.id,
-        orgId: org_id,
-        role,
-        session,
-        params: routeContext?.params || {}
-      });
-    } catch (err: unknown) {
-      logger.error('AUTH_MIDDLEWARE_ERROR', {
-        error: err instanceof Error ? err.message : 'UNKNOWN_ERROR',
-      });
-      return NextResponse.json(
-        { error: 'Internal Server Error' },
-        { status: 500 }
-      );
-    }
+    return Promise.race([handlerPromise, timeoutPromise]);
   };
 }

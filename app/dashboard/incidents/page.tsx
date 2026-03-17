@@ -49,8 +49,10 @@ export default async function IncidentsPage() {
         const severityMap: Record<string, string> = { critical: 'CRITICAL', high: 'HIGH', medium: 'MEDIUM', low: 'LOW' }
         incidents = data.map((incident: any) => {
           const ts = new Date(incident.timestamp).getTime()
-          const sev = (incident.severity || 'low').toLowerCase()
-          const riskScore = sev === 'critical' ? 95 : sev === 'high' ? 80 : sev === 'medium' ? 50 : 20
+          // incidents table has risk_score (0-100) and decision columns, no severity column
+          const riskScore = incident.risk_score ?? 0
+          const sev = riskScore >= 90 ? 'critical' : riskScore >= 70 ? 'high' : riskScore >= 40 ? 'medium' : 'low'
+          const decision = incident.decision || (sev === 'low' ? 'WARN' : 'BLOCK')
           return {
             session_id: incident.session_id,
             severity: (severityMap[sev] || 'LOW') as any,
@@ -60,11 +62,11 @@ export default async function IncidentsPage() {
               session_id: incident.session_id,
               org_id: orgId,
               timestamp: ts,
-              decision: sev === 'low' ? 'WARN' : 'BLOCK',
+              decision,
               risk_score: riskScore,
               prompt: 'Event Triggered',
               model: 'Internal',
-              violations: [{ policy_name: incident.violation_type, action: sev === 'low' ? 'WARN' : 'BLOCK' }],
+              violations: [{ policy_name: incident.violation || 'policy_violation', action: decision }],
               guardrail_signals: {},
               latency: 0
             }]

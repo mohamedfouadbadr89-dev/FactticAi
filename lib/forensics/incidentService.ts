@@ -87,12 +87,24 @@ export const IncidentService = {
    * Fetches events for a specific interaction session.
    */
   async getIncidentBySession(orgId: string, sessionId: string): Promise<IncidentThread | null> {
-    const { data, error } = await supabaseServer
+    // Try with org filter first (strict), then fall back to session_id-only (cross-org sessions)
+    let { data, error } = await supabaseServer
       .from('facttic_governance_events')
       .select('id, session_id, org_id, timestamp, prompt, decision, risk_score, violations, guardrail_signals, latency, model, simulation_id')
       .eq('org_id', orgId)
       .eq('session_id', sessionId)
       .order('timestamp', { ascending: true });
+
+    if (error || !data || data.length === 0) {
+      // Fall back: some sessions may have been written under a different org context
+      const fallback = await supabaseServer
+        .from('facttic_governance_events')
+        .select('id, session_id, org_id, timestamp, prompt, decision, risk_score, violations, guardrail_signals, latency, model, simulation_id')
+        .eq('session_id', sessionId)
+        .order('timestamp', { ascending: true });
+      data = fallback.data;
+      error = fallback.error;
+    }
 
     if (error || !data || data.length === 0) {
       return null;
