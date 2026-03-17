@@ -84,6 +84,25 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
     let rawHealth = 100 - (avgRisk24h * 0.4 + activeIncidents * 10 + driftForHealth * 0.3);
     const computedHealth = Math.max(0, Math.min(100, Math.round(rawHealth)));
 
+    // RCA Confidence: derived from event volume — more real data = higher confidence
+    // Starts at 0%, grows with volume, caps at 95% (never claim 100% certainty)
+    const rcaConfidencePct = totalEvents24h === 0
+      ? 0
+      : Math.min(95, 40 + Math.min(totalEvents24h, 55));
+    const rcaConfidence = `${rcaConfidencePct}%`;
+
+    // Tamper Integrity: only say "Verified" if we have a real snapshot with determinism_flag
+    const tamperIntegrity = !latestSnapshot
+      ? "No Snapshot"
+      : latestSnapshot.determinism_flag === false
+        ? "Warning"
+        : "Verified";
+
+    // Policy adherence: N/A when no traffic, otherwise real ratio
+    const policyAdherence = totalEvents24h === 0
+      ? "N/A"
+      : `${((1 - (blockedEvents24h / totalEvents24h)) * 100).toFixed(1)}% compliant`;
+
     // 3. Construct the DashboardData object
     const dashboardData = {
       health: {
@@ -91,11 +110,11 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
         sessions_today: totalEvents24h,
         voice_calls: voiceCalls24h,
         drift_freq: `${driftForHealth.toFixed(1)}%`,
-        rca_confidence: "91%", 
-        policy_adherence: `${totalEvents24h > 0 ? ((1 - (blockedEvents24h/totalEvents24h)) * 100).toFixed(1) : 100}% compliant`,
+        rca_confidence: rcaConfidence,
+        policy_adherence: policyAdherence,
         behavioral_drift: driftForHealth > 5 ? "Critical" : driftForHealth > 2 ? "Monitor" : "Stable",
         open_alerts: activeIncidents,
-        tamper_integrity: latestSnapshot?.determinism_flag !== false ? "Verified" : "Warning",
+        tamper_integrity: tamperIntegrity,
         avg_risk_24h: avgRisk24h.toFixed(1),
         blocked_24h: blockedEvents24h
       },
@@ -109,19 +128,23 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
         })).reverse() || []
       },
       voice_drift: {
-        avg_risk_30d: 0.14,
-        percentage_change: -4.2,
-        trend: [12, 14, 11, 15, 13, 16, 14, 13, 11, 9, 11, 13, 12, 14, 13]
+        avg_risk_30d: avgRisk24h / 100,
+        percentage_change: driftForHealth > 0 ? +(driftForHealth - 2).toFixed(1) : 0,
+        trend: predictions?.map(p => +(Number(p.drift_score) * 100).toFixed(1)).reverse() || []
       },
       intelligence: {
         pii_exposed_today: recentEvents?.filter(e => JSON.stringify(e).includes('PII')).length || 0,
-        compliance_drift_score: 0.18,
+        compliance_drift_score: driftForHealth / 100,
         recent_violations: alerts?.filter(a => a.alert_type === 'POLICY_VIOLATION_BLOCK').map(a => ({
           id: a.id.substring(0, 5),
           type: a.metadata?.violation_type || 'POLICY_BLOCK',
           timestamp: new Date(a.created_at).toLocaleTimeString()
         })) || [],
-        pii_trend: [4, 6, 3, 8, 12, 10, 14, 12, 11, 13, 15, 12, 11, 10, 12]
+        pii_trend: recentEvents
+          ? recentEvents.map((_, i) =>
+              recentEvents.slice(0, i + 1).filter(e => JSON.stringify(e).includes('PII')).length
+            ).slice(-15)
+          : []
       },
       alerts: alerts?.map(a => ({
         id: a.id.substring(0, 8).toUpperCase(),
@@ -131,10 +154,10 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
         severity: (a.severity === 'critical' || a.severity === 'warning') ? 'High' : 'Low'
       })) || [],
       risks: [
-        { label: "Policy Adherence", value: `${totalEvents24h > 0 ? ((1 - (blockedEvents24h/totalEvents24h)) * 100).toFixed(1) : 100}%`, percent: totalEvents24h > 0 ? ((1 - (blockedEvents24h/totalEvents24h)) * 100) : 100, color: "text-emerald-700", barColor: "bg-emerald-500" },
+        { label: "Policy Adherence", value: policyAdherence, percent: totalEvents24h > 0 ? ((1 - (blockedEvents24h/totalEvents24h)) * 100) : 0, color: "text-emerald-700", barColor: "bg-emerald-500" },
         { label: "Behavioral Drift", value: `${driftForHealth.toFixed(1)}%`, percent: Math.min(driftForHealth * 10, 100), color: driftForHealth > 5 ? "text-red-700" : "text-amber-700", barColor: driftForHealth > 5 ? "bg-red-500" : "bg-amber-500" },
-        { label: "Tamper Events", value: "0", percent: 100, color: "text-emerald-700", barColor: "bg-emerald-500" },
-        { label: "RCA Confidence", value: "91%", percent: 91, color: "text-blue-700", barColor: "bg-blue-500" },
+        { label: "Tamper Integrity", value: tamperIntegrity, percent: tamperIntegrity === "Verified" ? 100 : tamperIntegrity === "Warning" ? 30 : 0, color: tamperIntegrity === "Verified" ? "text-emerald-700" : tamperIntegrity === "Warning" ? "text-red-700" : "text-gray-500", barColor: tamperIntegrity === "Verified" ? "bg-emerald-500" : tamperIntegrity === "Warning" ? "bg-red-500" : "bg-gray-400" },
+        { label: "RCA Confidence", value: rcaConfidence, percent: rcaConfidencePct, color: "text-blue-700", barColor: "bg-blue-500" },
         { label: "Avg Risk (24h)", value: `${avgRisk24h.toFixed(1)}/100`, percent: avgRisk24h, color: avgRisk24h > 50 ? "text-amber-700" : "text-emerald-700", barColor: avgRisk24h > 50 ? "bg-amber-500" : "bg-emerald-500" },
         { label: "Open Incidents", value: String(activeIncidents), percent: Math.min(activeIncidents * 10, 100), color: activeIncidents > 5 ? "text-red-700" : "text-amber-700", barColor: activeIncidents > 5 ? "bg-red-500" : "bg-amber-500" },
       ],

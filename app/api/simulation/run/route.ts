@@ -27,10 +27,7 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
       risk_score: logs.length > 0 ? logs.reduce((acc, l) => acc + l.risk, 0) / logs.length : 0,
       policy_hits: logs.filter(l => l.decision === 'BLOCK').length,
       guardrail_hits: logs.filter(l => l.risk > 70).length,
-      logs: logs.map(l => ({
-        ...l,
-        ledger_id: crypto.randomUUID()
-      }))
+      logs
     });
 
   } catch (err: any) {

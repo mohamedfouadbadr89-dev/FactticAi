@@ -9,6 +9,69 @@ import { GovernanceAlertEngine } from '@/lib/governance/alertEngine';
 import crypto from 'crypto';
 
 /**
+ * LLM Execution Layer
+ *
+ * Called after GovernancePipeline returns ALLOW.
+ * Reads org's active connection for provider + model preference,
+ * then calls the real LLM using env-level API keys.
+ *
+ * BYOK design note: keys are stored hashed (non-reversible) in ai_connections.
+ * Plaintext keys come from server env vars (OPENAI_API_KEY / ANTHROPIC_API_KEY).
+ * The connection record determines WHICH provider to call.
+ */
+async function executeLLM(orgId: string, prompt: string): Promise<string | null> {
+  // Load org's active provider preference
+  const { data: connection } = await supabaseServer
+    .from('ai_connections')
+    .select('provider, model')
+    .eq('org_id', orgId)
+    .eq('status', 'connected')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  const provider = connection?.provider || 'openai';
+  const model = connection?.model || 'gpt-4o-mini';
+
+  if (provider === 'anthropic' && process.env.ANTHROPIC_API_KEY) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    const data = await res.json();
+    return data.content?.[0]?.text || null;
+  }
+
+  if (process.env.OPENAI_API_KEY) {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1024,
+      }),
+    });
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || null;
+  }
+
+  return null; // No LLM key configured — governance-only mode
+}
+
+/**
  * POST /api/chat
  * Auth: Supabase session cookie via withAuth() — orgId resolved automatically
  * Body: { prompt, model?, session_id? }
@@ -163,6 +226,19 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
       logger.error('TELEMETRY_FAILED', { error: telemetryErr.message });
     }
 
+    // 4. LLM Execution — only if governance allows it
+    let llmResponse: string | null = null;
+    let llmLatency: number | null = null;
+    if (result.decision === 'ALLOW') {
+      const llmT0 = Date.now();
+      try {
+        llmResponse = await executeLLM(orgId, prompt);
+        llmLatency = Date.now() - llmT0;
+      } catch (llmErr: any) {
+        logger.warn('LLM_EXECUTION_SKIPPED', { orgId, error: llmErr.message });
+      }
+    }
+
     return NextResponse.json({
       status: 'ok',
       session_id: sessionId,
@@ -170,7 +246,12 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
       risk_score: result.risk_score,
       behavior: result.behavior,
       violations: result.violations,
-      metadata: { latency_ms: latency },
+      response: llmResponse,
+      metadata: {
+        latency_ms: latency,
+        llm_latency_ms: llmLatency,
+        governance_only: llmResponse === null,
+      },
     }, { status: 200 });
 
   } catch (err: any) {
