@@ -215,7 +215,6 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
             }]
           })
         }
-      );
     ).catch((telemetryErr: any) => {
       logger.error('TELEMETRY_FAILED', { error: telemetryErr.message });
     });
