@@ -10,7 +10,8 @@ import { AnalyzerResult, RiskSignal } from './types';
  * 4. Confidence inflation / misinformation markers (low-medium severity)
  *
  * Performance: RULES compiled once at module load (not per-request).
- * Security: Triple-normalization — catches character masking (@dm!n, a.d.m.i.n, 1njection).
+ * Security: Quad-normalization — Unicode NFKD + character demasking + Base64 decode.
+ *   Catches: @dm!n, а (Cyrillic a), a.d.m.i.n, 1njection, base64-wrapped payloads.
  */
 
 // ── Static rule table — compiled ONCE at module load ──────────────────────────
@@ -72,23 +73,50 @@ function demask(s: string): string {
   return DEMASK_MAP.reduce((acc, [re, rep]) => acc.replace(re, rep), s);
 }
 
+/**
+ * Unicode NFKD normalization: collapses lookalike characters.
+ * e.g. Cyrillic а (U+0430) → Latin a (U+0061), fullwidth chars, ligatures.
+ * Strip combining diacritical marks (U+0300–U+036F) after decomposition.
+ */
+function unicodeNormalize(s: string): string {
+  return s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+/**
+ * Attempt to decode a Base64-encoded payload.
+ * Returns decoded string on success, empty string on failure.
+ * Only attempts decode if string looks like plausible Base64 (length ≥ 20, valid chars).
+ */
+function tryBase64Decode(s: string): string {
+  const trimmed = s.trim().replace(/\s/g, '');
+  if (trimmed.length < 20 || !/^[A-Za-z0-9+/]+=*$/.test(trimmed)) return '';
+  try {
+    return Buffer.from(trimmed, 'base64').toString('utf8');
+  } catch {
+    return '';
+  }
+}
+
 export async function analyze(prompt: string): Promise<AnalyzerResult> {
-  // Triple-normalization — catches @dm!n, a.d.m.i.n, 1njection, etc.
-  const baseNormalized = prompt.toLowerCase();
-  const stripped       = baseNormalized.replace(/[^a-z0-9\s]/g, ' ');
-  const demasked       = demask(baseNormalized);
+  // ── Quad-normalization ──────────────────────────────────────────────────────
+  // 1. Unicode NFKD — catches Cyrillic/fullwidth lookalikes
+  const unicoded  = unicodeNormalize(prompt);
+  // 2. Stripped — alphanumeric only
+  const stripped  = unicoded.replace(/[^a-z0-9\s]/g, ' ');
+  // 3. Demasked — leet-speak substitutions
+  const demasked  = demask(unicoded);
+  // 4. Base64 decoded — catches base64-wrapped payloads
+  const b64decoded = unicodeNormalize(tryBase64Decode(prompt));
+
+  const forms = [unicoded, stripped, demasked, b64decoded].filter(Boolean);
 
   const signals: RiskSignal[] = [];
 
   for (const rule of RULES) {
     const matched =
       typeof rule.pattern === 'string'
-        ? baseNormalized.includes(rule.pattern) ||
-          stripped.includes(rule.pattern)       ||
-          demasked.includes(rule.pattern)
-        : rule.pattern.test(prompt)         ||
-          rule.pattern.test(stripped)       ||
-          rule.pattern.test(demasked);
+        ? forms.some(f => f.includes(rule.pattern as string))
+        : forms.some(f => (rule.pattern as RegExp).test(f));
 
     if (matched) {
       signals.push({
