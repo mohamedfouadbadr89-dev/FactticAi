@@ -119,20 +119,24 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
 
     const latency = Date.now() - t0;
 
-    // 2. Evidence Ledger
-    try {
-      await EvidenceLedger.write({
-        session_id: sessionId,
-        org_id: orgId,
-        event_type: 'chat_governance',
-        prompt,
-        model: model || 'unspecified',
-        decision: result.decision,
-        risk_score: result.risk_score,
-        violations: result.violations,
-        guardrail_signals: result.signals,
-        latency,
-      });
+    // 2. Evidence Ledger + Session Persistence (fire-and-forget — do not block response)
+    const persistAsync = async () => {
+      try {
+        await EvidenceLedger.write({
+          session_id: sessionId,
+          org_id: orgId,
+          event_type: 'chat_governance',
+          prompt,
+          model: model || 'unspecified',
+          decision: result.decision,
+          risk_score: result.risk_score,
+          violations: result.violations,
+          guardrail_signals: result.signals,
+          latency,
+        });
+      } catch (err: any) {
+        logger.error('CHAT_EVIDENCE_LEDGER_FAILURE', { org_id: orgId, error: err.message });
+      }
 
       GovernanceAlertEngine.evaluate({
         org_id: orgId,
@@ -141,14 +145,9 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
         policy_action: result.decision === 'BLOCK' ? 'block' : undefined,
         metadata: { violations: result.violations },
       });
-    } catch (err: any) {
-      logger.error('CHAT_EVIDENCE_LEDGER_FAILURE', { org_id: orgId, error: err.message });
-    }
 
-    try {
-      await supabaseServer
-        .from('sessions')
-        .upsert({
+      try {
+        await supabaseServer.from('sessions').upsert({
           id: sessionId,
           org_id: orgId,
           status: result.decision === 'BLOCK' ? 'blocked' : 'completed',
@@ -158,10 +157,7 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
           ended_at: new Date().toISOString(),
           created_at: new Date().toISOString()
         });
-
-      await supabaseServer
-        .from('session_turns')
-        .insert({
+        await supabaseServer.from('session_turns').insert({
           session_id: sessionId,
           org_id: orgId,
           turn_index: 0,
@@ -170,32 +166,30 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
           incremental_risk: result.risk_score,
           created_at: new Date().toISOString()
         });
-    } catch (sessionErr: any) {
-      logger.error('CHAT_SESSION_PERSISTENCE_FAILURE', { org_id: orgId, error: sessionErr.message });
-    }
-
-    // 2.5 Incident Ledger
-    if (result.decision !== 'ALLOW' || result.risk_score > 0) {
-      try {
-        const severity = result.risk_score >= 90 ? 'critical' : result.risk_score >= 70 ? 'high' : result.risk_score >= 40 ? 'medium' : 'low';
-        const violation_type = result.violations?.[0]?.policy_name || (result.violations?.[0] as any)?.rule_type || 'unclassified';
-        await supabaseServer
-          .from('incidents')
-          .insert({
-            session_id: sessionId,
-            org_id: orgId,
-            severity,
-            violation_type,
-            timestamp: new Date().toISOString()
-          });
-      } catch (incErr: any) {
-        logger.error('CHAT_INCIDENT_PERSISTENCE_FAILURE', { org_id: orgId, error: incErr.message });
+      } catch (sessionErr: any) {
+        logger.error('CHAT_SESSION_PERSISTENCE_FAILURE', { org_id: orgId, error: sessionErr.message });
       }
+    };
+    // Non-blocking: start persistence in background, don't await
+    persistAsync().catch(e => logger.error('CHAT_PERSIST_UNHANDLED', { error: e.message }));
+
+    // 2.5 Incident Ledger (fire-and-forget)
+    if (result.decision !== 'ALLOW' || result.risk_score > 0) {
+      const severity = result.risk_score >= 90 ? 'critical' : result.risk_score >= 70 ? 'high' : result.risk_score >= 40 ? 'medium' : 'low';
+      const violation_type = result.violations?.[0]?.policy_name || (result.violations?.[0] as any)?.rule_type || 'unclassified';
+      supabaseServer.from('incidents').insert({
+        session_id: sessionId,
+        org_id: orgId,
+        severity,
+        violation_type,
+        timestamp: new Date().toISOString()
+      }).then(({ error }) => {
+        if (error) logger.error('CHAT_INCIDENT_PERSISTENCE_FAILURE', { org_id: orgId, error: error.message });
+      });
     }
 
-    // 3. Realtime broadcast → Live Monitor
-    try {
-      await fetch(
+    // 3. Realtime broadcast → Live Monitor (fire-and-forget)
+    fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/realtime/v1/api/broadcast`,
         {
           method: "POST",
@@ -222,9 +216,9 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
           })
         }
       );
-    } catch (telemetryErr: any) {
+    ).catch((telemetryErr: any) => {
       logger.error('TELEMETRY_FAILED', { error: telemetryErr.message });
-    }
+    });
 
     // 4. LLM Execution — only if governance allows it
     let llmResponse: string | null = null;

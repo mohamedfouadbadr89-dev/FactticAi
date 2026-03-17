@@ -13,6 +13,7 @@ export default function SimulationPage() {
   const [scenarioId, setScenarioId] = useState('hallucination');
   const [volume, setVolume] = useState(5);
   const [logs, setLogs] = useState<any[]>([]);
+  const [simError, setSimError] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createBrowserClient(
@@ -28,6 +29,7 @@ export default function SimulationPage() {
   const handleRunSimulation = async () => {
     setLoading(true);
     setLogs([]);
+    setSimError(null);
     try {
       const res = await fetch('/api/simulation/run', {
         method: 'POST',
@@ -37,9 +39,12 @@ export default function SimulationPage() {
       const data = await res.json();
       if (data.success) {
         setLogs(data.logs);
+      } else {
+        setSimError(data.error || data.message || 'Simulation failed');
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error('[Simulation]', err);
+      setSimError(err.message || 'Network error');
     } finally {
       setLoading(false);
     }
@@ -97,7 +102,13 @@ export default function SimulationPage() {
             </div>
 
             <div className="flex-1 p-8 font-mono text-xs overflow-y-auto max-h-[500px] space-y-2">
-              {logs.length === 0 && !loading && (
+              {simError && !loading && (
+                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono">
+                  <p className="font-black uppercase tracking-widest text-[9px] mb-1">Simulation Error</p>
+                  <p>{simError}</p>
+                </div>
+              )}
+              {logs.length === 0 && !loading && !simError && (
                 <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)] opacity-50 text-center space-y-4 italic">
                   <History className="w-12 h-12 mb-2" />
                   <p>No active simulation data.<br/>Select a scenario to begin generation.</p>

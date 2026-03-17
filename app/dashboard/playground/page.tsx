@@ -8,10 +8,12 @@ import { ShieldCheck, Info } from 'lucide-react';
 export default function PlaygroundPage() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleRunGovernance = async (config: any) => {
     setLoading(true);
     setResults(null);
+    setError(null);
     const sessionId = crypto.randomUUID();
     try {
       const res = await fetch('/api/chat', {
@@ -25,16 +27,17 @@ export default function PlaygroundPage() {
           session_id: sessionId,
         })
       });
-      
+
+      const data = await res.json().catch(() => null);
+
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Governance pipeline execution failed.');
+        throw new Error(data?.error || data?.message || `Server error ${res.status}`);
       }
-      
-      const data = await res.json();
+
       setResults(data);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error('[Playground]', err);
+      setError(err.message || 'Pipeline execution failed');
     } finally {
       setLoading(false);
     }
@@ -67,7 +70,16 @@ export default function PlaygroundPage() {
 
           {/* Right Panel: Analysis Results */}
           <div className="lg:col-span-8 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-3xl p-8 shadow-sm h-full">
-            <GovernanceResults data={results} />
+            {error ? (
+              <div className="h-full flex flex-col items-center justify-center text-center p-12">
+                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-mono max-w-md w-full text-left">
+                  <p className="font-black uppercase tracking-widest text-[10px] mb-2">Pipeline Error</p>
+                  <p>{error}</p>
+                </div>
+              </div>
+            ) : (
+              <GovernanceResults data={results} />
+            )}
           </div>
         </div>
       </div>

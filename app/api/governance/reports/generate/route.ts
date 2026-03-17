@@ -1,4 +1,3 @@
-import { verifyApiKey } from '@/lib/security/verifyApiKey';
 import { NextResponse } from 'next/server';
 import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { ReportGenerator, ReportConfig } from '@/lib/reports/reportGenerator';
@@ -6,19 +5,9 @@ import { logger } from '@/lib/logger';
 import { supabaseServer } from '@/lib/supabaseServer';
 
 export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
-  const authResult = await verifyApiKey(req);
-  if (authResult.error) {
-    return NextResponse.json(
-      { error: authResult.error },
-      { status: authResult.status }
-    );
-  }
-  // Override org_id from the verified API key
-  const verifiedOrgId = authResult.org_id;
-
   try {
-    const config: ReportConfig = await req.json();
-    const { format } = (await req.json() as any); // Re-parsing for format if not in config, but let's assume it's there
+    const body = await req.json();
+    const config: ReportConfig = body;
 
     if (!config.startDate || !config.endDate || !config.metrics) {
       return NextResponse.json({ error: 'Missing required configuration fields' }, { status: 400 });

@@ -37,18 +37,18 @@ export const POST = withAuth(async (req: Request, { orgId, userId: currentUserId
     if (existingUser) {
       targetUserId = existingUser.id;
     } else {
-      // 2. Trigger Supabase Admin Invite for new users
-      const { data: inviteData, error: inviteError } = await supabaseServer.auth.admin.inviteUserByEmail(email);
-      
+      // 2. Try to invite user via Supabase Admin API
+      const { data: inviteData, error: inviteError } = await supabaseServer.auth.admin.inviteUserByEmail(email, {
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+      });
+
       if (inviteError) {
-        // Handle edge case where auth user exists but public.users record is missing
-        if (inviteError.message.includes('already been registered')) {
-          // Use admin API to find the user by email and sync them
+        // User already exists in auth but not in public.users — sync them
+        if (inviteError.message.includes('already been registered') || inviteError.message.includes('already exists')) {
           const { data: listData } = await supabaseServer.auth.admin.listUsers();
           const authUser = listData?.users?.find(u => u.email === email);
           if (authUser) {
             targetUserId = authUser.id;
-            // Sync to public.users
             await supabaseServer.from('users').upsert({
               id: authUser.id,
               email,
@@ -57,18 +57,33 @@ export const POST = withAuth(async (req: Request, { orgId, userId: currentUserId
           } else {
             return NextResponse.json({ error: 'USER_EXISTS_IN_AUTH_BUT_NOT_SYNCED' }, { status: 409 });
           }
+        } else if (inviteError.message.toLowerCase().includes('smtp') || inviteError.message.toLowerCase().includes('email') || inviteError.message.toLowerCase().includes('send')) {
+          // SMTP not configured — create user directly without sending email
+          const { data: createData, error: createError } = await supabaseServer.auth.admin.createUser({
+            email,
+            email_confirm: false,
+            user_metadata: { invited: true, invited_by_org: orgId },
+          });
+          if (createError) throw createError;
+          if (createData?.user) {
+            targetUserId = createData.user.id;
+            isNewUser = true;
+            await supabaseServer.from('users').upsert({
+              id: targetUserId,
+              email,
+              full_name: email.split('@')[0],
+            });
+          }
         } else {
-           throw inviteError;
+          throw inviteError;
         }
       } else if (inviteData?.user) {
         targetUserId = inviteData.user.id;
         isNewUser = true;
-        
-        // Ensure mapped to public.users
         await supabaseServer.from('users').upsert({
            id: targetUserId,
-           email: email,
-           full_name: email.split('@')[0]
+           email,
+           full_name: email.split('@')[0],
         });
       }
     }
