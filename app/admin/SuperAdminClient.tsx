@@ -1,7 +1,39 @@
 'use client'
 
-import React, { useState } from 'react';
-import { ShieldAlert, Activity, Settings, Plus, Lock, Globe, ServerCrash } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShieldAlert, Activity, Settings, Plus, Lock, Globe, ServerCrash, Sun, Moon } from 'lucide-react';
+
+function ThemeToggle() {
+  const [dark, setDark] = useState(true)
+
+  useEffect(() => {
+    const root = document.documentElement
+    setDark(root.classList.contains('theme-dark') || !root.classList.contains('theme-light'))
+  }, [])
+
+  const toggle = () => {
+    const root = document.documentElement
+    if (dark) {
+      root.classList.remove('theme-dark')
+      root.classList.add('theme-light')
+    } else {
+      root.classList.remove('theme-light')
+      root.classList.add('theme-dark')
+    }
+    setDark(d => !d)
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      className="w-8 h-8 rounded-lg border flex items-center justify-center transition-colors"
+      style={{ borderColor: 'var(--border-primary)', color: 'var(--text-secondary)' }}
+      title="Toggle theme"
+    >
+      {dark ? <Sun size={14} /> : <Moon size={14} />}
+    </button>
+  )
+}
 
 const mockTenants = [
   { id: 't-1A', name: 'Acme Corporation', domain: 'acme.com', sso: true, status: 'Active', members: 42, compute: '14.2ms', plan: 'Enterprise', region: 'us-east-1' },
@@ -15,10 +47,10 @@ export default function SuperAdminClientView() {
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
 
   return (
-    <div className="flex h-screen bg-[#050505] text-[var(--text-primary)]">
+    <div className="flex h-screen bg-[var(--bg-secondary)] text-[var(--text-primary)]">
       {/* Sidebar Overlay */}
-      <div className="w-64 border-r border-[#1a1a1a] bg-[#0a0a0a] flex flex-col">
-        <div className="p-6 border-b border-[#1a1a1a]">
+      <div className="w-64 border-r border-[var(--border-primary)] bg-[var(--bg-primary)] flex flex-col">
+        <div className="p-6 border-b border-[var(--border-primary)]">
           <div className="flex items-center space-x-2 text-red-500 mb-1">
             <ShieldAlert size={20} />
             <span className="font-black tracking-[0.2em] text-xs">SUPER ADMIN</span>
@@ -27,36 +59,39 @@ export default function SuperAdminClientView() {
         </div>
         
         <nav className="flex-1 p-4 space-y-2">
-          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg bg-[var(--accent)] text-black font-bold text-xs uppercase tracking-widest">
+          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg bg-[var(--accent)] text-white font-bold text-xs uppercase tracking-widest">
             <Globe size={16} />
             <span>Tenants</span>
           </button>
-          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-[var(--text-secondary)] hover:bg-[#1a1a1a] hover:text-white font-bold text-xs uppercase tracking-widest transition-colors">
+          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] font-bold text-xs uppercase tracking-widest transition-colors">
             <Activity size={16} />
             <span>Telemetry</span>
           </button>
-          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-[var(--text-secondary)] hover:bg-[#1a1a1a] hover:text-white font-bold text-xs uppercase tracking-widest transition-colors">
+          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] font-bold text-xs uppercase tracking-widest transition-colors">
             <Settings size={16} />
             <span>Global Config</span>
           </button>
         </nav>
 
-        <div className="p-4 border-t border-[#1a1a1a]">
+        <div className="p-4 border-t border-[var(--border-primary)]">
           <div className="text-[10px] font-mono text-[var(--text-secondary)]">Facttic OS v2.1.0-BYOC</div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-20 border-b border-[#1a1a1a] flex items-center justify-between px-8 bg-[#0a0a0a]">
+        <header className="h-20 border-b border-[var(--border-primary)] flex items-center justify-between px-8 bg-[var(--bg-primary)]">
           <div>
              <h1 className="text-xl font-bold tracking-tight">Tenant Fleet Management</h1>
              <p className="text-xs text-[var(--text-secondary)] font-mono mt-1">Global Instance Registry: {tenants.length} Active Nodes</p>
           </div>
-          <button className="flex items-center space-x-2 bg-white text-black px-4 py-2 rounded text-xs font-black uppercase tracking-widest hover:bg-gray-200 transition-colors">
-             <Plus size={14} />
-             <span>Provision Tenant</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <button className="flex items-center space-x-2 bg-[var(--accent)] text-white px-4 py-2 rounded text-xs font-black uppercase tracking-widest hover:opacity-90 transition-opacity">
+               <Plus size={14} />
+               <span>Provision Tenant</span>
+            </button>
+          </div>
         </header>
 
         <main className="flex-1 overflow-auto p-8">
@@ -81,7 +116,7 @@ export default function SuperAdminClientView() {
           <div className="section-card overflow-hidden">
              <table className="w-full text-left border-collapse">
                 <thead>
-                   <tr className="border-b border-[#1a1a1a] bg-[#0d0d0d]">
+                   <tr className="border-b border-[var(--border-primary)] bg-[var(--bg-secondary)]">
                       <th className="p-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Organization</th>
                       <th className="p-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Domain / Identity</th>
                       <th className="p-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Region Zone</th>
@@ -90,9 +125,9 @@ export default function SuperAdminClientView() {
                       <th className="p-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] text-right">State</th>
                    </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1a1a1a]">
+                <tbody className="divide-y divide-[var(--border-primary)]">
                    {tenants.map(tenant => (
-                     <tr key={tenant.id} onClick={() => setSelectedTenant(tenant.id)} className="hover:bg-[#111] cursor-pointer transition-colors">
+                     <tr key={tenant.id} onClick={() => setSelectedTenant(tenant.id)} className="hover:bg-[var(--bg-secondary)] cursor-pointer transition-colors">
                         <td className="p-4">
                            <div className="font-bold text-sm">{tenant.name}</div>
                            <div className="text-[10px] text-[var(--text-secondary)] font-mono">{tenant.id} • {tenant.members} seats</div>
@@ -115,7 +150,7 @@ export default function SuperAdminClientView() {
                            {tenant.region}
                         </td>
                         <td className="p-4">
-                           <div className="text-xs font-mono border border-[#333] inline-block px-2 py-0.5 rounded bg-[#0a0a0a]">{tenant.plan}</div>
+                           <div className="text-xs font-mono border border-[var(--border-primary)] inline-block px-2 py-0.5 rounded bg-[var(--bg-secondary)]">{tenant.plan}</div>
                         </td>
                         <td className="p-4 font-mono text-sm">
                            <span className={tenant.status === 'Throttled' ? 'text-red-500' : 'text-green-500'}>{tenant.compute}</span>
@@ -137,10 +172,10 @@ export default function SuperAdminClientView() {
               <p className="text-xs text-[var(--text-secondary)] mb-6 font-mono">WARNING: Super Admin overrides bypass normal tenant RLS restrictions. Actions taken here modify physical database boundaries directly.</p>
               
               <div className="flex space-x-4">
-                <button className="bg-[#111] border border-[#333] text-white px-4 py-2 rounded text-[10px] font-black tracking-widest uppercase hover:bg-[#222]">
+                <button className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] px-4 py-2 rounded text-[10px] font-black tracking-widest uppercase hover:bg-[var(--bg-primary)] transition-colors">
                   Force Token Invalidation
                 </button>
-                <button className="bg-[#111] border border-orange-500/50 text-orange-500 px-4 py-2 rounded text-[10px] font-black tracking-widest uppercase hover:bg-orange-500/10">
+                <button className="bg-[var(--bg-secondary)] border border-orange-500/50 text-orange-500 px-4 py-2 rounded text-[10px] font-black tracking-widest uppercase hover:bg-orange-500/10 transition-colors">
                   Throttle API Quota
                 </button>
                 <button className="bg-red-500 text-white px-4 py-2 rounded text-[10px] font-black tracking-widest uppercase shadow hover:bg-red-600">
