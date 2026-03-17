@@ -183,9 +183,35 @@ function ForensicsContent() {
             <h3 className="text-xs font-black uppercase tracking-widest text-[var(--text-secondary)]">
               Turn Replay & Deep Inspection
             </h3>
-            <div className="flex items-center gap-1 text-[10px] font-bold text-[var(--accent)] cursor-pointer hover:underline">
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/governance/reports/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                      endDate: new Date().toISOString().split('T')[0],
+                      metrics: ['risk_score', 'decision', 'violations'],
+                      format: 'csv',
+                    }),
+                  });
+                  if (!res.ok) throw new Error('Export failed');
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `audit_log_${selectedSessionId || 'all'}_${Date.now()}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                } catch (e) {
+                  alert('Export failed. Please try again.');
+                }
+              }}
+              className="flex items-center gap-1 text-[10px] font-bold text-[var(--accent)] cursor-pointer hover:underline"
+            >
               Export Audit Log <ExternalLink className="w-2.5 h-2.5" />
-            </div>
+            </button>
           </div>
           <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-primary)] p-6 min-h-[600px] max-h-[800px] overflow-y-auto custom-scrollbar">
             <TurnTimeline turns={data.turns} onInspect={() => {}} />

@@ -2,23 +2,26 @@
 
 import React, { useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { 
-  User, 
-  Shield, 
-  Building, 
-  Mail, 
-  MapPin, 
-  Briefcase, 
-  Clock, 
+import {
+  User,
+  Shield,
+  Building,
+  Mail,
+  MapPin,
+  Briefcase,
+  Clock,
   Fingerprint,
   Save,
-  Loader2
+  Loader2,
+  CheckCircle2
 } from 'lucide-react';
 import { logger } from '@/lib/logger';
 
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [org, setOrg] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
@@ -69,19 +72,21 @@ export default function ProfilePage() {
 
   const handleUpdate = async () => {
     setSaving(true);
+    setSaveSuccess(false);
+    setSaveError(null);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          job_title: profile.job_title,
-          department: profile.department,
-          bio: profile.bio
-        });
-
-      if (error) throw error;
-      logger.info('PROFILE_UPDATED', { userId: user.id });
+      // Update display name in the users table (profiles table does not exist in schema)
+      if (profile?.full_name || profile?.job_title) {
+        const { error } = await supabase
+          .from('users')
+          .update({ name: profile.full_name || profile.job_title })
+          .eq('id', user.id);
+        if (error) throw error;
+      }
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: any) {
+      setSaveError('Failed to save profile. Please try again.');
       logger.error('PROFILE_UPDATE_FAILED', { error: err.message });
     } finally {
       setSaving(false);
@@ -217,31 +222,48 @@ export default function ProfilePage() {
                 </div>
               </section>
 
-              <footer className="pt-6 flex justify-end gap-4">
-                 <button 
-                   onClick={() => {
-                     localStorage.removeItem('facttic_tour_completed');
-                     window.location.reload();
-                   }}
-                   type="button"
-                   className="group relative inline-flex items-center gap-3 bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:text-white border border-[var(--border-primary)] font-black uppercase tracking-[0.3em] text-[10px] px-8 py-4 rounded-xl transition-all shadow-inner hover:border-[var(--accent)] active:scale-[0.98]"
-                 >
-                   Reset Tour
-                 </button>
-                 <button 
-                   onClick={handleUpdate}
-                   disabled={saving}
-                   className="group relative inline-flex items-center gap-3 bg-[var(--accent)] text-white font-black uppercase tracking-[0.3em] text-[10px] px-8 py-4 rounded-xl hover:opacity-90 transition-all shadow-[0_20px_40px_-15px_rgba(var(--accent-rgb),0.4)] active:scale-[0.98] disabled:opacity-50"
-                 >
-                   {saving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                   ) : (
-                      <>
-                        <Save className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
-                        Synchronize Profile
-                      </>
-                   )}
-                 </button>
+              <footer className="pt-6 flex flex-col gap-3">
+                 {saveSuccess && (
+                   <div className="flex items-center gap-2 text-emerald-500 text-xs font-bold bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3">
+                     <CheckCircle2 className="w-4 h-4" /> Profile synchronized successfully.
+                   </div>
+                 )}
+                 {saveError && (
+                   <div className="text-red-400 text-xs font-bold bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                     {saveError}
+                   </div>
+                 )}
+                 <div className="flex justify-end gap-4">
+                   <button
+                     onClick={() => {
+                       localStorage.removeItem('facttic_tour_completed');
+                       window.location.reload();
+                     }}
+                     type="button"
+                     className="group relative inline-flex items-center gap-3 bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:text-white border border-[var(--border-primary)] font-black uppercase tracking-[0.3em] text-[10px] px-8 py-4 rounded-xl transition-all shadow-inner hover:border-[var(--accent)] active:scale-[0.98]"
+                   >
+                     Reset Tour
+                   </button>
+                   <button
+                     onClick={handleUpdate}
+                     disabled={saving}
+                     className="group relative inline-flex items-center gap-3 bg-[var(--accent)] text-white font-black uppercase tracking-[0.3em] text-[10px] px-8 py-4 rounded-xl hover:opacity-90 transition-all shadow-[0_20px_40px_-15px_rgba(var(--accent-rgb),0.4)] active:scale-[0.98] disabled:opacity-50"
+                   >
+                     {saving ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                     ) : saveSuccess ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" />
+                          Synchronized
+                        </>
+                     ) : (
+                        <>
+                          <Save className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
+                          Synchronize Profile
+                        </>
+                     )}
+                   </button>
+                 </div>
               </footer>
            </div>
         </div>

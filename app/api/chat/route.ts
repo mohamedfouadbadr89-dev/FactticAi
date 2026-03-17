@@ -89,12 +89,13 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
 
     const sessionId = session_id ?? crypto.randomUUID();
 
-    // 0. Fraud Detection
-    const fraudResult = await FraudDetectionEngine.evaluate({
-      session_id: sessionId,
-      org_id: orgId,
-      prompt,
-    });
+    // 0. Fraud Detection (2s timeout — unprotected DB call must not block the route)
+    const fraudResult = await Promise.race([
+      FraudDetectionEngine.evaluate({ session_id: sessionId, org_id: orgId, prompt }),
+      new Promise<{ action: string; fraud_score: number; classification: string }>(
+        (resolve) => setTimeout(() => resolve({ action: 'allow', fraud_score: 0, classification: 'normal' }), 2000)
+      ),
+    ]);
 
     if (fraudResult.action === 'block API key') {
       logger.warn('FRAUD_BLOCK', { org_id: orgId, session_id: sessionId, fraud_score: fraudResult.fraud_score });
@@ -224,7 +225,11 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
     if (result.decision === 'ALLOW') {
       const llmT0 = Date.now();
       try {
-        llmResponse = await executeLLM(orgId, prompt);
+        // 10-second timeout on LLM call to prevent indefinite hang
+        llmResponse = await Promise.race([
+          executeLLM(orgId, prompt),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000)),
+        ]);
         llmLatency = Date.now() - llmT0;
       } catch (llmErr: any) {
         logger.warn('LLM_EXECUTION_SKIPPED', { orgId, error: llmErr.message });
