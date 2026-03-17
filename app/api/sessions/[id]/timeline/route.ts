@@ -22,15 +22,30 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // RBAC: Resolve the org that owns this session from the evidence ledger
-    const { data: eventRow, error: sessionError } = await supabaseServer
-      .from('facttic_governance_events')
+    // RBAC: Resolve the org that owns this session
+    // First try the sessions table (source of truth for the incidents page)
+    let orgId: string | null = null;
+
+    const { data: sessionRow } = await supabaseServer
+      .from('sessions')
       .select('org_id')
-      .eq('session_id', sessionId)
-      .limit(1)
+      .eq('id', sessionId)
       .maybeSingle();
 
-    if (sessionError || !eventRow) {
+    if (sessionRow?.org_id) {
+      orgId = sessionRow.org_id;
+    } else {
+      // Fall back to governance events ledger
+      const { data: eventRow } = await supabaseServer
+        .from('facttic_governance_events')
+        .select('org_id')
+        .eq('session_id', sessionId)
+        .limit(1)
+        .maybeSingle();
+      orgId = eventRow?.org_id ?? null;
+    }
+
+    if (!orgId) {
       return NextResponse.json({ error: 'Session not found or forbidden.' }, { status: 404 });
     }
 
@@ -38,7 +53,7 @@ export async function GET(
       .from('org_members')
       .select('id')
       .eq('user_id', user.id)
-      .eq('org_id', eventRow.org_id)
+      .eq('org_id', orgId)
       .single();
 
     if (rbacError || !orgMember) {

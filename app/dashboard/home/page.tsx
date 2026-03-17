@@ -47,25 +47,49 @@ export default function HomePage() {
   const router = useRouter()
   const [data, setData] = React.useState<OverviewData | null>(null)
   const [loading, setLoading] = React.useState(true)
+  const [apiError, setApiError] = React.useState(false)
+  const [retry, setRetry] = React.useState(0)
   const [executiveMode, setExecutiveMode] = React.useState(false)
 
   React.useEffect(() => {
+    setLoading(true)
+    setApiError(false)
     fetch('/api/product/overview')
       .then(res => res.json())
       .then(json => {
-        setData(json)
+        if (json && json.governance && json.intelligence && json.gateway && json.agents) {
+          setData(json)
+        } else {
+          setApiError(true)
+        }
         setLoading(false)
       })
       .catch(e => {
         console.error(e)
+        setApiError(true)
         setLoading(false)
       })
-  }, [])
+  }, [retry])
 
-  if (loading || !data)
+  if (loading)
     return (
       <div className="min-h-screen bg-[var(--bg-secondary)] flex items-center justify-center animate-pulse text-[var(--text-secondary)]">
         <Shield className="w-12 h-12 animate-spin" />
+      </div>
+    )
+
+  if (apiError || !data)
+    return (
+      <div className="min-h-screen bg-[var(--bg-secondary)] flex flex-col items-center justify-center gap-4 text-[var(--text-secondary)]">
+        <Shield className="w-12 h-12 opacity-30" />
+        <p className="text-sm font-bold uppercase tracking-widest">Overview Unavailable</p>
+        <p className="text-xs opacity-60">Could not load product metrics. Check your connection or try again.</p>
+        <button
+          onClick={() => setRetry(r => r + 1)}
+          className="mt-2 px-4 py-2 text-xs font-black uppercase tracking-widest border border-[var(--border-primary)] rounded-lg hover:border-[var(--accent)] transition-colors"
+        >
+          Retry
+        </button>
       </div>
     )
 
