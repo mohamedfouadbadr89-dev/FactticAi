@@ -30,8 +30,8 @@ export default function VoiceDriftCard({ data }: Props) {
           <h3 className="card-title select-none">Voice Governance Drift</h3>
           <p className="card-subtitle">30D Performance Analysis</p>
         </div>
-        <a 
-          href="/dashboard/voice/analysis" 
+        <a
+          href="/dashboard/voice"
           className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline"
         >
           View Details →

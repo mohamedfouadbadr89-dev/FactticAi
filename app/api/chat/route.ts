@@ -148,12 +148,14 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
       });
 
       try {
+        // total_risk and risk_score columns store 0.0–1.0 decimals, not 0–100
+        const riskDecimal = Math.min(1, result.risk_score / 100);
         await supabaseServer.from('sessions').upsert({
           id: sessionId,
           org_id: orgId,
-          status: result.decision === 'BLOCK' ? 'blocked' : 'completed',
-          total_risk: result.risk_score,
-          risk_score: result.risk_score,
+          status: result.decision === 'BLOCK' ? 'completed' : 'active',
+          total_risk: riskDecimal,
+          risk_score: riskDecimal,
           ended_at: new Date().toISOString(),
           created_at: new Date().toISOString()
         });

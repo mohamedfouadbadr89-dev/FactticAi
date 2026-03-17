@@ -114,7 +114,32 @@ export default function IntelligenceDashboard({ data }: Props) {
                </div>
             </div>
 
-            <button className="w-full py-2.5 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl text-[10px] font-black uppercase tracking-[0.15em] text-[var(--text-primary)] hover:bg-[var(--border-primary)] transition-all">
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/governance/reports/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                      endDate: new Date().toISOString().split('T')[0],
+                      metrics: ['risk_score', 'decision', 'violations', 'pii_exposure'],
+                      format: 'csv',
+                    }),
+                  });
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `evidence_package_${new Date().toISOString().split('T')[0]}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                } catch (e) {
+                  console.error('Export failed', e);
+                }
+              }}
+              className="w-full py-2.5 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl text-[10px] font-black uppercase tracking-[0.15em] text-[var(--text-primary)] hover:bg-[var(--border-primary)] transition-all cursor-pointer"
+            >
                Export Verified Evidence Package
             </button>
         </div>

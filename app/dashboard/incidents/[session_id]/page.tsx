@@ -1,3 +1,4 @@
+import { createServerAuthClient } from '@/lib/supabaseAuth';
 import { resolveOrgContext } from '@/lib/orgResolver';
 import { IncidentService } from '@/lib/forensics/incidentService';
 import IncidentTimeline from '@/components/incidents/IncidentTimeline';
@@ -14,14 +15,18 @@ interface Props {
 
 export default async function IncidentDetailPage({ params }: Props) {
   const { session_id } = await params;
-  
+
   let incident = null;
-  
+
   try {
     let orgId: string | null = null;
     try {
-      const orgContext = await resolveOrgContext("user-1234");
-      orgId = orgContext.org_id;
+      const authClient = await createServerAuthClient();
+      const { data: { user } } = await authClient.auth.getUser();
+      if (user) {
+        const orgContext = await resolveOrgContext(user.id);
+        orgId = orgContext.org_id;
+      }
     } catch {
       const { supabaseServer } = await import('@/lib/supabaseServer');
       const { data } = await supabaseServer
