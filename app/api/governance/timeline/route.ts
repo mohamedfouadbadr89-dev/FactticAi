@@ -26,7 +26,8 @@ export const GET = withAuth(async (
   req: NextRequest | Request,
   ctx: AuthContext
 ) => {
-  const { orgId, requestId } = ctx
+  const { orgId } = ctx
+  const requestId = crypto.randomUUID()
 
   // ── Step 1: Extract and validate session_id ──────────────────────────────
 

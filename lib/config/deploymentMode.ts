@@ -4,16 +4,20 @@ export type DeploymentMode = 'SAAS' | 'VPC' | 'SELF_HOSTED'
 export type DataResidency  = 'US' | 'EU' | 'APAC' | 'CUSTOM'
 
 export interface ComplianceProfile {
-  soc2:    boolean
-  hipaa:   boolean
-  gdpr:    boolean
-  iso27001: boolean
+  soc2:       boolean
+  hipaa:      boolean
+  gdpr:       boolean
+  iso27001:   boolean
+  privateVpc: boolean
+  auditLogs:  boolean
+  description: string
 }
 
 export interface DeploymentModeConfig {
   label:       string
   description: string
   features:    string[]
+  badge:       string
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -22,6 +26,7 @@ export const DEPLOYMENT_MODES: Record<DeploymentMode, DeploymentModeConfig> = {
   SAAS: {
     label:       'Cloud SaaS',
     description: 'Fully managed cloud deployment. Facttic handles all infrastructure, updates, and scaling.',
+    badge:       '#3b82f6',
     features: [
       'Zero infrastructure management',
       'Automatic updates & patches',
@@ -32,6 +37,7 @@ export const DEPLOYMENT_MODES: Record<DeploymentMode, DeploymentModeConfig> = {
   VPC: {
     label:       'VPC Isolated',
     description: 'Dedicated cloud environment within your Virtual Private Cloud. Full network isolation.',
+    badge:       '#8b5cf6',
     features: [
       'Network-level isolation',
       'Dedicated compute resources',
@@ -42,6 +48,7 @@ export const DEPLOYMENT_MODES: Record<DeploymentMode, DeploymentModeConfig> = {
   SELF_HOSTED: {
     label:       'Self-Hosted',
     description: 'Deploy Facttic entirely within your own infrastructure. Maximum control and data sovereignty.',
+    badge:       '#10b981',
     features: [
       'Full data sovereignty',
       'On-premise or private cloud',
@@ -79,11 +86,25 @@ export function computeComplianceProfile(
   mode: DeploymentMode,
   dataResidency: DataResidency
 ): ComplianceProfile {
+  const hipaa      = mode === 'VPC' || mode === 'SELF_HOSTED'
+  const gdpr       = dataResidency === 'EU' || mode === 'SELF_HOSTED'
+  const iso27001   = mode === 'VPC' || mode === 'SELF_HOSTED'
+  const privateVpc = mode === 'VPC' || mode === 'SELF_HOSTED'
+  const auditLogs  = true
+
+  const active: string[] = ['SOC 2']
+  if (hipaa)    active.push('HIPAA')
+  if (gdpr)     active.push('GDPR')
+  if (iso27001) active.push('ISO 27001')
+
   return {
-    soc2:     true,
-    hipaa:    mode === 'VPC' || mode === 'SELF_HOSTED',
-    gdpr:     dataResidency === 'EU' || mode === 'SELF_HOSTED',
-    iso27001: mode === 'VPC' || mode === 'SELF_HOSTED',
+    soc2:        true,
+    hipaa,
+    gdpr,
+    iso27001,
+    privateVpc,
+    auditLogs,
+    description: `Active certifications: ${active.join(', ')}. Data residency: ${dataResidency}. Deployment: ${DEPLOYMENT_MODES[mode].label}.`,
   }
 }
 

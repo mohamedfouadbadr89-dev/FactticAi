@@ -172,6 +172,40 @@ export const DETECTION_RULES = {
   } satisfies DetectionRule,
 
   /**
+   * MALICIOUS_INTENT — MI-001
+   * Prompts requesting hacking instructions, credential theft,
+   * account compromise, or any overtly illegal / harmful activity.
+   */
+  MALICIOUS_INTENT: {
+    rule_id: 'MI-001',
+    description: 'Prompt requests hacking, credential theft, account compromise, or illegal/harmful activity.',
+    patterns: [
+      'how to hack',
+      'how do i hack',
+      'teach me to hack',
+      'how to steal credentials',
+      'how to crack passwords',
+      'how to bypass authentication',
+      'how to compromise an account',
+      'how to perform a cyberattack',
+      'launch a ddos',
+      'how to perform sql injection',
+      'how to install malware',
+      'how to create a virus',
+      'write ransomware',
+      'write a keylogger',
+      'exploit a vulnerability',
+      'how to phish',
+      'how to conduct phishing',
+      'social engineering attack',
+      'how to break into a system',
+      'unauthorized access',
+    ],
+    severity: 0.85,
+    recommended_action: 'block',
+  } satisfies DetectionRule,
+
+  /**
    * ROLE_MANIPULATION — RM-001
    * Prompts that attempt to alter the AI's operational role or persona in order
    * to assume elevated privileges, administrative access, or an unrestricted identity.

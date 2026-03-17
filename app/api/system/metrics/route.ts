@@ -16,7 +16,8 @@ export const GET = withAuth(async (
   req: NextRequest | Request,
   ctx: AuthContext
 ) => {
-  const { orgId, requestId } = ctx
+  const { orgId } = ctx
+  const requestId = crypto.randomUUID()
   const t0 = Date.now()
 
   const now          = Date.now()
