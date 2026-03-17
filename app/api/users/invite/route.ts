@@ -24,6 +24,14 @@ export const POST = withAuth(async (req: Request, { orgId, userId: currentUserId
       return NextResponse.json({ error: 'INVALID_ROLE' }, { status: 400 });
     }
 
+    // Map app-level roles to DB-valid roles (org_members check constraint only allows: admin, owner, member)
+    const dbRoleMap: Record<string, string> = {
+      admin: 'admin',
+      analyst: 'member',
+      viewer: 'member',
+    };
+    const dbRole = dbRoleMap[newRole] || 'member';
+
     let targetUserId: string | null = null;
     let isNewUser = false;
 
@@ -52,7 +60,7 @@ export const POST = withAuth(async (req: Request, { orgId, userId: currentUserId
             await supabaseServer.from('users').upsert({
               id: authUser.id,
               email,
-              full_name: authUser.user_metadata?.full_name ?? email.split('@')[0],
+              name: authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? email.split('@')[0],
             });
           } else {
             return NextResponse.json({ error: 'USER_EXISTS_IN_AUTH_BUT_NOT_SYNCED' }, { status: 409 });
@@ -71,7 +79,7 @@ export const POST = withAuth(async (req: Request, { orgId, userId: currentUserId
             await supabaseServer.from('users').upsert({
               id: targetUserId,
               email,
-              full_name: email.split('@')[0],
+              name: email.split('@')[0],
             });
           }
         } else {
@@ -83,7 +91,7 @@ export const POST = withAuth(async (req: Request, { orgId, userId: currentUserId
         await supabaseServer.from('users').upsert({
            id: targetUserId,
            email,
-           full_name: email.split('@')[0],
+           name: email.split('@')[0],
         });
       }
     }
@@ -110,7 +118,7 @@ export const POST = withAuth(async (req: Request, { orgId, userId: currentUserId
       .insert({
         user_id: targetUserId,
         org_id: orgId,
-        role: newRole
+        role: dbRole
       });
 
     if (memberError) throw memberError;

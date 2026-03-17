@@ -152,7 +152,6 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
           org_id: orgId,
           status: result.decision === 'BLOCK' ? 'blocked' : 'completed',
           total_risk: result.risk_score,
-          decision: result.decision,
           risk_score: result.risk_score,
           ended_at: new Date().toISOString(),
           created_at: new Date().toISOString()
