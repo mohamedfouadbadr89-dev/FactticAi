@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
 import { CreditCard, History, Shield, CheckCircle, ArrowRight, Download } from 'lucide-react';
 import PricingSelector from '@/components/billing/PricingSelector';
 import BillingCycleToggle from '@/components/billing/BillingCycleToggle';
@@ -14,18 +13,10 @@ export default function BillingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
 
   useEffect(() => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const orgId = session?.user?.user_metadata?.org_id;
-      if (!orgId) { setLoading(false); return; }
-      fetch(`/api/dashboard/billing/plan?org_id=${orgId}`)
-        .then(res => res.json())
-        .then(json => { setData(json); setLoading(false); })
-        .catch(e => { console.error("Plan fetch failed", e); setLoading(false); });
-    });
+    fetch('/api/dashboard/billing/plan')
+      .then(res => res.json())
+      .then(json => { setData(json); setLoading(false); })
+      .catch(e => { console.error('Plan fetch failed', e); setLoading(false); });
   }, []);
 
   const invoices = [
