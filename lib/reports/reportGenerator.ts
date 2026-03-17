@@ -658,9 +658,15 @@ td {
     try {
       const html = await this.generateHTML(orgId, config);
 
+      // Cross-platform Chrome/Chromium path detection
+      const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
+        || (process.platform === 'darwin'
+          ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+          : '/usr/bin/chromium-browser');
+
       const browser = await puppeteer.launch({
-        executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+        executablePath,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
       });
 
       const page = await browser.newPage();
