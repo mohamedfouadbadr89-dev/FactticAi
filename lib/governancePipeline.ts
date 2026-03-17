@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import crypto from 'crypto';
 import { supabaseServer } from './supabaseServer';
 import { logger } from './logger';
 import { authorize, type Role } from './rbac';
@@ -22,6 +22,7 @@ import { GovernanceAlertEngine } from './governance/alertEngine';
 import { ComplianceIntelligenceEngine } from './compliance/complianceIntelligenceEngine';
 import { runAnalyzers } from './governance/analyzers/runAnalyzers';
 import { computeCompositeRisk } from './metrics/compositeRiskEngine';
+import { governanceQueue } from './queue/governanceQueue';
 
 
 export interface GovernanceExecutionResult {
@@ -66,130 +67,184 @@ export class GovernancePipeline {
     org_id: string, 
     session_id?: string | undefined, 
     prompt?: string | undefined, 
-    response?: string | undefined 
+    response?: string | undefined,
+    model?: string | undefined
   }) {
-    const { org_id, session_id, prompt, response } = params;
+    const { org_id, session_id, prompt, response, model = 'facttic-governance-v1' } = params;
     const t0 = Date.now();
 
     try {
-      // 1. Interceptor Layer (Prompt)
-      const promptIntercept = prompt 
-        ? await AiInterceptorKernel.interceptPrompt(org_id, prompt)
-        : { action: 'proceed', content: prompt };
-
-      if (promptIntercept.action === 'blocked') {
-        return {
-          decision: 'BLOCK',
-          risk_score: 100,
-          violations: [{ policy_name: 'Kernel Protection', rule_type: 'prompt_injection', action: 'block' }],
-          signals: { prompt_intercept: promptIntercept },
-          latency_ms: Date.now() - t0
-        };
-      }
-
-      // 2. Signal.Analysis Layer (Phase 62)
-      const signalContext = {
-        signals: [] as any[],
-        risk_score: 0
-      };
-
-      if (prompt) {
-        const analysis = await runAnalyzers(prompt);
-        signalContext.signals = analysis.signals;
-        signalContext.risk_score = analysis.totalRisk;
-      }
-
-      // 3. Guardrail Layer (Response Analysis)
-      const guardrail = response 
-        ? await GuardrailEngine.evaluateResponse({ org_id, response_text: response })
-        : { signals: [], metrics: { hallucination_risk: 0, policy_risk: 0, tone_risk: 0, safety_risk: 0 } };
-
-      // 4. Policy Layer (Rule Execution)
-      const policies = await PolicyEngine.loadOrganizationPolicies(org_id);
+      // ─────────────────────────────────────────────────────────────────────
+      // PERFORMANCE-BOUNDED EXECUTION (FAIL-CLOSED)
+      //
+      // Wraps the multi-stage pipeline in a hard 50ms timeout race.
+      // If DB queries or heavy compute exceed the budget, the system triggers
+      // a Fail-Closed BLOCK to protect downstream LLM execution and maintain
+      // sub-100ms total API latency.
+      // ─────────────────────────────────────────────────────────────────────
+      const GOVERNANCE_TIMEOUT_MS = 50;
       
-      const detectionSignals = signalContext.signals.map(s => ({
-        rule_type: (s.type === 'PROMPT_INJECTION' ? 'instruction_override' : 
-                   s.type === 'SYSTEM_PROMPT_EXTRACTION' ? 'system_prompt_extraction' :
-                   s.type === 'SENSITIVE_DATA' ? 'pii_exposure' : 'safety_violation') as any,
-        score: s.severity * 100
-      }));
-
-      const policyEval = PolicyEngine.evaluateSignals(policies, [...guardrail.signals, ...detectionSignals]);
-
-      // 4a. Guardrail prompt-level detection (DATA_EXFILTRATION + future rules)
-      const resolvedViolations = prompt ? GuardrailEngine.evaluatePrompt(prompt) : [];
-
-      // 5. Response Sanitization (Kernel)
-      const responseIntercept = response
-        ? await AiInterceptorKernel.interceptResponse(org_id, response)
-        : { action: 'proceed', content: response };
-
-      // 5. Risk Aggregation (Distributed Metrics)
-      const riskMetrics = await RiskMetricsEngine.calculateRiskScore(org_id, session_id);
-
-      // 6. Governance State (Stability)
-      const govState = await GovernanceStateEngine.getGovernanceState(org_id);
-
-      const latency = Date.now() - t0;
-
-      // Determine final decision hierarchy (Phase 62: Consumes detection risk)
-      let decision = 'ALLOW';
-      const detectionRisk = signalContext.risk_score;
-
-      // Phase 62b: Direct high-severity signal check — if ANY individual signal
-      // has severity >= 0.8 (e.g. SSN/PII detection), force BLOCK regardless of
-      // aggregate dilution from other analyzers
-      const hasHighSeveritySignal = signalContext.signals.some(s => s.severity >= 0.8);
-
-      if (hasHighSeveritySignal || policyEval.highest_action === 'block' || guardrail.metrics.safety_risk > 0.8 || detectionRisk > 0.7 || resolvedViolations.some(v => v.action === 'BLOCK')) {
-        decision = 'BLOCK';
-      } else if (policyEval.highest_action === 'warn' || riskMetrics.risk_score > 50 || detectionRisk > 0.4) {
-        decision = 'WARN';
-      }
-
-      // Format detection signals for the violations panel (UI-compatible)
-      const detectionViolations = signalContext.signals.map(s => ({
-        policy_name: `Detection Engine: ${s.type}`,
-        rule_type: s.type.toLowerCase() as any,
-        threshold: 0.4, // Standard warning threshold
-        actual_score: s.severity * 100,
-        action: s.severity > 0.7 ? 'block' : 'warn',
-        // Injected fields for UI specific detection panel
-        signal_type: s.type,
-        severity: s.severity,
-        explanation: s.description
-      }));
-
-      const allViolations = [...policyEval.violations, ...detectionViolations, ...resolvedViolations];
-      const composite = computeCompositeRisk({
-        signals: signalContext.signals,
-        prompt,
-        violations: allViolations,
-        decision,
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('GOVERNANCE_TIMEOUT')), GOVERNANCE_TIMEOUT_MS);
       });
-      const finalRiskScore = composite.risk_score;
-      const behavior = composite.behavior;
 
-      return {
-        decision,
-        risk_score: finalRiskScore,
-        violations: allViolations,
-        signals: {
-          guardrail: guardrail.metrics,
-          risk_breakdown: riskMetrics.breakdown,
-          state_factors: govState.contributing_factors,
-          detection: signalContext.signals,
-          interceptor: {
-            prompt: promptIntercept.action,
-            response: responseIntercept.action
+      const coreLogicPromise = (async () => {
+        // 1. Interceptor Layer (Prompt)
+        const promptIntercept = prompt 
+          ? await AiInterceptorKernel.interceptPrompt(org_id, prompt)
+          : { action: 'proceed', content: prompt };
+
+        if (promptIntercept.action === 'blocked') {
+          return {
+            decision: 'BLOCK',
+            risk_score: 100,
+            violations: [{ policy_name: 'Kernel Protection', rule_type: 'prompt_injection', action: 'block' }],
+            signals: { prompt_intercept: promptIntercept },
+            latency_ms: Date.now() - t0
+          };
+        }
+
+        // 2. Signal.Analysis Layer (Phase 62)
+        const signalContext = {
+          signals: [] as any[],
+          risk_score: 0
+        };
+
+        if (prompt) {
+          const analysis = await runAnalyzers(prompt);
+          signalContext.signals = analysis.signals;
+          signalContext.risk_score = analysis.totalRisk;
+        }
+
+        // 3. Guardrail Layer (Response Analysis)
+        const guardrail = response 
+          ? await GuardrailEngine.evaluateResponse({ org_id, response_text: response })
+          : { signals: [], metrics: { hallucination_risk: 0, policy_risk: 0, tone_risk: 0, safety_risk: 0 } };
+
+        // 4. Policy Layer (Rule Execution)
+        const policies = await PolicyEngine.loadOrganizationPolicies(org_id);
+        
+        const detectionSignals = signalContext.signals.map(s => ({
+          rule_type: (s.type === 'PROMPT_INJECTION' ? 'instruction_override' : 
+                     s.type === 'SYSTEM_PROMPT_EXTRACTION' ? 'system_prompt_extraction' :
+                     s.type === 'SENSITIVE_DATA' ? 'pii_exposure' : 'safety_violation') as any,
+          score: s.severity * 100
+        }));
+
+        const policyEval = PolicyEngine.evaluateSignals(policies, [...guardrail.signals, ...detectionSignals]);
+
+        // 4a. Guardrail prompt-level detection (DATA_EXFILTRATION + future rules)
+        const resolvedViolations = prompt ? GuardrailEngine.evaluatePrompt(prompt) : [];
+
+        // 5. Response Sanitization (Kernel)
+        const responseIntercept = response
+          ? await AiInterceptorKernel.interceptResponse(org_id, response)
+          : { action: 'proceed', content: response };
+
+        // 5. Risk Aggregation (Distributed Metrics)
+        const riskMetrics = await RiskMetricsEngine.calculateRiskScore(org_id, session_id);
+
+        // 6. Governance State (Stability)
+        const govState = await GovernanceStateEngine.getGovernanceState(org_id);
+
+        const latency = Date.now() - t0;
+
+        // Determine final decision hierarchy (Phase 62: Consumes detection risk)
+        let decision = 'ALLOW';
+        const detectionRisk = signalContext.risk_score;
+
+        // Phase 62b: Direct high-severity signal check — if ANY individual signal
+        // has severity >= 0.8 (e.g. SSN/PII detection), force BLOCK regardless of
+        // aggregate dilution from other analyzers
+        const hasHighSeveritySignal = signalContext.signals.some(s => s.severity >= 0.8);
+
+        if (hasHighSeveritySignal || policyEval.highest_action === 'block' || guardrail.metrics.safety_risk > 0.8 || detectionRisk > 0.7 || resolvedViolations.some(v => v.action === 'BLOCK')) {
+          decision = 'BLOCK';
+        } else if (policyEval.highest_action === 'warn' || riskMetrics.risk_score > 50 || detectionRisk > 0.4) {
+          decision = 'WARN';
+        }
+
+        // Format detection signals for the violations panel (UI-compatible)
+        const detectionViolations = signalContext.signals.map(s => ({
+          policy_name: `Detection Engine: ${s.type}`,
+          rule_type: s.type.toLowerCase() as any,
+          threshold: 0.4, // Standard warning threshold
+          actual_score: s.severity * 100,
+          action: s.severity > 0.7 ? 'block' : 'warn',
+          // Injected fields for UI specific detection panel
+          signal_type: s.type,
+          severity: s.severity,
+          explanation: s.description
+        }));
+
+        const allViolations = [...policyEval.violations, ...detectionViolations, ...resolvedViolations];
+        const composite = computeCompositeRisk({
+          signals: signalContext.signals,
+          prompt,
+          violations: allViolations,
+          decision,
+        });
+        const finalRiskScore = composite.risk_score;
+        const behavior = composite.behavior;
+
+        const duration = Date.now() - t0;
+
+        // 7. Enqueue Async Persistence (Fire and forget)
+        const payload = {
+          session_id: session_id || crypto.randomUUID(),
+          org_id,
+          decision,
+          risk_score: finalRiskScore,
+          metadata: {
+            event_type: 'governance_evaluation',
+            prompt,
+            model,
+            guardrail_signals: guardrail.metrics,
+            violations: allViolations,
+            latency: duration,
+            user_id: 'api-gateway', 
+            voice_modifiers: {}
           }
-        },
-        behavior
-      };
+        };
+
+        const secret = process.env.GOVERNANCE_SECRET;
+        if (secret) {
+          const signature = crypto.createHmac('sha256', secret)
+              .update(JSON.stringify(payload))
+              .digest('hex');
+          
+          await governanceQueue.add('governance_event_job', { payload, signature }).catch(e => {
+            logger.error('PIPELINE_QUEUE_FAIL', { error: e.message });
+          });
+        }
+
+        return {
+          decision,
+          risk_score: finalRiskScore,
+          violations: allViolations,
+          signals: {
+            guardrail: guardrail.metrics,
+            risk_breakdown: riskMetrics.breakdown,
+            state_factors: govState.contributing_factors,
+            detection: signalContext.signals,
+            interceptor: {
+              prompt: promptIntercept.action,
+              response: responseIntercept.action
+            }
+          },
+          behavior
+        };
+      })();
+
+      // Race the core logic against the timeout
+      return await Promise.race([coreLogicPromise, timeoutPromise]) as any;
 
     } catch (err: any) {
-      // FAIL-CLOSED: Any pipeline failure defaults to BLOCK — never pass traffic on error
-      logger.error('PIPELINE_EXECUTION_FAILURE_FAIL_CLOSED', { orgId: org_id, error: err.message });
+      if (err.message === 'GOVERNANCE_TIMEOUT') {
+        logger.error('PIPELINE_LATENCY_TIMEOUT_FAIL_CLOSED', { orgId: org_id });
+      } else {
+        logger.error('PIPELINE_EXECUTION_FAILURE_FAIL_CLOSED', { orgId: org_id, error: err.message });
+      }
       return {
         decision: 'BLOCK' as const,
         risk_score: 100,
@@ -264,7 +319,7 @@ export class GovernancePipeline {
 
       // 4. Hash (FREEZE ZONE START)
       await this.stage(context, 'HASH', async () => {
-        context.integrityHash = createHash('sha256')
+        context.integrityHash = crypto.createHash('sha256')
           .update(JSON.stringify({
             orgId: context.orgId,
             eventId: context.eventId,

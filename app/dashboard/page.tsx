@@ -6,7 +6,7 @@ import DriftTrendCard from "@/components/dashboard/DriftTrendCard";
 import ActiveAlertsCard from "@/components/dashboard/ActiveAlertsCard";
 import RiskBreakdownCard from "@/components/dashboard/RiskBreakdownCard";
 import RecentInvestigationsCard from "@/components/dashboard/RecentInvestigationsCard";
-import GovernanceSnapshotCard from "@/components/dashboard/GovernanceSnapshotCard";
+import GovernanceSnapshotCard, { type SnapshotStats } from "@/components/dashboard/GovernanceSnapshotCard";
 import GovernanceStateCard from "@/components/dashboard/GovernanceStateCard";
 import VoiceDriftCard from "@/components/dashboard/VoiceDriftCard";
 import IntelligenceDashboard from "@/components/dashboard/IntelligenceDashboard";
@@ -154,7 +154,7 @@ export default function DashboardPage() {
         {/* Governance Snapshot + Recent Investigations */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-3">
-            <GovernanceSnapshotCard stats={data ?? undefined} />
+            <GovernanceSnapshotCard stats={data as SnapshotStats | null} />
           </div>
           <div className="lg:col-span-2">
             <RecentInvestigationsCard data={data?.investigations} />

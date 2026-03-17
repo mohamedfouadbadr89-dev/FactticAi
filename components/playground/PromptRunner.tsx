@@ -42,13 +42,16 @@ export default function PromptRunner({ onRun, loading }: PromptRunnerProps) {
             <select
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-[var(--accent)] transition-all font-bold"
+              disabled
+              className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl py-3 px-4 text-sm focus:outline-none transition-all font-bold opacity-70 cursor-not-allowed"
             >
-              <option value="gpt-4o">GPT-4o</option>
-              <option value="gpt-4o-mini">GPT-4o Mini</option>
-              <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
-              <option value="claude-3-opus">Claude 3 Opus</option>
+              <option value="universal">Universal Governance Engine</option>
+              <option value="gpt-4o" disabled>GPT-4o (Optimization Pending)</option>
+              <option value="claude-3-5" disabled>Claude 3.5 (Optimization Pending)</option>
             </select>
+            <p className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-tighter mt-1">
+              Model-specific optimization coming soon
+            </p>
           </div>
 
           <div className="space-y-2">

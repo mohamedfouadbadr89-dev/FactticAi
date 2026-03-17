@@ -3,7 +3,7 @@
 import React from "react";
 import { CountUp } from "@/components/ui/CountUp";
 
-interface SnapshotStats {
+export interface SnapshotStats {
   health?: {
     sessions_today?: number;
     tamper_integrity?: string;
@@ -13,7 +13,7 @@ interface SnapshotStats {
   };
 }
 
-export default function GovernanceSnapshotCard({ stats }: { stats?: SnapshotStats }) {
+export default function GovernanceSnapshotCard({ stats }: { stats?: SnapshotStats | null }) {
   const health = stats?.health;
   const hasLiveData    = !!health;
   const sessionCount   = health?.sessions_today ?? null;
@@ -27,15 +27,22 @@ export default function GovernanceSnapshotCard({ stats }: { stats?: SnapshotStat
 
       {/* Header */}
       <div className="card-header flex items-center justify-between">
-        <h3 className="card-title">
-          Governance Snapshot — Phase 1–6
-        </h3>
-        <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+        <div className="flex flex-col">
+          <h3 className="card-title">
+            Governance Snapshot — Phase 1–6
+          </h3>
+          {!hasLiveData && (
+            <p className="text-[10px] text-[var(--text-secondary)] font-medium mt-1 animate-pulse">
+              Integration live · Analyzing first 100 sessions to generate baseline...
+            </p>
+          )}
+        </div>
+        <span className={`text-xs px-3 py-1 rounded-full font-black uppercase tracking-tighter ${
           hasLiveData
             ? 'bg-green-500/10 text-green-500 border border-green-500/20'
-            : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
+            : 'bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 shadow-[0_0_10px_rgba(var(--accent-rgb),0.1)]'
         }`}>
-          {hasLiveData ? 'Live · Real-time' : 'Awaiting Data'}
+          {hasLiveData ? 'Live · Real-time' : 'Awaiting Baseline'}
         </span>
       </div>
 
