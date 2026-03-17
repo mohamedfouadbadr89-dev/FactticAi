@@ -188,8 +188,21 @@ export class GovernancePipeline {
       };
 
     } catch (err: any) {
-      logger.error('PIPELINE_EXECUTION_FAILURE', { orgId: org_id, error: err.message });
-      throw err;
+      // FAIL-CLOSED: Any pipeline failure defaults to BLOCK — never pass traffic on error
+      logger.error('PIPELINE_EXECUTION_FAILURE_FAIL_CLOSED', { orgId: org_id, error: err.message });
+      return {
+        decision: 'BLOCK' as const,
+        risk_score: 100,
+        violations: [{
+          policy_name: 'Fail-Closed Safety Gate',
+          rule_type: 'safety_violation' as any,
+          action: 'block' as any,
+          threshold: 0,
+          actual_score: 100,
+        }],
+        signals: { error: err.message, fail_closed: true },
+        behavior: 'fail_closed',
+      };
     }
   }
 
