@@ -6,15 +6,9 @@ import { logger } from '@/lib/logger';
 import { supabaseServer } from '@/lib/supabaseServer';
 
 export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
-  const authResult = await verifyApiKey(req);
-  if (authResult.error) {
-    return NextResponse.json(
-      { error: authResult.error },
-      { status: authResult.status }
-    );
-  }
-  // Override org_id from the verified API key
-  const verifiedOrgId = authResult.org_id;
+  // Use org_id from session auth (withAuth already verified the user)
+  // verifyApiKey is only needed for external API access without session
+  const verifiedOrgId = orgId;
 
   try {
     const config: ReportConfig = await req.json();
