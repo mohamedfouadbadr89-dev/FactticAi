@@ -151,10 +151,10 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
         .upsert({
           id: sessionId,
           org_id: orgId,
-          status: result.decision === 'BLOCK' ? 'blocked' : 'completed',
-          total_risk: result.risk_score,
+          status: result.decision === 'BLOCK' ? 'completed' : 'active',
+          total_risk: Math.min(1, result.risk_score / 100),
           decision: result.decision,
-          risk_score: result.risk_score,
+          risk_score: Math.min(1, result.risk_score / 100),
           ended_at: new Date().toISOString(),
           created_at: new Date().toISOString()
         });

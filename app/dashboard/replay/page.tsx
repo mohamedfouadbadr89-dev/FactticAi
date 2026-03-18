@@ -82,8 +82,8 @@ function ReplayContent() {
                     <div className={`text-sm font-bold uppercase ${session.status === 'blocked' ? 'text-red-400' : 'text-green-400'}`}>
                       {session.status ?? '—'}
                     </div>
-                    <div className={`text-sm font-bold ${(session.total_risk ?? 0) > 50 ? 'text-red-400' : 'text-green-400'}`}>
-                      {session.total_risk != null ? `${session.total_risk}%` : '—'}
+                    <div className={`text-sm font-bold ${(session.total_risk ?? 0) > 0.5 ? 'text-red-400' : 'text-green-400'}`}>
+                      {session.total_risk != null ? `${Math.round(session.total_risk * 100)}%` : '—'}
                     </div>
                     <div className="text-sm text-[var(--text-secondary)]">
                       {new Date(session.created_at).toLocaleString()}

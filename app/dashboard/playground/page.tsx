@@ -13,29 +13,35 @@ export default function PlaygroundPage() {
     setLoading(true);
     setResults(null);
     const sessionId = crypto.randomUUID();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: config.prompt,
           model: config.model,
           session_id: sessionId,
-        })
+        }),
+        signal: controller.signal,
       });
-      
+
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || 'Governance pipeline execution failed.');
       }
-      
+
       const data = await res.json();
       setResults(data);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.error('Governance analysis timed out after 20 seconds');
+      } else {
+        console.error(err);
+      }
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   };
