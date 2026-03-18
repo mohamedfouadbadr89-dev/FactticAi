@@ -119,36 +119,37 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
 
     const latency = Date.now() - t0;
 
-    // 2. Evidence Ledger
-    try {
-      await EvidenceLedger.write({
-        session_id: sessionId,
-        org_id: orgId,
-        event_type: 'chat_governance',
-        prompt,
-        model: model || 'unspecified',
-        decision: result.decision,
-        risk_score: result.risk_score,
-        violations: result.violations,
-        guardrail_signals: result.signals,
-        latency,
-      });
+    // 2–3. Persist + Broadcast — fire & forget (don't block the response)
+    setImmediate(async () => {
+      try {
+        await EvidenceLedger.write({
+          session_id: sessionId,
+          org_id: orgId,
+          event_type: 'chat_governance',
+          prompt,
+          model: model || 'unspecified',
+          decision: result.decision,
+          risk_score: result.risk_score,
+          violations: result.violations,
+          guardrail_signals: result.signals,
+          latency,
+        });
+      } catch (err: any) {
+        logger.error('CHAT_EVIDENCE_LEDGER_FAILURE', { org_id: orgId, error: err.message });
+      }
 
-      GovernanceAlertEngine.evaluate({
-        org_id: orgId,
-        session_id: sessionId,
-        risk_score: result.risk_score,
-        policy_action: result.decision === 'BLOCK' ? 'block' : undefined,
-        metadata: { violations: result.violations },
-      });
-    } catch (err: any) {
-      logger.error('CHAT_EVIDENCE_LEDGER_FAILURE', { org_id: orgId, error: err.message });
-    }
+      try {
+        GovernanceAlertEngine.evaluate({
+          org_id: orgId,
+          session_id: sessionId,
+          risk_score: result.risk_score,
+          policy_action: result.decision === 'BLOCK' ? 'block' : undefined,
+          metadata: { violations: result.violations },
+        });
+      } catch {}
 
-    try {
-      await supabaseServer
-        .from('sessions')
-        .upsert({
+      try {
+        await supabaseServer.from('sessions').upsert({
           id: sessionId,
           org_id: orgId,
           status: result.decision === 'BLOCK' ? 'completed' : 'active',
@@ -158,10 +159,7 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
           ended_at: new Date().toISOString(),
           created_at: new Date().toISOString()
         });
-
-      await supabaseServer
-        .from('session_turns')
-        .insert({
+        await supabaseServer.from('session_turns').insert({
           session_id: sessionId,
           org_id: orgId,
           turn_index: 0,
@@ -170,69 +168,55 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
           incremental_risk: result.risk_score,
           created_at: new Date().toISOString()
         });
-    } catch (sessionErr: any) {
-      logger.error('CHAT_SESSION_PERSISTENCE_FAILURE', { org_id: orgId, error: sessionErr.message });
-    }
+      } catch (sessionErr: any) {
+        logger.error('CHAT_SESSION_PERSISTENCE_FAILURE', { org_id: orgId, error: sessionErr.message });
+      }
 
-    // 2.5 Incident Ledger
-    if (result.decision !== 'ALLOW' || result.risk_score > 0) {
-      try {
-        const severity = result.risk_score >= 90 ? 'critical' : result.risk_score >= 70 ? 'high' : result.risk_score >= 40 ? 'medium' : 'low';
-        const violation_type = result.violations?.[0]?.policy_name || (result.violations?.[0] as any)?.rule_type || 'unclassified';
-        await supabaseServer
-          .from('incidents')
-          .insert({
+      if (result.decision !== 'ALLOW' || result.risk_score > 0) {
+        try {
+          const severity = result.risk_score >= 90 ? 'critical' : result.risk_score >= 70 ? 'high' : result.risk_score >= 40 ? 'medium' : 'low';
+          const violation_type = result.violations?.[0]?.policy_name || (result.violations?.[0] as any)?.rule_type || 'unclassified';
+          await supabaseServer.from('incidents').insert({
             session_id: sessionId,
             org_id: orgId,
             severity,
             violation_type,
             timestamp: new Date().toISOString()
           });
-      } catch (incErr: any) {
-        logger.error('CHAT_INCIDENT_PERSISTENCE_FAILURE', { org_id: orgId, error: incErr.message });
-      }
-    }
-
-    // 3. Realtime broadcast → Live Monitor
-    try {
-      await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/realtime/v1/api/broadcast`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": process.env.SUPABASE_SERVICE_ROLE_KEY!,
-            "Authorization": `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
-          },
-          body: JSON.stringify({
-            messages: [{
-              topic: `governance:${orgId}`,
-              event: "governance_event",
-              payload: {
-                event: "governance_event",
-                data: {
-                  session_id: sessionId,
-                  org_id: orgId,
-                  decision: result.decision,
-                  risk_score: result.risk_score,
-                  timestamp: new Date().toISOString()
-                }
-              }
-            }]
-          })
+        } catch (incErr: any) {
+          logger.error('CHAT_INCIDENT_PERSISTENCE_FAILURE', { org_id: orgId, error: incErr.message });
         }
-      );
-    } catch (telemetryErr: any) {
-      logger.error('TELEMETRY_FAILED', { error: telemetryErr.message });
-    }
+      }
 
-    // 4. LLM Execution — only if governance allows it
+      // Realtime broadcast — best-effort, 3s timeout
+      try {
+        await Promise.race([
+          fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/realtime/v1/api/broadcast`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": process.env.SUPABASE_SERVICE_ROLE_KEY!,
+              "Authorization": `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+            },
+            body: JSON.stringify({
+              messages: [{ topic: `governance:${orgId}`, event: "governance_event", payload: { event: "governance_event", data: { session_id: sessionId, org_id: orgId, decision: result.decision, risk_score: result.risk_score, timestamp: new Date().toISOString() } } }]
+            })
+          }),
+          new Promise((_, r) => setTimeout(() => r(new Error('broadcast_timeout')), 3000))
+        ]);
+      } catch {}
+    });
+
+    // 4. Return result immediately — LLM is best-effort with 10s timeout
     let llmResponse: string | null = null;
     let llmLatency: number | null = null;
     if (result.decision === 'ALLOW') {
       const llmT0 = Date.now();
       try {
-        llmResponse = await executeLLM(orgId, prompt);
+        llmResponse = await Promise.race([
+          executeLLM(orgId, prompt),
+          new Promise<null>((r) => setTimeout(() => r(null), 10000))
+        ]);
         llmLatency = Date.now() - llmT0;
       } catch (llmErr: any) {
         logger.warn('LLM_EXECUTION_SKIPPED', { orgId, error: llmErr.message });

@@ -1,5 +1,3 @@
-import { createServerAuthClient } from '@/lib/supabaseAuth';
-import { resolveOrgContext } from '@/lib/orgResolver';
 import { IncidentService } from '@/lib/forensics/incidentService';
 import IncidentTimeline from '@/components/incidents/IncidentTimeline';
 import GovernanceStory from '@/components/incidents/GovernanceStory';
@@ -19,24 +17,14 @@ export default async function IncidentDetailPage({ params }: Props) {
   let incident = null;
 
   try {
-    let orgId: string | null = null;
-    try {
-      const authClient = await createServerAuthClient();
-      const { data: { user } } = await authClient.auth.getUser();
-      if (user) {
-        const orgContext = await resolveOrgContext(user.id);
-        orgId = orgContext.org_id;
-      }
-    } catch {
-      // fallback: pick first org from DB
-      const { supabaseServer } = await import('@/lib/supabaseServer');
-      const { data } = await supabaseServer
-        .from('org_members')
-        .select('org_id')
-        .limit(1)
-        .single();
-      orgId = data?.org_id || null;
-    }
+    // Use service role to resolve org — avoids hanging getUser() network call to Supabase auth
+    const { supabaseServer } = await import('@/lib/supabaseServer');
+    const { data: orgData } = await supabaseServer
+      .from('org_members')
+      .select('org_id')
+      .limit(1)
+      .single();
+    const orgId = orgData?.org_id || null;
     if (orgId) {
       incident = await IncidentService.getIncidentBySession(orgId, session_id);
     }
