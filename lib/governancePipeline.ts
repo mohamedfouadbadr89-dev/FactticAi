@@ -130,7 +130,7 @@ export class GovernancePipeline {
       // 5. Risk Aggregation (Distributed Metrics)
       const riskMetrics = await withTimeout(
         RiskMetricsEngine.calculateRiskScore(org_id, session_id),
-        { risk_score: 0 }
+        { risk_score: 0, breakdown: {}, timestamp: new Date().toISOString() } as any
       );
 
       // 6. Governance State (Stability)
