@@ -15,12 +15,17 @@ export default function PlaygroundPage() {
     setResults(null);
     setError(null);
     const sessionId = crypto.randomUUID();
+
+    // Client-side 20s abort — guarantees ANALYZING never hangs forever
+    // even if the server-side timeout response is delayed by nginx buffering
+    const controller = new AbortController();
+    const clientTimeout = setTimeout(() => controller.abort(), 20000);
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           prompt: config.prompt,
           model: config.model,
@@ -36,9 +41,14 @@ export default function PlaygroundPage() {
 
       setResults(data);
     } catch (err: any) {
-      console.error('[Playground]', err);
-      setError(err.message || 'Pipeline execution failed');
+      if (err.name === 'AbortError') {
+        setError('Pipeline timeout — Supabase connection is slow. Please try again.');
+      } else {
+        console.error('[Playground]', err);
+        setError(err.message || 'Pipeline execution failed');
+      }
     } finally {
+      clearTimeout(clientTimeout);
       setLoading(false);
     }
   };

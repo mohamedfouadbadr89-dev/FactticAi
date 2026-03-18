@@ -35,21 +35,42 @@ export function withAuth(handler: AuthenticatedHandler) {
       try {
         const supabase = await createServerAuthClient();
 
-        // Attempt to get session from supabase auth (standard cookie-based)
-        let {
-          data: { session },
-          error: authError,
-        } = await supabase.auth.getSession();
+        // Attempt to get session — wrap in 4s timeout because getSession()
+        // can make a network call to Supabase auth to refresh an expired token,
+        // and that call can hang indefinitely (ECONNRESET from Supabase).
+        let session: any = null;
+        let authError: any = null;
+        try {
+          const sessionResult = await Promise.race([
+            supabase.auth.getSession(),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('GETSESSION_TIMEOUT')), 4000)
+            ),
+          ]);
+          session = sessionResult.data?.session ?? null;
+          authError = sessionResult.error ?? null;
+        } catch (sessionErr: any) {
+          logger.warn('GETSESSION_SLOW', { url: req.url, error: sessionErr.message });
+          // session stays null — fall through to Bearer token check
+        }
 
         // Fallback: Check for Authorization header if no session
         if (!session || authError) {
           const authHeader = req.headers.get('Authorization');
           if (authHeader?.startsWith('Bearer ')) {
             const token = authHeader.split(' ')[1];
-            const { data, error } = await supabase.auth.getUser(token);
-            if (data?.user && !error) {
-              // Mock a session-like object for the handler context
-              session = { user: data.user } as any;
+            try {
+              const { data, error } = await Promise.race([
+                supabase.auth.getUser(token),
+                new Promise<never>((_, reject) =>
+                  setTimeout(() => reject(new Error('GETUSER_TIMEOUT')), 4000)
+                ),
+              ]);
+              if (data?.user && !error) {
+                session = { user: data.user } as any;
+              }
+            } catch {
+              // Bearer token check timed out — session stays null
             }
           }
         }
