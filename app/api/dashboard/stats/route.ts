@@ -16,6 +16,9 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
     yesterday.setHours(yesterday.getHours() - 24);
     const timeThreshold = yesterday.toISOString();
 
+    const withDbTimeout = <T>(promise: Promise<T>, fallback: T): Promise<T> =>
+      Promise.race([promise, new Promise<T>(r => setTimeout(() => r(fallback), 8000))]);
+
     // 1. Fetch data in parallel for performance
     const [
       { data: snapshots, error: snapshotError },
@@ -23,7 +26,7 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
       { data: alerts, error: alertsError },
       { data: recentEvents, error: eventsError },
       { count: activeIncidentsCount, error: incidentsError }
-    ] = await Promise.all([
+    ] = await withDbTimeout(Promise.all([
       supabaseServer
         .from('governance_snapshot_v1')
         .select('*')
@@ -52,7 +55,13 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
         .select('*', { count: 'exact', head: true })
         .eq('org_id', orgId)
         .neq('status', 'closed')
-    ]);
+    ]), [
+      { data: null, error: null },
+      { data: null, error: null },
+      { data: null, error: null },
+      { data: null, error: null },
+      { count: null, error: null }
+    ] as any);
 
     // Log individual failures but continue — degrade gracefully
     if (snapshotError) logger.warn('DASHBOARD_SNAPSHOT_UNAVAILABLE', { orgId, error: snapshotError.message });

@@ -19,51 +19,77 @@ export type AuthenticatedHandler = (
 /**
  * Fast-path: decode the Supabase access token from the Cookie header locally.
  * No network call to Supabase auth server at all.
- * Returns user_id (sub) if token is valid and not expired, otherwise null.
+ * Handles both chunked (@supabase/ssr splits large cookies into .0, .1, ...) and non-chunked.
  */
 function getUserIdFromCookies(cookieHeader: string | null): string | null {
   if (!cookieHeader) return null;
 
-  const cookies = cookieHeader.split(';');
-  for (const cookie of cookies) {
-    const eqIdx = cookie.indexOf('=');
+  // Parse all cookies into a map
+  const cookieMap = new Map<string, string>();
+  for (const raw of cookieHeader.split(';')) {
+    const eqIdx = raw.indexOf('=');
     if (eqIdx === -1) continue;
-    const name = cookie.substring(0, eqIdx).trim();
-    const rawValue = cookie.substring(eqIdx + 1).trim();
-
-    // Supabase SSR stores session in cookies named: sb-<project-ref>-auth-token
-    if (!name.startsWith('sb-') || !name.endsWith('-auth-token')) continue;
-
-    try {
-      const decoded = decodeURIComponent(rawValue);
-      const tokenData = JSON.parse(decoded);
-      const accessToken = tokenData.access_token;
-      if (!accessToken || typeof accessToken !== 'string') continue;
-
-      // JWT is 3 base64url-encoded parts: header.payload.signature
-      const parts = accessToken.split('.');
-      if (parts.length !== 3) continue;
-
-      // Decode payload (no signature check needed — we trust our own Supabase cookie)
-      const padding = '='.repeat((4 - (parts[1].length % 4)) % 4);
-      const payloadJson = Buffer.from(
-        parts[1].replace(/-/g, '+').replace(/_/g, '/') + padding,
-        'base64'
-      ).toString('utf-8');
-      const payload = JSON.parse(payloadJson);
-
-      // Reject if expired (allow 60s clock skew buffer)
-      if (payload.exp && payload.exp * 1000 < Date.now() - 60000) continue;
-
-      if (payload.sub && typeof payload.sub === 'string') {
-        return payload.sub;
-      }
-    } catch {
-      continue;
-    }
+    cookieMap.set(raw.substring(0, eqIdx).trim(), raw.substring(eqIdx + 1).trim());
   }
 
+  // Strategy 1: reassemble chunked cookies (sb-xxx-auth-token.0, sb-xxx-auth-token.1, ...)
+  // @supabase/ssr splits large session JSON across multiple cookies to stay under size limits
+  const chunkMap = new Map<string, Map<number, string>>();
+  for (const [name, value] of cookieMap) {
+    const match = name.match(/^(sb-.+-auth-token)\.(\d+)$/);
+    if (match) {
+      const baseName = match[1];
+      const idx = parseInt(match[2], 10);
+      if (!chunkMap.has(baseName)) chunkMap.set(baseName, new Map());
+      chunkMap.get(baseName)!.set(idx, value);
+    }
+  }
+  for (const [, chunks] of chunkMap) {
+    try {
+      const sorted = [...chunks.entries()].sort(([a], [b]) => a - b).map(([, v]) => v);
+      const userId = decodeSessionCookieValue(sorted.join(''));
+      if (userId) return userId;
+    } catch { continue; }
+  }
+
+  // Strategy 2: non-chunked sb-xxx-auth-token
+  for (const [name, value] of cookieMap) {
+    if (!name.startsWith('sb-') || !name.endsWith('-auth-token')) continue;
+    try {
+      const userId = decodeSessionCookieValue(value);
+      if (userId) return userId;
+    } catch { continue; }
+  }
+
+  // Strategy 3: direct sb-access-token cookie (some Supabase versions)
+  const directToken = cookieMap.get('sb-access-token');
+  if (directToken) return decodeJwtSub(decodeURIComponent(directToken));
+
   return null;
+}
+
+function decodeSessionCookieValue(rawValue: string): string | null {
+  try {
+    const decoded = decodeURIComponent(rawValue);
+    const tokenData = JSON.parse(decoded);
+    return decodeJwtSub(tokenData.access_token);
+  } catch { return null; }
+}
+
+function decodeJwtSub(accessToken: string): string | null {
+  if (!accessToken || typeof accessToken !== 'string') return null;
+  try {
+    const parts = accessToken.split('.');
+    if (parts.length !== 3) return null;
+    const padding = '='.repeat((4 - (parts[1].length % 4)) % 4);
+    const payloadJson = Buffer.from(
+      parts[1].replace(/-/g, '+').replace(/_/g, '/') + padding,
+      'base64'
+    ).toString('utf-8');
+    const payload = JSON.parse(payloadJson);
+    if (payload.exp && payload.exp * 1000 < Date.now() - 60000) return null;
+    return (payload.sub && typeof payload.sub === 'string') ? payload.sub : null;
+  } catch { return null; }
 }
 
 /**
