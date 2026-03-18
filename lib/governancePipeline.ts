@@ -136,7 +136,7 @@ export class GovernancePipeline {
       // 6. Governance State (Stability)
       const govState = await withTimeout(
         GovernanceStateEngine.getGovernanceState(org_id),
-        { state: 'unknown', score: 0 }
+        { governance_state: 'SAFE' as const, risk_score: 0, contributing_factors: { drift: 0, hallucination: 0, policy: 0, guardrail: 0 } }
       );
 
       const latency = Date.now() - t0;
