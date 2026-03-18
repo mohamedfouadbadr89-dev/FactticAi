@@ -14,12 +14,12 @@ interface ReplayViewerProps {
 }
 
 const EVENT_TYPE_STYLES: Record<string, { label: string; border: string; badge: string }> = {
-  prompt_submitted:    { label: "Prompt",      border: "border-slate-700",       badge: "bg-slate-800 text-slate-400 border-slate-700" },
-  governance_decision: { label: "Decision",    border: "border-indigo-900/60",   badge: "bg-indigo-950/60 text-indigo-400 border-indigo-800/50" },
-  policy_violation:    { label: "Violation",   border: "border-red-900/60",      badge: "bg-red-950/50 text-red-400 border-red-800/50" },
-  risk_score_calculated: { label: "Risk Score", border: "border-orange-900/50",  badge: "bg-orange-950/40 text-orange-400 border-orange-800/40" },
-  system_metrics:      { label: "Metrics",     border: "border-slate-800",       badge: "bg-slate-900 text-slate-500 border-slate-700" },
-  activity:            { label: "Activity",    border: "border-emerald-900/50",  badge: "bg-emerald-950/40 text-emerald-400 border-emerald-800/40" },
+  prompt_submitted:    { label: "Prompt",      border: "border-[var(--border-primary)]",  badge: "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-primary)]" },
+  governance_decision: { label: "Decision",    border: "border-[var(--accent)]/30",       badge: "bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/20" },
+  policy_violation:    { label: "Violation",   border: "border-red-500/40",               badge: "bg-red-500/10 text-red-400 border-red-500/30" },
+  risk_score_calculated: { label: "Risk Score", border: "border-orange-500/30",           badge: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+  system_metrics:      { label: "Metrics",     border: "border-[var(--border-primary)]",  badge: "bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-primary)]" },
+  activity:            { label: "Activity",    border: "border-emerald-500/30",           badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
 };
 
 function riskColor(score: number): string {
@@ -66,8 +66,8 @@ export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-500 text-sm font-mono uppercase tracking-widest">
+          <div className="w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+          <p className="text-[var(--text-secondary)] text-sm font-mono uppercase tracking-widest">
             Loading session replay…
           </p>
         </div>
@@ -77,7 +77,7 @@ export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
 
   if (error) {
     return (
-      <div className="p-6 rounded-2xl bg-red-950/20 border border-red-800/40 text-red-400 font-mono text-sm">
+      <div className="p-6 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-sm">
         Error: {error}
       </div>
     );
@@ -86,11 +86,11 @@ export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
   if (events.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
-        <div className="text-center py-16 px-8 border border-dashed border-slate-800 rounded-2xl">
-          <p className="text-slate-500 font-mono text-sm uppercase tracking-widest">
+        <div className="text-center py-16 px-8 border border-dashed border-[var(--border-primary)] rounded-2xl">
+          <p className="text-[var(--text-secondary)] font-mono text-sm uppercase tracking-widest">
             No events recorded for this session
           </p>
-          <p className="text-slate-700 text-xs mt-2 font-mono">
+          <p className="text-[var(--text-secondary)] opacity-50 text-xs mt-2 font-mono">
             Session ID: {sessionId}
           </p>
         </div>
@@ -99,13 +99,13 @@ export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] p-6 lg:p-10">
+    <div className="min-h-screen bg-[var(--bg-primary)] p-6 lg:p-10">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-black tracking-tighter text-white uppercase">
+        <h1 className="text-2xl font-black tracking-tighter text-[var(--text-primary)] uppercase">
           Session Replay
         </h1>
-        <p className="text-slate-500 font-mono text-xs mt-1">
+        <p className="text-[var(--text-secondary)] font-mono text-xs mt-1">
           {sessionId} &middot; {events.length} events
         </p>
       </div>
@@ -113,14 +113,14 @@ export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
       {/* Timeline */}
       <div className="relative">
         {/* Vertical connector line */}
-        <div className="absolute left-[19px] top-6 bottom-6 w-px bg-slate-800" />
+        <div className="absolute left-[19px] top-6 bottom-6 w-px bg-[var(--border-primary)]" />
 
         <div className="space-y-3">
           {events.map((event, idx) => {
             const style = EVENT_TYPE_STYLES[event.event_type] ?? {
               label: event.event_type,
-              border: "border-slate-800",
-              badge: "bg-slate-900 text-slate-400 border-slate-700",
+              border: "border-[var(--border-primary)]",
+              badge: "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-primary)]",
             };
 
             return (
@@ -130,18 +130,18 @@ export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
                   event.event_type === "policy_violation"
                     ? "bg-red-500 border-red-500"
                     : event.event_type === "governance_decision"
-                    ? "bg-indigo-500 border-indigo-500"
-                    : "bg-slate-900 border-slate-600"
+                    ? "bg-[var(--accent)] border-[var(--accent)]"
+                    : "bg-[var(--bg-secondary)] border-[var(--border-primary)]"
                 }`} />
 
                 {/* Card */}
-                <div className={`flex-1 bg-[#0d0d0d] border rounded-2xl p-5 ${style.border}`}>
+                <div className={`flex-1 bg-[var(--bg-secondary)] border rounded-2xl p-5 ${style.border}`}>
                   {/* Top row */}
                   <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
                     <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${style.badge}`}>
                       {style.label}
                     </span>
-                    <span className="text-slate-600 text-[11px] font-mono shrink-0">
+                    <span className="text-[var(--text-secondary)] opacity-60 text-[11px] font-mono shrink-0">
                       {new Date(event.timestamp).toLocaleTimeString(undefined, {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -152,14 +152,14 @@ export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
                   </div>
 
                   {/* Content */}
-                  <pre className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap break-words font-sans">
+                  <pre className="text-[var(--text-primary)] text-sm leading-relaxed whitespace-pre-wrap break-words font-sans">
                     {event.content}
                   </pre>
 
                   {/* Risk score bar */}
                   {event.risk_score > 0 && (
                     <div className="mt-4 flex items-center gap-3">
-                      <div className="flex-1 h-1 bg-slate-900 rounded-full overflow-hidden">
+                      <div className="flex-1 h-1 bg-[var(--bg-primary)] rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${riskBarColor(event.risk_score)}`}
                           style={{ width: `${Math.min(event.risk_score, 100)}%` }}

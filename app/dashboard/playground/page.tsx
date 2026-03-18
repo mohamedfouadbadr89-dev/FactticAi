@@ -8,10 +8,12 @@ import { ShieldCheck, Info } from 'lucide-react';
 export default function PlaygroundPage() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleRunGovernance = async (config: any) => {
     setLoading(true);
     setResults(null);
+    setError(null);
     const sessionId = crypto.randomUUID();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20000);
@@ -29,16 +31,16 @@ export default function PlaygroundPage() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Governance pipeline execution failed.');
+        throw new Error(errData.error || `Request failed (${res.status})`);
       }
 
       const data = await res.json();
       setResults(data);
     } catch (err: any) {
       if (err.name === 'AbortError') {
-        console.error('Governance analysis timed out after 20 seconds');
+        setError('Analysis timed out after 20 seconds. Please try again.');
       } else {
-        console.error(err);
+        setError(err.message || 'Governance pipeline execution failed.');
       }
     } finally {
       clearTimeout(timeoutId);
@@ -73,6 +75,11 @@ export default function PlaygroundPage() {
 
           {/* Right Panel: Analysis Results */}
           <div className="lg:col-span-8 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-3xl p-8 shadow-sm h-full">
+            {error && (
+              <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-mono">
+                {error}
+              </div>
+            )}
             <GovernanceResults data={results} />
           </div>
         </div>
