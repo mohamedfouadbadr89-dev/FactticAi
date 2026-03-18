@@ -15,7 +15,7 @@ interface ReplayViewerProps {
 
 const EVENT_TYPE_STYLES: Record<string, { label: string; border: string; badge: string }> = {
   prompt_submitted:    { label: "Prompt",      border: "border-[var(--border-primary)]",  badge: "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-primary)]" },
-  governance_decision: { label: "Decision",    border: "border-[var(--accent)]/30",       badge: "bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/20" },
+  governance_decision: { label: "Decision",    border: "border-indigo-500/30",            badge: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
   policy_violation:    { label: "Violation",   border: "border-red-500/40",               badge: "bg-red-500/10 text-red-400 border-red-500/30" },
   risk_score_calculated: { label: "Risk Score", border: "border-orange-500/30",           badge: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
   system_metrics:      { label: "Metrics",     border: "border-[var(--border-primary)]",  badge: "bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-primary)]" },
@@ -130,7 +130,7 @@ export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
                   event.event_type === "policy_violation"
                     ? "bg-red-500 border-red-500"
                     : event.event_type === "governance_decision"
-                    ? "bg-[var(--accent)] border-[var(--accent)]"
+                    ? "bg-indigo-500 border-indigo-500"
                     : "bg-[var(--bg-secondary)] border-[var(--border-primary)]"
                 }`} />
 
