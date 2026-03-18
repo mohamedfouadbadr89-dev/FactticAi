@@ -75,7 +75,7 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
     
     // Dynamic Drift Calculate
     const avgDrift = predictions && predictions.length > 0
-      ? predictions.reduce((acc, curr) => acc + (Number(curr.drift_score) || 0), 0) / predictions.length
+      ? predictions.reduce((acc: number, curr) => acc + (Number(curr.drift_score) || 0), 0) / predictions.length
       : 0;
       
     // Observability Metrics Computation
