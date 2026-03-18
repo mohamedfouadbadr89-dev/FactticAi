@@ -72,9 +72,12 @@ export class GovernancePipeline {
     const t0 = Date.now();
 
     try {
+      const withTimeout = <T>(p: Promise<T>, fallback: T, ms = 3000): Promise<T> =>
+        Promise.race([p, new Promise<T>(r => setTimeout(() => r(fallback), ms))]);
+
       // 1. Interceptor Layer (Prompt)
-      const promptIntercept = prompt 
-        ? await AiInterceptorKernel.interceptPrompt(org_id, prompt)
+      const promptIntercept = prompt
+        ? await withTimeout(AiInterceptorKernel.interceptPrompt(org_id, prompt), { action: 'proceed', content: prompt })
         : { action: 'proceed', content: prompt };
 
       if (promptIntercept.action === 'blocked') {
@@ -105,7 +108,7 @@ export class GovernancePipeline {
         : { signals: [], metrics: { hallucination_risk: 0, policy_risk: 0, tone_risk: 0, safety_risk: 0 } };
 
       // 4. Policy Layer (Rule Execution)
-      const policies = await PolicyEngine.loadOrganizationPolicies(org_id);
+      const policies = await withTimeout(PolicyEngine.loadOrganizationPolicies(org_id), []);
       
       const detectionSignals = signalContext.signals.map(s => ({
         rule_type: (s.type === 'PROMPT_INJECTION' ? 'instruction_override' : 
@@ -125,10 +128,16 @@ export class GovernancePipeline {
         : { action: 'proceed', content: response };
 
       // 5. Risk Aggregation (Distributed Metrics)
-      const riskMetrics = await RiskMetricsEngine.calculateRiskScore(org_id, session_id);
+      const riskMetrics = await withTimeout(
+        RiskMetricsEngine.calculateRiskScore(org_id, session_id),
+        { risk_score: 0 }
+      );
 
       // 6. Governance State (Stability)
-      const govState = await GovernanceStateEngine.getGovernanceState(org_id);
+      const govState = await withTimeout(
+        GovernanceStateEngine.getGovernanceState(org_id),
+        { state: 'unknown', score: 0 }
+      );
 
       const latency = Date.now() - t0;
 
