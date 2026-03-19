@@ -1,4 +1,3 @@
-import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { NextResponse } from 'next/server';
 import { GovernancePipeline } from '@/lib/governance/governancePipeline';
 import { logger } from '@/lib/logger';
