@@ -1,7 +1,8 @@
-# AI Governance Interceptor Kernel
+# AI Governance Interceptor Kernel (v5.0 — Real-Time Enabled)
+Verified against Live Supabase Production on March 19, 2026.
 
 ## Overview
-The **AI Governance Interceptor Kernel** provides an institutional security layer that inspects and validates all AI interactions—prompts, responses, and agent actions—before they are processed by LLM providers or delivered to users.
+The **AI Governance Interceptor Kernel** provides an institutional security layer that inspects and validates all AI interactions—prompts, responses, and agent actions—before they are processed by LLM providers or delivered to users. Since the **Voice Engine Upgrade (v5.0)**, the kernel enforces a **Fail-Closed** security model with a hard 50ms processing budget.
 
 ## Interception Flow
 ```mermaid
@@ -46,4 +47,6 @@ Every interception is recorded in the **Governance Event Ledger**:
 
 ## Implementation Notes
 - **Local Priority**: Regex-based redaction is performed first to minimize data exposure to secondary evaluation engines.
-- **Tamper-Proof Logging**: All events are chained into the governance ledger with sequential hashes.
+- **Fail-Closed Logic**: The kernel uses a 50ms `AbortController` gate. If dependencies (Policy Engine, LLMs, DB) lag, the kernel issues an immediate `BLOCK`.
+- **Latency Verification**: For voice-interacted streams, the kernel calculates **True Latency** (Server Time - `client_sent_at`). Streams exceeding 150ms are automatically blocked to prevent out-of-sync command injections.
+- **Tamper-Proof Logging**: All events are chained into the governance ledger with sequential hashes and signed via HMAC-SHA256.

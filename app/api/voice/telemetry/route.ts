@@ -11,6 +11,7 @@ const TelemetrySchema = z.object({
   packet_loss:           z.number().min(0).max(100),
   interruptions:         z.number().int().min(0),
   audio_integrity_score: z.number().min(0).max(100),
+  client_sent_at:        z.number().int().positive(),
   provider:              z.string().optional(),
   transcript:            z.string().optional(),
 })
@@ -52,70 +53,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid payload', details: parsed.error.format() }, { status: 400 })
     }
 
-    // Step 1 - Create voice session
-    const { data: voiceSession, error: vsError } = await supabase
-      .from('voice_sessions')
-      .insert({ session_id: parsed.data.session_id, provider: parsed.data.provider || 'unknown' })
-      .select()
-      .single()
+    const payload = parsed.data;
 
-    if (vsError) {
-      console.warn('[Voice Telemetry] Failed to create voice_session:', vsError)
-    }
-
-    if (voiceSession) {
-      // Step 2 - Insert voice metrics
-      await supabase
-        .from('voice_metrics')
-        .insert({
-          voice_session_id: voiceSession.id,
-          latency_ms: parsed.data.latency_ms,
-          packet_loss: parsed.data.packet_loss,
-          interruptions: parsed.data.interruptions,
-          audio_integrity_score: parsed.data.audio_integrity_score
-        })
-
-      // Step 3 - Insert transcript if present
-      if (parsed.data.transcript) {
-        await supabase
-          .from('voice_transcripts')
-          .insert({
-            voice_session_id: voiceSession.id,
-            transcript: parsed.data.transcript,
-            transcript_source: parsed.data.provider || 'unknown'
-          })
-          
-        // Step 4 - Convert transcript to NormalizedMessage
-        const messages = parsed.data.transcript.split('\n').map((line: string) => ({
-          role: line.startsWith('Agent') ? 'assistant' : 'user',
-          content: line
-        }))
-
-        // Run governance pipeline against the voice transcript + telemetry metrics.
-        // user_id is sourced from the authenticated session — Zero-Trust gate enforced.
-        await GovernancePipeline.execute({
-          user_id,
-          org_id: orgMember.org_id,
-          session_id: parsed.data.session_id,
-          prompt: parsed.data.transcript,
-          voice_latency_ms: parsed.data.latency_ms,
-          voice_packet_loss: parsed.data.packet_loss,
-          voice_audio_integrity: parsed.data.audio_integrity_score
-        })
-      }
-    }
-
-    // Still record to old metrics store to not break old dashboard cards completely
-    await VoiceTelemetryEngine.recordMetrics({
+    // Step 5 - Standardize & Execute Governance Pipeline (Fail-Closed)
+    // user_id is sourced from the authenticated session — Zero-Trust gate enforced.
+    // Every voice telemetry packet is now a cryptographically linked event.
+    const govResult = await GovernancePipeline.execute({
+      user_id,
       org_id: orgMember.org_id,
-      session_id: parsed.data.session_id,
-      latency_ms: parsed.data.latency_ms,
-      packet_loss: parsed.data.packet_loss,
-      interruptions: parsed.data.interruptions,
-      audio_integrity_score: parsed.data.audio_integrity_score
-    })
+      session_id: payload.session_id,
+      prompt: payload.transcript || `[Voice Telemetry Snapshot: L:${payload.latency_ms}ms P:${payload.packet_loss}%]`,
+      voice_latency_ms: payload.latency_ms,
+      voice_packet_loss: payload.packet_loss,
+      voice_audio_integrity: payload.audio_integrity_score,
+      client_sent_at: payload.client_sent_at
+    });
 
-    return NextResponse.json({ status: 'voice telemetry recorded' })
+    // Step 6 - Kill-Switch Signal Execution
+    // If risk > 85, we return a hardware-level interrupt.
+    if (govResult.decision === 'BLOCK' || govResult.risk_score > 85) {
+      return NextResponse.json({
+        status: 'BLOCK',
+        action: 'INTERRUPT',
+        signal: 'KILL_AUDIO_STREAM',
+        reason: 'SECURITY_THRESHOLD_EXCEEDED',
+        risk_score: govResult.risk_score,
+        event_hash: govResult.event_hash
+      });
+    }
+
+    return NextResponse.json({ 
+      status: 'SUCCESS', 
+      decision: govResult.decision,
+      risk_score: govResult.risk_score,
+      event_hash: govResult.event_hash
+    })
   } catch (err: any) {
     console.error('[Voice Telemetry POST]', err)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })

@@ -36,6 +36,7 @@ export interface GovernanceEvent {
   latency?: number
   model_response?: string | null
   queue_job_id?: string
+  client_sent_at?: number | null
 }
 
 export interface LedgedEvent extends GovernanceEvent {
@@ -307,7 +308,7 @@ export const EvidenceLedger = {
 
   // ── write ─────────────────────────────────────────────────────────────────
 
-  async write(event: GovernanceEvent): Promise<{
+  async write(event: GovernanceEvent, signal?: AbortSignal): Promise<{
     event_id: string
     session_id: string
     event_hash: string
@@ -334,7 +335,7 @@ export const EvidenceLedger = {
       }
       const violationsStr = JSON.stringify(event.violations || [])
       
-      const { data, error } = await supabaseServer.rpc('append_governance_ledger', {
+      let query = supabaseServer.rpc('append_governance_ledger', {
         p_session_id: event.session_id,
         p_org_id: event.org_id,
         p_event_type: event.event_type || 'governance_decision',
@@ -348,8 +349,15 @@ export const EvidenceLedger = {
         p_latency: event.latency || 0,
         p_model_response: event.model_response || null,
         p_secret: secret,
-        p_queue_job_id: event.queue_job_id || null
-      })
+        p_queue_job_id: event.queue_job_id || null,
+        p_client_sent_at: event.client_sent_at || null
+      });
+
+      if (signal) {
+        query = query.abortSignal(signal);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error
 

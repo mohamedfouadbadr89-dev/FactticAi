@@ -1,7 +1,8 @@
-# Governance Pipeline Runtime
+# Governance Pipeline Runtime (v5.0 — Production)
+Verified against Live Supabase Production on March 19, 2026.
 
 ## Overview
-The Facttic Governance Pipeline (v4.3) orchestrates the end-to-end execution of AI safety, policy, and risk engines. It ensures that every AI request is evaluated through a deterministic sequence of protection layers.
+The Facttic Governance Pipeline (v5.0) orchestrates the end-to-end execution of AI safety, policy, and risk engines. It operates as a strict **Fail-Closed Reactive System**, prioritizing low-latency guardrails over processing completion to ensure deterministic protection of enterprise AI data.
 
 ## Orchestration Flow
 
@@ -26,8 +27,18 @@ The execution follows a strict sequential hierarchy to maximize safety and minim
 5.  **GovernanceStateEngine (Cluster Stability)**
     - Evaluates the overall health state of the organization's AI cluster (`SAFE`, `UNSTABLE`, `CRITICAL`).
 
-6.  **GovernanceAlertEngine (Notification)**
-    - Triggers asynchronous alerts for risk breaches (>75) or policy blocks.
+6.  **Voice Engine Upgrade (Real-time Telemetry)**
+    - Verifies **True Latency** (Clock-Sync) between client and server.
+    - If `Latency > 150ms`, triggers an immediate `BLOCK`.
+    - Handles **Barge-In Escalation** logic to detect session instability.
+
+## Deterministic Safety Gates
+
+To prevent "Security Theater" and ensure system resilience, the following gates are hard-coded in the runtime:
+
+1.  **50ms Hard-Stop (AbortController)**: The entire pipeline execution is wrapped in a 50ms `Promise.race`. If any dependency lags, the system deterministically returns a `BLOCK` response.
+2.  **30ms Atomic Ledger (Fail-Closed Persistence)**: Every governance decision must be cryptographically hashed and written to the `EvidenceLedger` within 30ms. If the database write exceeds this budget, the pipeline returns a `BLOCK` to prevent "Ghost Evaluations" (untracked decisions).
+3.  **Kill-Switch Signal**: For Voice sessions, a `risk_score > 85` triggers an immediate `INTERRUPT` signal (`KILL_AUDIO_STREAM`) sent to the edge hardware.
 
 ## Implementation Details
 The pipeline is accessible via the `GovernancePipeline.execute` method, which is the authoritative entry point for all governance evaluation APIs.

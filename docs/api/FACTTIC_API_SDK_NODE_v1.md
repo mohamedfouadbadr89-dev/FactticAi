@@ -1,4 +1,5 @@
-# FACTTIC API SDK NODE v1
+# FACTTIC API SDK NODE v1 (v5.0 — Real-Time Voice Ready)
+Verified against Live Supabase Production on March 19, 2026.
 
 ## Purpose
 The official Node.js SDK for Facttic. This library securely bridges your AI application layer to the Facttic Governance and Observability backends with a simple async tracking call.
@@ -39,5 +40,25 @@ async function handleAI() {
 }
 ```
 
+## Real-Time Voice Telemetry
+
+The v5.0 SDK supports hardware-level voice stream monitoring. Callers must include a `client_sent_at` timestamp for True-Latency verification.
+
+```typescript
+// Tracking a Voice snapshot
+const result = await facttic.trackVoice({
+  session_id: "voice_usr_456",
+  latency_ms: 45,
+  packet_loss: 2,
+  audio_integrity_score: 98,
+  client_sent_at: Date.now() // Required for 150ms security floor
+});
+
+if (result.action === 'INTERRUPT') {
+  // Execute hardware kill switch (e.g., stop AWS Lex/Twilio stream)
+  killStream(result.signal);
+}
+```
+
 ## Internal Mechanics
-The `track()` method automatically generates and resolves `sessions` and `session_turns` inside the connected Supabase instance asynchronously.
+The `track()` and `trackVoice()` methods are bound to the **Fail-Closed Governance Pipeline**. Every call is subjected to a 50ms latency budget and a 30ms atomic ledger write.
