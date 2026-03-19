@@ -1,15 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
+import { GovernancePipeline } from '@/lib/governance/governancePipeline';
+import { logger } from '@/lib/logger';
 
-// Assuming standard Supabase env vars are present
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export interface EvaluationPayload {
   prompt: string;
-  expected_output: string;
-  model_response: string;
-  policy_rules: string[];
+  expected_output?: string;
+  model_response?: string;
+  org_id?: string;
 }
 
 export interface EvaluationResult {
@@ -20,33 +21,48 @@ export interface EvaluationResult {
   risk_score: number;
   hallucination_flag: boolean;
   policy_violation: boolean;
+  decision: string;
+  latency: number;
   timestamp?: string;
 }
 
 export class EvaluationRunner {
   /**
-   * Execute regression suites
+   * Execute real-world regression suites using the actual Governance Pipeline.
+   * No more Math.random().
    */
-  async executeRegressionSuite(datasetName: string, model: string, records: EvaluationPayload[]): Promise<EvaluationResult[]> {
+  async executeRegressionSuite(params: {
+    datasetName: string,
+    model: string,
+    records: EvaluationPayload[],
+    org_id: string,
+    user_id: string
+  }): Promise<EvaluationResult[]> {
+    const { datasetName, model, records, org_id, user_id } = params;
     const results: EvaluationResult[] = [];
     
     for (const record of records) {
-      // Stub: Integrate with existing RegressionEngine or scoring logic here
-      // For orchestration, we simulate the evaluation result based on input
-      const riskScore = Math.random() * 0.5; // Stub score
-      const hallucinationFlag = riskScore > 0.4;
-      const policyViolation = riskScore > 0.45;
+      // Execute through the official Governance Pipeline (Single Source of Truth)
+      const govResult = await GovernancePipeline.execute({
+        org_id: org_id,
+        user_id: user_id,
+        prompt: record.prompt,
+        response: record.model_response,
+        model: model
+      });
 
       const result: EvaluationResult = {
         dataset_name: datasetName,
         scenario: 'regression',
-        model,
-        risk_score: riskScore,
-        hallucination_flag: hallucinationFlag,
-        policy_violation: policyViolation,
+        model: model,
+        risk_score: govResult.risk_score,
+        hallucination_flag: govResult.risk_score > 60, // Normalization threshold
+        policy_violation: govResult.decision === 'BLOCK',
+        decision: govResult.decision,
+        latency: govResult.latency
       };
 
-      await this.storeEvaluationResult(result);
+      await this.storeEvaluationResult(result, org_id);
       results.push(result);
     }
 
@@ -54,23 +70,38 @@ export class EvaluationRunner {
   }
 
   /**
-   * Run scenario simulations
+   * Run scenario simulations against the live Governance subsystem.
    */
-  async runScenarioSimulation(scenario: string, runs: number): Promise<EvaluationResult[]> {
+  async runScenarioSimulation(params: {
+    scenario: string,
+    runs: number,
+    prompt: string,
+    org_id: string,
+    user_id: string
+  }): Promise<EvaluationResult[]> {
+    const { scenario, runs, prompt, org_id, user_id } = params;
     const results: EvaluationResult[] = [];
     
     for (let i = 0; i < runs; i++) {
-        // Stub: Integrate with existing ScenarioEngine logic here
-        const riskScore = Math.random() * 0.8; 
+        const govResult = await GovernancePipeline.execute({
+          org_id,
+          user_id,
+          prompt,
+          model: 'simulation-engine'
+        });
+
         const result: EvaluationResult = {
           dataset_name: 'scenario_batch',
           scenario,
-          model: 'simulated_engine',
-          risk_score: riskScore,
-          hallucination_flag: riskScore > 0.6,
-          policy_violation: riskScore > 0.7,
+          model: 'simulation-engine',
+          risk_score: govResult.risk_score,
+          hallucination_flag: govResult.risk_score > 80,
+          policy_violation: govResult.decision === 'BLOCK',
+          decision: govResult.decision,
+          latency: govResult.latency
         };
-        await this.storeEvaluationResult(result);
+        
+        await this.storeEvaluationResult(result, org_id);
         results.push(result);
     }
     
@@ -78,20 +109,28 @@ export class EvaluationRunner {
   }
 
   /**
-   * Store evaluation results into the evaluation_runs table
+   * Store evaluation results into the evaluation_runs table.
+   * Maintains audit trail for simulation performance.
    */
-  async storeEvaluationResult(result: EvaluationResult): Promise<void> {
-    const { error } = await supabase.from('evaluation_runs').insert({
-      dataset_name: result.dataset_name,
-      scenario: result.scenario,
-      model: result.model,
-      risk_score: result.risk_score,
-      hallucination_flag: result.hallucination_flag,
-      policy_violation: result.policy_violation,
-    });
+  async storeEvaluationResult(result: EvaluationResult, org_id: string): Promise<void> {
+    try {
+      const { error } = await supabase.from('evaluation_runs').insert({
+        org_id: org_id,
+        dataset_name: result.dataset_name,
+        scenario: result.scenario,
+        model: result.model,
+        risk_score: result.risk_score,
+        hallucination_flag: result.hallucination_flag,
+        policy_violation: result.policy_violation,
+        metadata: {
+            decision: result.decision,
+            latency: result.latency
+        }
+      });
 
-    if (error) {
-      console.error('Failed to store evaluation result:', error);
+      if (error) throw error;
+    } catch (err: any) {
+      logger.error('EVALUATION_STORAGE_FAIL', { error: err.message, org_id });
     }
   }
 }

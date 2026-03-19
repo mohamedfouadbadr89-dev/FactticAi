@@ -15,7 +15,8 @@ export interface SnapshotStats {
 
 export default function GovernanceSnapshotCard({ stats }: { stats?: SnapshotStats | null }) {
   const health = stats?.health;
-  const hasLiveData    = !!health;
+  const isBaseline     = (health as any)?.baseline_mode ?? false;
+  const hasLiveData    = !!health && !isBaseline;
   const sessionCount   = health?.sessions_today ?? null;
   const tamper         = health?.tamper_integrity ?? '—';
   const policyAdh      = health?.policy_adherence ?? '—';
@@ -31,16 +32,16 @@ export default function GovernanceSnapshotCard({ stats }: { stats?: SnapshotStat
           <h3 className="card-title">
             Governance Snapshot — Phase 1–6
           </h3>
-          {!hasLiveData && (
-            <p className="text-[10px] text-[var(--text-secondary)] font-medium mt-1 animate-pulse">
+          {isBaseline && (
+            <p className="text-[10px] text-[var(--accent)] font-bold mt-1 animate-pulse uppercase tracking-wider">
               Integration live · Analyzing first 100 sessions to generate baseline...
             </p>
           )}
         </div>
-        <span className={`text-xs px-3 py-1 rounded-full font-black uppercase tracking-tighter ${
+        <span className={`text-xs px-3 py-1 rounded-full font-black uppercase tracking-tighter transition-all duration-500 ${
           hasLiveData
-            ? 'bg-green-500/10 text-green-500 border border-green-500/20'
-            : 'bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 shadow-[0_0_10px_rgba(var(--accent-rgb),0.1)]'
+            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+            : 'bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 shadow-[0_0_15px_rgba(var(--accent-rgb),0.2)]'
         }`}>
           {hasLiveData ? 'Live · Real-time' : 'Awaiting Baseline'}
         </span>

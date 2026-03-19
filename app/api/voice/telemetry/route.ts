@@ -91,13 +91,16 @@ export async function POST(req: Request) {
           content: line
         }))
 
-        // Run governance pipeline against the voice transcript.
+        // Run governance pipeline against the voice transcript + telemetry metrics.
         // user_id is sourced from the authenticated session — Zero-Trust gate enforced.
         await GovernancePipeline.execute({
-          user_id,                    // ✅ Authenticated user — Zero-Trust gate enforced
+          user_id,
           org_id: orgMember.org_id,
           session_id: parsed.data.session_id,
-          prompt: parsed.data.transcript
+          prompt: parsed.data.transcript,
+          voice_latency_ms: parsed.data.latency_ms,
+          voice_packet_loss: parsed.data.packet_loss,
+          voice_audio_integrity: parsed.data.audio_integrity_score
         })
       }
     }

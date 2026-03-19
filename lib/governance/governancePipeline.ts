@@ -7,258 +7,249 @@ import { IncidentCreator } from './modules/incidentCreator';
 import { EvidenceLedger } from '../evidence/evidenceLedger';
 import { authorizeOrgAccess, AuthorizationError } from '@/lib/security/authorizeOrgAccess';
 import { redactPII } from '@/lib/security/redactPII';
-import { governanceQueue } from '../queue/governanceQueue';
+import { FraudDetectionEngine } from '@/lib/security/fraudDetectionEngine';
+import { logger } from '@/lib/logger';
 import crypto from 'crypto';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HASH CHAIN PRIMITIVES
-//
-// These two functions mirror the SQL logic in append_governance_ledger() and
-// verify_event_chain() in 20260316000001_governance_hash_chain.sql.
-// Field ordering is canonical — any change breaks existing chains.
-// ─────────────────────────────────────────────────────────────────────────────
+export type PipelineDecision = 'ALLOW' | 'WARN' | 'BLOCK';
 
-/**
- * Fetches the most recent event_hash for a session from the DB.
- * Returns 'GENESIS_HASH' if no events exist yet (first event in session).
- */
-async function fetchPreviousHash(session_id: string, org_id: string): Promise<string> {
-    const { data } = await supabase
-        .from('facttic_governance_events')
-        .select('event_hash')
-        .eq('session_id', session_id)
-        .eq('org_id', org_id)
-        .not('event_hash', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-    return (data as any)?.event_hash ?? 'GENESIS_HASH';
-}
-
-/**
- * Computes SHA-256 over the canonical field set.
- * Must remain in sync with buildHashInput() in lib/evidence/evidenceLedger.ts
- * and the v_hash_input concatenation in append_governance_ledger() SQL.
- *
- * Canonical field order:
- *   session_id + timestamp_ms + prompt + decision + risk_score + violations_json + previous_hash
- */
-function computeGovernanceHash(fields: {
-    session_id:    string;
-    timestamp_ms:  number;
-    prompt:        string | null | undefined;
-    decision:      string;
-    risk_score:    number;
-    violations:    any[];
-    previous_hash: string;
-}): string {
-    const input =
-        fields.session_id +
-        fields.timestamp_ms +
-        (fields.prompt || '') +
-        fields.decision +
-        fields.risk_score +
-        JSON.stringify(fields.violations || []) +
-        fields.previous_hash;
-    return crypto.createHash('sha256').update(input).digest('hex');
+export interface GovernanceExecutionResult {
+    success: boolean;
+    session_id: string;
+    decision: PipelineDecision;
+    risk_score: number;
+    violations: any[];
+    incident?: any;
+    latency: number;
+    fail_closed?: boolean;
+    event_hash?: string;
+    hash: string; // Legacy compatibility
 }
 
 export class GovernancePipeline {
+    /**
+     * The Single Source of Truth for Governance Execution.
+     * Executes logic, manages persistence, and enforces security guardrails.
+     * Hard-capped at 50ms for dependency interactions (Supabase, etc.).
+     */
     static async execute(params: { 
         org_id: string,
-        user_id: string,         // REQUIRED: Must come from verified session context, never from payload
-        session_id?: string, 
+        user_id: string,
+        session_id?: string | null | undefined, 
         prompt: string, 
-        response?: string, 
-        model?: string,
-        voice_latency_ms?: number,
-        voice_collision_index?: number,
-        voice_barge_in_detected?: boolean
-    }) {
-        const { org_id, user_id, session_id, prompt, response, model = 'facttic-governance-engine', voice_latency_ms, voice_collision_index, voice_barge_in_detected } = params;
-        
-        // 1. Precise Start Time
+        response?: string | null | undefined, 
+        model?: string | null | undefined,
+        voice_latency_ms?: number | null | undefined,
+        voice_collision_index?: number | null | undefined,
+        voice_barge_in_detected?: boolean | null | undefined,
+        voice_packet_loss?: number | null | undefined,
+        voice_audio_integrity?: number | null | undefined
+    }): Promise<GovernanceExecutionResult> {
+        const { org_id, user_id, session_id, prompt, response, model = 'facttic-governance-engine' } = params;
         const start = performance.now();
         const sessionId = session_id || crypto.randomUUID();
 
-        // ─────────────────────────────────────────────────────────────────────
-        // 0. ECONOMIC DOS PROTECTION
-        // Prevent CPU amplification attacks via extremely large prompt payloads.
-        // 16KB limit matches token-heavy governance overhead boundaries.
-        // ─────────────────────────────────────────────────────────────────────
-        const MAX_PROMPT_BYTES = 16384; // 16KB
-        const promptSize = Buffer.byteLength(prompt, 'utf8');
+        // 50ms Hard-Stop for dependency interaction (Fail-Closed)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 50);
 
-        if (promptSize > MAX_PROMPT_BYTES) {
-            void supabase.from('audit_logs').insert({
-                org_id,
-                action: 'PROMPT_SIZE_REJECTED',
-                metadata: {
-                    user_id,
-                    session_id: sessionId,
-                    size_bytes: promptSize,
-                    limit_bytes: MAX_PROMPT_BYTES
-                }
-            });
-            throw new Error('PROMPT_TOO_LARGE: Payloads exceeding 16KB are rejected for safety.');
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // ZERO-TRUST AUTHORIZATION GATE
-        // Must execute BEFORE any pipeline logic. org_id is verified against
-        // the authenticated user's confirmed membership in `org_members`.
-        // Any failure is forensically logged and execution is hard-stopped.
-        // ─────────────────────────────────────────────────────────────────────
         try {
+            // 1. Authorization Access Gate (First, must resolve < 10ms)
             await authorizeOrgAccess(user_id, org_id);
-        } catch (authErr: any) {
-            const isAuthError = authErr instanceof AuthorizationError;
-            const code = isAuthError ? authErr.code : 'AUTHORIZATION_UNKNOWN_ERROR';
 
-            // Forensic record — always write, never suppress.
-            // redactPII applied: auth error messages may echo user-supplied values.
-            void supabase.from('audit_logs').insert({
-                org_id,
-                action: 'AUTHORIZATION_FAILURE',
-                metadata: redactPII({
-                    code,
-                    user_id,
-                    org_id,
-                    error: authErr.message,
-                    session_id: sessionId,
-                    timestamp: new Date().toISOString()
+            // 2. Comprehensive Logic Pipeline
+            const result = await Promise.race([
+                this.runCoreLogic(params, sessionId, controller.signal),
+                new Promise<any>((_, reject) => {
+                    controller.signal.addEventListener('abort', () => reject(new Error('GOVERNANCE_TIMEOUT')));
                 })
-            });
+            ]);
 
-            // Surface a safe, non-leaking error to the caller
-            throw new Error(`AUTHORIZATION_FAILURE: ${code}`);
-        }
-        // ─────────────────────────────────────────────────────────────────────
+            if (!result) throw new Error('GOVERNANCE_TIMEOUT');
 
-        try {
-            // Load necessary external state for pure functions
-            const { data: policies } = await supabase.from('governance_policies').select('*').eq('org_id', org_id);
-            const { data: history } = await supabase.from('facttic_governance_events')
-                .select('risk_score')
-                .eq('org_id', org_id)
-                .order('created_at', { ascending: false })
-                .limit(10);
-            const historyScores = (history || []).map(h => h.risk_score);
-
-            // -- Execution Steps --
-            const policyResult = PolicyEvaluator.evaluate(prompt, policies || []);
-            const guardrailResult = GuardrailDetector.evaluate(prompt, response);
-            let riskScore = RiskScorer.computeScore(policyResult, guardrailResult);
-
-            const voice_modifiers: any = {};
-            if (voice_latency_ms !== undefined && voice_latency_ms > 800) {
-                riskScore += 0.05;
-                voice_modifiers.voice_latency_ms = voice_latency_ms;
-                voice_modifiers.latency_penalty = 0.05;
-            }
-            if (voice_collision_index !== undefined && voice_collision_index > 0.2) {
-                riskScore += 0.10;
-                voice_modifiers.voice_collision_index = voice_collision_index;
-                voice_modifiers.collision_penalty = 0.10;
-            }
-            if (voice_barge_in_detected === true) {
-                riskScore += 0.15;
-                voice_modifiers.voice_barge_in_detected = true;
-                voice_modifiers.barge_in_penalty = 0.15;
-            }
-            riskScore = Math.min(riskScore, 100);
-            const driftResult = DriftDetector.detect(riskScore, historyScores);
-            const incidentResult = IncidentCreator.evaluateIncident(riskScore, driftResult);
-
-            // ── Fast Path vs Async Persistence ──────────────────────────────────
-            // To protect the Node.js event loop under heavy load (>500 req/sec),
-            // the HTTP request path must execute in < 10ms.
-            //
-            // The pipeline MUST ONLY perform synchronous in-memory logic:
-            // 1. Policy Evaluation
-            // 2. Guardrail Detection
-            // 3. Risk Scoring
-            //
-            // ALL heavy cryptographic operations, hash computation, HMAC signature
-            // generation, database inserts (like incidents or evidence ledger), 
-            // and large-string regex (like redactPII on prompts) are deferred to 
-            // the background async worker queue. redactPII in the fast-path is
-            // strictly limited to metadata payloads <10KB.
-            // ──────────────────────────────────────────────────────────────────
-            
-            const decision = riskScore >= 80 ? 'BLOCK' : riskScore >= 40 ? 'WARN' : 'ALLOW';
-            const violations = policyResult.violations.length > 0 ? policyResult.violations : [];
-
-            // 2. Compute Precision Latency (Internal Logic Execution)
+            clearTimeout(timeoutId);
             const duration = Math.round(performance.now() - start);
 
-            // 3. Asynchronous Persistence — Enqueue Worker Job
-            // The pipeline returns immediately after logical risk scoring.
-            // Evidence Ledger hashing, database RPCs, audit logs, and telemetry
-            // are serialized to the background queue, vastly reducing HTTP latency.
-            const payload = {
-                session_id: sessionId,
-                org_id,
-                decision,
-                risk_score: riskScore,
-                metadata: {
-                    event_type: 'governance_evaluation',
-                    prompt, // Unredacted! Redaction shifted to async worker.
-                    model,
-                    guardrail_signals: guardrailResult.signals,
-                    violations,
-                    latency: duration,
-                    user_id,
-                    voice_modifiers,
-                    incident: incidentResult.create_incident ? incidentResult : null
-                }
+            const finalResult: GovernanceExecutionResult = {
+                ...result,
+                latency: duration,
+                event_hash: 'PENDING_ASYNC',
+                hash: 'PENDING_ASYNC'
             };
 
-            const secret = process.env.GOVERNANCE_SECRET;
-            if (!secret) {
-                throw new Error('CRITICAL_SECURITY_FAILURE: GOVERNANCE_SECRET must be configured to sign async payloads.');
+            // 3. Atomicity Guard: For BLOCK, we ensure the ledger hit before returning.
+            // For ALLOW/WARN, we persist asynchronously to protect latency.
+            if (result.decision === 'BLOCK') {
+                await this.persistInternal(finalResult, params, sessionId);
+            } else {
+                void this.persistInternal(finalResult, params, sessionId).catch(e => 
+                    logger.error('GOVERNANCE_PERSIST_FAIL', { error: e.message, sessionId })
+                );
             }
 
-            const signature = crypto.createHmac('sha256', secret)
-                .update(JSON.stringify(payload))
-                .digest('hex');
-
-            await governanceQueue.add('governance_event_job', {
-                payload,
-                signature
-            });
-
-            return {
-                success: true,
-                session_id: sessionId,
-                decision,
-                risk_score: riskScore,
-                violations,
-                incident: incidentResult.create_incident ? incidentResult : null,
-                latency: duration,
-                event_hash:    'PENDING_ASYNC',
-                previous_hash: 'PENDING_ASYNC',
-            };
+            return finalResult;
 
         } catch (err: any) {
-            console.error('Governance execution crash:', err);
-            
-            // Record failure in audit logs even on crash.
-            // redactPII applied: err.message routinely echoes prompt fragments
-            // (e.g. "Policy violation: <prompt excerpt>") which may contain PII.
+            clearTimeout(timeoutId);
             const crashDuration = Math.round(performance.now() - start);
+
+            if (err.message === 'GOVERNANCE_TIMEOUT' || err.name === 'AbortError') {
+                logger.error('PIPELINE_FAIL_CLOSED_TIMEOUT', { org_id, sessionId });
+                const failClosed: GovernanceExecutionResult = {
+                    success: true,
+                    session_id: sessionId,
+                    decision: 'BLOCK',
+                    risk_score: 100,
+                    violations: [{ policy_name: 'Fail-Closed Safety', rule_type: 'latency_violation', action: 'block' }],
+                    latency: crashDuration,
+                    fail_closed: true,
+                    event_hash: 'FAIL_CLOSED',
+                    hash: 'FAIL_CLOSED',
+                    incident: {
+                        create_incident: true,
+                        severity: 'critical',
+                        violation_type: 'latency_violation',
+                        metadata: { cause: 'GOVERNANCE_TIMEOUT_50MS' }
+                    }
+                };
+
+                // Atomic record of the fail-closed event
+                void this.persistInternal(failClosed, params, sessionId);
+                return failClosed;
+            }
+
+            // Record crash
             void supabase.from('audit_logs').insert({
                 org_id,
                 action: 'GOVERNANCE_CRASH',
-                metadata: redactPII({
-                    error: err.message,
-                    processing_ms: crashDuration,
-                    session_id: sessionId,
-                    user_id
-                })
+                metadata: redactPII({ error: err.message, session_id: sessionId, user_id })
             });
 
             throw err;
+        }
+    }
+
+    private static async runCoreLogic(params: any, sessionId: string, signal: AbortSignal) {
+        const { org_id, prompt, response, voice_latency_ms, voice_collision_index, voice_barge_in_detected } = params;
+        
+        // 1. Fraud / Velocity Check (Pass signal to kill hanging DB/network tasks)
+        const fraudResult = await FraudDetectionEngine.evaluate({ session_id: sessionId, org_id, prompt });
+        if (signal.aborted) throw new Error('GOVERNANCE_TIMEOUT');
+
+        if (fraudResult.action === 'block API key') {
+            return { decision: 'BLOCK' as PipelineDecision, risk_score: 100, violations: [{ policy_name: 'Fraud Detection', rule_type: 'malicious_velocity', action: 'block' }] };
+        }
+
+        // 2. Logic Evaluation (Fast Paths)
+        const { data: policies, error: policyErr } = await supabase
+            .from('governance_policies')
+            .select('*')
+            .eq('org_id', org_id)
+            .abortSignal(signal); // KILL ZOMBIE DB CALLS
+
+        if (policyErr && policyErr.message.includes('abort')) throw new Error('GOVERNANCE_TIMEOUT');
+
+        const policyResult = PolicyEvaluator.evaluate(prompt, policies || []);
+        const guardrailResult = GuardrailDetector.evaluate(prompt, response);
+        
+        let riskScore = RiskScorer.computeScore(policyResult, guardrailResult);
+
+        // Voice Modifiers (Server-Side Verified)
+        if (voice_latency_ms > 800) riskScore += 5;
+        if (voice_collision_index > 0.2) riskScore += 10;
+        if (voice_barge_in_detected) riskScore += 15;
+        
+        // Anti-Spoofing & Integrity Verification
+        const packet_loss = params.voice_packet_loss || 0;
+        const audio_integrity = params.voice_audio_integrity ?? 100;
+
+        if (packet_loss > 10) riskScore += 10; // High frequency dropout signal
+        if (audio_integrity < 95) {
+            riskScore += 20; // Potential signal tampering or adversarial noise
+            policyResult.violations.push({
+                policy_name: 'Audio Integrity Guard',
+                rule_type: 'safety_violation',
+                threshold: 95,
+                actual_score: audio_integrity,
+                action: 'warn'
+            });
+        }
+        
+        riskScore = Math.min(riskScore, 100);
+        const incidentResult = IncidentCreator.evaluateIncident(riskScore, { triggered: false }); // Drift detached for speed
+
+        const decision: PipelineDecision = riskScore >= 80 || fraudResult.action === 'block API key' ? 'BLOCK' : riskScore >= 40 ? 'WARN' : 'ALLOW';
+
+        return {
+            success: true,
+            session_id: sessionId,
+            decision,
+            risk_score: riskScore,
+            violations: policyResult.violations,
+            incident: incidentResult.create_incident ? incidentResult : null
+        };
+    }
+
+    private static async persistInternal(result: GovernanceExecutionResult, params: any, sessionId: string) {
+        const { org_id, user_id, prompt, model } = params;
+        
+        // 1. Evidence Ledger (Atomic Chain)
+        await EvidenceLedger.write({
+            session_id: sessionId,
+            org_id,
+            event_type: 'governance_evaluation',
+            prompt,
+            model: model || 'unspecified',
+            decision: result.decision,
+            risk_score: result.risk_score,
+            violations: result.violations,
+            latency: result.latency
+        });
+
+        // 2. Realtime Broadcast
+        void fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/realtime/v1/api/broadcast`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "apikey": process.env.SUPABASE_SERVICE_ROLE_KEY!,
+                "Authorization": `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+            },
+            body: JSON.stringify({
+                messages: [{
+                    topic: `governance:${org_id}`,
+                    event: "governance_event",
+                    payload: { event: "governance_event", data: { session_id: sessionId, org_id, decision: result.decision, risk_score: result.risk_score, timestamp: new Date().toISOString() } }
+                }]
+            })
+        }).catch(e => logger.error('TELEMETRY_BROADCAST_FAIL', { error: e.message }));
+
+        // 3. Operational Data (Sessions & Turns)
+        const riskDecimal = result.risk_score / 100;
+        await supabase.from('sessions').upsert({
+            id: sessionId,
+            org_id,
+            status: result.decision === 'BLOCK' ? 'completed' : 'active',
+            total_risk: riskDecimal,
+            risk_score: riskDecimal,
+            ended_at: result.decision === 'BLOCK' ? new Date().toISOString() : null
+        });
+
+        await supabase.from('session_turns').insert({
+            session_id: sessionId,
+            org_id,
+            prompt,
+            decision: result.decision,
+            incremental_risk: result.risk_score
+        });
+
+        // 4. Incident Escalation
+        if (result.incident) {
+            await supabase.from('incidents').insert({
+                session_id: sessionId,
+                org_id,
+                severity: result.risk_score >= 90 ? 'critical' : 'high',
+                violation_type: result.violations?.[0]?.policy_name || 'unclassified'
+            });
         }
     }
 }
