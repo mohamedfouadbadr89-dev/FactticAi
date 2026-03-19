@@ -22,15 +22,14 @@ interface GovernanceData {
  * Visualization of the Deterministic Governance State.
  * Displays risk index, state classification, and contributing factors.
  */
-export default function GovernanceStateCard({ orgId }: { orgId: string }) {
+export default function GovernanceStateCard() {
   const [data, setData] = useState<GovernanceData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!orgId) { setLoading(false); return; }
     async function fetchState() {
       try {
-        const res = await fetch(`/api/governance/state?orgId=${orgId}`);
+        const res = await fetch(`/api/governance/state`);
         if (!res.ok) throw new Error("Failed to fetch");
         const json = await res.json();
         setData(json);
@@ -41,7 +40,7 @@ export default function GovernanceStateCard({ orgId }: { orgId: string }) {
       }
     }
     fetchState();
-  }, [orgId]);
+  }, []);
 
   if (loading) {
     return (

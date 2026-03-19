@@ -14,12 +14,12 @@ interface ReplayViewerProps {
 }
 
 const EVENT_TYPE_STYLES: Record<string, { label: string; border: string; badge: string }> = {
-  prompt_submitted:    { label: "Prompt",      border: "border-slate-700",       badge: "bg-slate-800 text-slate-400 border-slate-700" },
-  governance_decision: { label: "Decision",    border: "border-indigo-900/60",   badge: "bg-indigo-950/60 text-indigo-400 border-indigo-800/50" },
-  policy_violation:    { label: "Violation",   border: "border-red-900/60",      badge: "bg-red-950/50 text-red-400 border-red-800/50" },
-  risk_score_calculated: { label: "Risk Score", border: "border-orange-900/50",  badge: "bg-orange-950/40 text-orange-400 border-orange-800/40" },
-  system_metrics:      { label: "Metrics",     border: "border-slate-800",       badge: "bg-slate-900 text-slate-500 border-slate-700" },
-  activity:            { label: "Activity",    border: "border-emerald-900/50",  badge: "bg-emerald-950/40 text-emerald-400 border-emerald-800/40" },
+  prompt_submitted:    { label: "Prompt",      border: "border-[var(--border-primary)]",  badge: "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-primary)]" },
+  governance_decision: { label: "Decision",    border: "border-indigo-500/30",            badge: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
+  policy_violation:    { label: "Violation",   border: "border-red-500/40",               badge: "bg-red-500/10 text-red-400 border-red-500/30" },
+  risk_score_calculated: { label: "Risk Score", border: "border-orange-500/30",           badge: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+  system_metrics:      { label: "Metrics",     border: "border-[var(--border-primary)]",  badge: "bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-primary)]" },
+  activity:            { label: "Activity",    border: "border-emerald-500/30",           badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
 };
 
 function riskColor(score: number): string {
@@ -66,8 +66,8 @@ export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-500 text-sm font-mono uppercase tracking-widest">
+          <div className="w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+          <p className="text-[var(--text-secondary)] text-sm font-mono uppercase tracking-widest">
             Loading session replay…
           </p>
         </div>
@@ -77,7 +77,7 @@ export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
 
   if (error) {
     return (
-      <div className="p-6 rounded-2xl bg-red-950/20 border border-red-800/40 text-red-400 font-mono text-sm">
+      <div className="p-6 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-sm">
         Error: {error}
       </div>
     );
@@ -86,11 +86,11 @@ export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
   if (events.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
-        <div className="text-center py-16 px-8 border border-dashed border-slate-800 rounded-2xl">
-          <p className="text-slate-500 font-mono text-sm uppercase tracking-widest">
+        <div className="text-center py-16 px-8 border border-dashed border-[var(--border-primary)] rounded-2xl">
+          <p className="text-[var(--text-secondary)] font-mono text-sm uppercase tracking-widest">
             No events recorded for this session
           </p>
-          <p className="text-slate-700 text-xs mt-2 font-mono">
+          <p className="text-[var(--text-secondary)] opacity-50 text-xs mt-2 font-mono">
             Session ID: {sessionId}
           </p>
         </div>
@@ -141,7 +141,7 @@ export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
                     <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${style.badge}`}>
                       {style.label}
                     </span>
-                    <span className="text-[var(--text-secondary)] text-[11px] font-mono shrink-0">
+                    <span className="text-[var(--text-secondary)] opacity-60 text-[11px] font-mono shrink-0">
                       {new Date(event.timestamp).toLocaleTimeString(undefined, {
                         hour: "2-digit",
                         minute: "2-digit",

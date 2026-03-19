@@ -20,10 +20,13 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (syncAttempted.current) return;
+    // Prevent reload loop: only attempt sync once per browser session
+    if (sessionStorage.getItem('facttic_sync_done')) return;
     syncAttempted.current = true;
 
     fetch('/api/dashboard/stats').then(res => {
       if (res.status === 401) {
+        sessionStorage.setItem('facttic_sync_done', '1');
         fetch('/api/setup/sync-user', { method: 'POST' })
           .then(r => { if (r.ok) window.location.reload(); })
           .catch(() => {});

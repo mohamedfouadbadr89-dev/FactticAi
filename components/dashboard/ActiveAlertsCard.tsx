@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { AlertItem } from "@/lib/dashboard/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -23,6 +24,7 @@ const rowInteractionClass: Record<string, string> = {
 const PAGE_SIZE = 3;
 
 export default function ActiveAlertsCard({ data }: Props) {
+  const router = useRouter();
   const alerts = data ?? [
     { id: "INV-440", title: "Data Exfiltration Risk", description: "Outbound payload exceeded threshold on Node F-01", meta: "INV-440 · 2m ago · Chat", severity: "High" as const },
     { id: "INV-439", title: "Unsanctioned API Access", description: "Unauthorized endpoint call detected at gateway layer", meta: "INV-439 · 15m ago · Voice", severity: "Med" as const },
@@ -38,8 +40,11 @@ export default function ActiveAlertsCard({ data }: Props) {
 
       {/* Header */}
       <div className="card-header flex items-center justify-between">
-        <h3 className="card-title">Active Alerts</h3>
-        <span className="bg-[var(--danger-bg)] text-[var(--danger)] rounded-full px-3 py-1 text-xs font-medium">
+        <button onClick={() => router.push('/dashboard/alerts')} className="card-title hover:text-[var(--accent)] transition-colors text-left">Active Alerts</button>
+        <span
+          className="bg-[var(--danger-bg)] text-[var(--danger)] rounded-full px-3 py-1 text-xs font-medium cursor-pointer"
+          onClick={() => router.push('/dashboard/alerts')}
+        >
           {alerts.length} Open
         </span>
       </div>
@@ -52,7 +57,8 @@ export default function ActiveAlertsCard({ data }: Props) {
           pageAlerts.map((alert, idx) => (
             <div
               key={alert.id}
-              className={`flex justify-between items-start py-4 px-3 -mx-3 mb-1 ${rowInteractionClass[alert.severity] ?? "hover:bg-[var(--bg-secondary)] transition-colors duration-200"} ${
+              onClick={() => router.push('/dashboard/alerts')}
+              className={`flex justify-between items-start py-4 px-3 -mx-3 mb-1 cursor-pointer ${rowInteractionClass[alert.severity] ?? "hover:bg-[var(--bg-secondary)] transition-colors duration-200"} ${
                 idx < pageAlerts.length - 1 && alert.severity !== "High" && alert.severity !== "Med" ? "border-b border-[var(--border-primary)]" : ""
               }`}
               style={alert.severity === "High" ? { "--pulse-color": "rgba(220, 38, 38, 0.4)" } as React.CSSProperties : {}}
