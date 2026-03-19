@@ -10,7 +10,8 @@ export default function PlaygroundPage() {
   const [results, setResults] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleRunGovernance = async (config: any) => {
+  const executeGovernanceAnalysis = async (config: any) => {
+    alert('Triggered');
     setLoading(true);
     setResults(null);
     setError(null);
@@ -77,7 +78,7 @@ export default function PlaygroundPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Panel: Prompt Input */}
           <div className="lg:col-span-4 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-3xl p-8 shadow-sm">
-            <PromptRunner onRun={handleRunGovernance} loading={loading} />
+            <PromptRunner onRun={executeGovernanceAnalysis} loading={loading} />
           </div>
 
           {/* Right Panel: Analysis Results */}

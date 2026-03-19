@@ -83,7 +83,7 @@ export default function PromptRunner({ onRun, loading }: PromptRunnerProps) {
           ) : (
             <Play className="w-4 h-4" />
           )}
-          {loading ? 'Analyzing...' : 'Run Governance Analysis'}
+          {loading ? 'Analyzing...' : 'RUN ANALYSIS v2'}
         </button>
       </form>
 
