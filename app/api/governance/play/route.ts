@@ -1,6 +1,19 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { GovernancePipeline } from '@/lib/governance/governancePipeline';
 import { logger } from '@/lib/logger';
+
+/**
+ * Diagnostic Connectivity Check
+ */
+export async function GET() {
+  return NextResponse.json({ 
+    status: 'ONLINE', 
+    engine: 'Facttic Governance Engine v5.0', 
+    bypass: 'EMERGENCY_AUTH_ACTIVE' 
+  });
+}
 
 /**
  * Playground Execution Route
