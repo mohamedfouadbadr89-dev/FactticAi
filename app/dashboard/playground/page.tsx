@@ -22,7 +22,7 @@ export default function PlaygroundPage() {
     const clientTimeout = setTimeout(() => controller.abort(), 20000);
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch('/api/governance/play', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,

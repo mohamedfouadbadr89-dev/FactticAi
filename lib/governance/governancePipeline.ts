@@ -43,15 +43,37 @@ export class GovernancePipeline {
         voice_collision_index?: number | null | undefined,
         voice_barge_in_detected?: boolean | null | undefined,
         voice_packet_loss?: number | null | undefined,
-        voice_audio_integrity?: number | null | undefined
+        voice_audio_integrity?: number | null | undefined,
+        client_sent_at?: number | null | undefined,
+        playground_mode?: boolean | null | undefined
     }): Promise<GovernanceExecutionResult> {
-        const { org_id, user_id, session_id, prompt, response, model = 'facttic-governance-engine' } = params;
+        const { org_id, user_id, session_id, prompt, response, model = 'facttic-governance-engine', client_sent_at, playground_mode } = params;
         const start = performance.now();
         const sessionId = session_id || crypto.randomUUID();
 
-        // 50ms Hard-Stop for dependency interaction (Fail-Closed)
+        // 1. Clock-Sync Latency Check (Security Floor)
+        const now = Date.now();
+        const trueLatency = client_sent_at ? now - client_sent_at : 0;
+        if (client_sent_at && trueLatency > 150) {
+            logger.warn('CLOCK_SYNC_LATENCY_VIOLATION', { org_id, sessionId, trueLatency });
+            return {
+                success: true,
+                session_id: sessionId,
+                decision: 'BLOCK',
+                risk_score: 95,
+                violations: [{ policy_name: 'Clock-Sync Latency', rule_type: 'latency_violation', action: 'block', metadata: { true_latency: trueLatency } }],
+                latency: Math.round(performance.now() - start),
+                fail_closed: true,
+                event_hash: 'LATENCY_BLOCK',
+                hash: 'LATENCY_BLOCK'
+            };
+        }
+
+        // 50ms (Prod) / 150ms (Playground/Dev) Hard-Stop for dependency interaction (Fail-Closed)
+        const isDev = process.env.NODE_ENV === 'development';
+        const timeoutMs = (playground_mode || isDev) ? 150 : 50;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 50);
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
         try {
             // 1. Authorization Access Gate (First, must resolve < 10ms)
@@ -176,6 +198,26 @@ export class GovernancePipeline {
         }
         
         riskScore = Math.min(riskScore, 100);
+
+        // 3. Barge-In Escalation (Session Persistence check)
+        const { count: sessionInterrupts } = await supabase
+            .from('facttic_governance_events')
+            .select('*', { count: 'exact', head: true })
+            .eq('session_id', sessionId)
+            .eq('event_type', 'voice_interrupt')
+            .abortSignal(signal);
+
+        if (sessionInterrupts && sessionInterrupts > 3) {
+            riskScore = Math.min(100, riskScore + 25);
+            policyResult.violations.push({
+                policy_name: 'Barge-In Escalation',
+                rule_type: 'safety_violation',
+                threshold: 3,
+                actual_score: sessionInterrupts,
+                action: 'block'
+            });
+        }
+        
         const incidentResult = IncidentCreator.evaluateIncident(riskScore, { triggered: false }); // Drift detached for speed
 
         const decision: PipelineDecision = riskScore >= 80 || fraudResult.action === 'block API key' ? 'BLOCK' : riskScore >= 40 ? 'WARN' : 'ALLOW';
@@ -191,20 +233,35 @@ export class GovernancePipeline {
     }
 
     private static async persistInternal(result: GovernanceExecutionResult, params: any, sessionId: string) {
-        const { org_id, user_id, prompt, model } = params;
+        const { org_id, user_id, prompt, model, client_sent_at } = params;
         
-        // 1. Evidence Ledger (Atomic Chain)
-        await EvidenceLedger.write({
-            session_id: sessionId,
-            org_id,
-            event_type: 'governance_evaluation',
-            prompt,
-            model: model || 'unspecified',
-            decision: result.decision,
-            risk_score: result.risk_score,
-            violations: result.violations,
-            latency: result.latency
-        });
+        // 30ms Hard-Stop for DB Write (Fail-Closed Integrity)
+        const persistController = new AbortController();
+        const persistTimeout = setTimeout(() => persistController.abort(), 30);
+
+        try {
+            // 1. Evidence Ledger (Atomic Chain)
+            await EvidenceLedger.write({
+                session_id: sessionId,
+                org_id,
+                event_type: result.decision === 'BLOCK' ? 'governance_block' : 'governance_evaluation',
+                prompt,
+                model: model || 'unspecified',
+                decision: result.decision,
+                risk_score: result.risk_score,
+                violations: result.violations,
+                latency: result.latency,
+                client_sent_at
+            }, persistController.signal);
+            
+            clearTimeout(persistTimeout);
+        } catch (e: any) {
+            clearTimeout(persistTimeout);
+            if (e.name === 'AbortError' || e.message?.includes('abort')) {
+                throw new Error('LEDGER_WRITE_TIMEOUT_30MS');
+            }
+            throw e;
+        }
 
         // 2. Realtime Broadcast
         void fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/realtime/v1/api/broadcast`, {

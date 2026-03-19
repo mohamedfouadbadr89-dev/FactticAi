@@ -46,6 +46,65 @@ export default function GovernanceResults({ data }: GovernanceResultsProps) {
     }
   };
 
+  if (decision === 'BLOCK') {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-center p-12 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="relative">
+          <div className="absolute inset-0 bg-red-500/20 blur-3xl rounded-full" />
+          <div className="relative p-8 rounded-full bg-red-500/10 border-2 border-red-500/30 text-red-500">
+            <ShieldAlert className="w-20 h-20" />
+          </div>
+        </div>
+        
+        <div className="space-y-2 max-w-md">
+          <h2 className="text-3xl font-black uppercase tracking-tighter text-red-500">Access Denied</h2>
+          <p className="text-sm font-bold text-[var(--text-secondary)]">The Facttic Governance Pipeline has intercepted this request due to high-risk policy violations.</p>
+        </div>
+
+        <div className="w-full max-w-lg p-6 rounded-2xl bg-red-500/5 border border-red-500/10 text-left space-y-4">
+           <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-red-400">
+             <span>Security Violation Details</span>
+             <span>Risk Score: {risk_score}%</span>
+           </div>
+           
+           <div className="space-y-3">
+             {violations && violations.length > 0 ? (
+               violations.map((v: any, i: number) => (
+                 <div key={i} className="flex gap-3">
+                   <div className="mt-1 w-1.5 h-1.5 rounded-full bg-red-500" />
+                   <div>
+                     <p className="text-[11px] font-black text-white uppercase">{v.policy_name}</p>
+                     <p className="text-[10px] text-red-400/80 font-medium">{v.metadata?.cause || 'Execution was fail-closed to protect system integrity.'}</p>
+                   </div>
+                 </div>
+               ))
+             ) : (
+               <div className="flex gap-3">
+                  <div className="mt-1 w-1.5 h-1.5 rounded-full bg-red-500" />
+                  <div>
+                    <p className="text-[11px] font-black text-white uppercase">System Fail-Closed</p>
+                    <p className="text-[10px] text-red-400/80 font-medium">Pipeline execution exceeded the 50ms latency budget.</p>
+                  </div>
+               </div>
+             )}
+           </div>
+
+           <div className="pt-4 border-t border-red-500/10 flex justify-between items-center text-[10px] font-bold text-[var(--text-secondary)]">
+             <span>LATENCY: {metadata?.latency_ms ?? 0}ms</span>
+             <span className="font-mono text-[9px]">{data.session_id}</span>
+           </div>
+        </div>
+
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-8 py-3 bg-[var(--bg-primary)] border border-red-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/5 transition-all"
+        >
+          Reset Session
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
       {/* Risk Summary */}
