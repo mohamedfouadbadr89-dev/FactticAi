@@ -22,9 +22,11 @@ export default function PlaygroundPage() {
     const clientTimeout = setTimeout(() => controller.abort(), 20000);
 
     try {
+      console.log('SENDING_TO_PIPELINE', config.prompt);
       const res = await fetch('/api/governance/play', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         signal: controller.signal,
         body: JSON.stringify({
           prompt: config.prompt,
