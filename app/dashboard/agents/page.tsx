@@ -64,7 +64,7 @@ export default function AgentsPage() {
           body: JSON.stringify({ seed: true })
         })
       }
-      
+
       const res = await fetch('/api/agents/sessions')
       if (res.ok) {
         const json = await res.json()
@@ -77,6 +77,19 @@ export default function AgentsPage() {
       setSeeding(false)
     }
   }, [])
+
+  const controlSession = React.useCallback(async (sessionId: string, action: 'resume' | 'block') => {
+    try {
+      await fetch('/api/agents/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, action })
+      })
+      await fetchData()
+    } catch (e) {
+      console.error('[AgentsPage] control', e)
+    }
+  }, [fetchData])
 
   React.useEffect(() => { fetchData() }, [fetchData])
 
@@ -182,10 +195,18 @@ export default function AgentsPage() {
                            {s.status}
                          </div>
                          <div className="flex items-center gap-2">
-                            <button className="p-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] hover:border-[#3b82f6] rounded-lg transition-colors group">
+                            <button
+                              onClick={() => controlSession(s.id, 'resume')}
+                              title="Resume session"
+                              className="p-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] hover:border-[#3b82f6] rounded-lg transition-colors group"
+                            >
                                <Play className="w-3 h-3 text-[var(--text-secondary)] group-hover:text-[#3b82f6]" />
                             </button>
-                            <button className="p-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] hover:border-[#ef4444] rounded-lg transition-colors group">
+                            <button
+                              onClick={() => controlSession(s.id, 'block')}
+                              title="Block session"
+                              className="p-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] hover:border-[#ef4444] rounded-lg transition-colors group"
+                            >
                                <ShieldX className="w-3 h-3 text-[var(--text-secondary)] group-hover:text-[#ef4444]" />
                             </button>
                          </div>
