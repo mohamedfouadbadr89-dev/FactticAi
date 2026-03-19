@@ -12,8 +12,7 @@ import VoiceDriftCard from "@/components/dashboard/VoiceDriftCard";
 import IntelligenceDashboard from "@/components/dashboard/IntelligenceDashboard";
 import DashboardFilters from "@/components/dashboard/DashboardFilters";
 import { useDashboardData } from "@/lib/dashboard/useDashboardData";
-import React, { useEffect, useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+import React from "react";
 import QuickStart from "@/components/onboarding/QuickStart";
 import { useInteractionMode } from "@/store/interactionMode";
 
@@ -45,7 +44,6 @@ function DashboardLoadingSkeleton() {
 export default function DashboardPage() {
   const router = useRouter();
   const { data, loading, error } = useDashboardData("/api/dashboard/stats");
-  const [orgId, setOrgId] = useState<string | null>(null);
   const { mode: channel } = useInteractionMode();
 
   const [filters, setFilters] = React.useState({
@@ -54,17 +52,6 @@ export default function DashboardPage() {
     modelVersion: "all",
     channels: ["chat", "voice"]
   });
-
-  useEffect(() => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const id = session?.user?.user_metadata?.org_id;
-      if (id) setOrgId(id);
-    });
-  }, []);
 
   if (loading) {
     return <DashboardLoadingSkeleton />;
@@ -78,8 +65,18 @@ export default function DashboardPage() {
       <div className="w-full h-8 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] flex items-center justify-center text-xs uppercase tracking-wider text-[var(--text-secondary)]">
         <div className="flex items-center gap-6">
           <span>Governance Mode: ACTIVE</span>
-          <span>Risk Level: LOW</span>
-          <span>System Integrity: VERIFIED</span>
+          <span>
+            Risk Level:{" "}
+            <span className={Number(data?.health?.avg_risk_24h) > 50 ? "text-[var(--danger)]" : Number(data?.health?.avg_risk_24h) > 20 ? "text-[var(--warning)]" : "text-[var(--success)]"}>
+              {data?.health ? (Number(data.health.avg_risk_24h) > 50 ? "HIGH" : Number(data.health.avg_risk_24h) > 20 ? "MEDIUM" : "LOW") : "—"}
+            </span>
+          </span>
+          <span>
+            System Integrity:{" "}
+            <span className={data?.health?.tamper_integrity === "Warning" ? "text-[var(--danger)]" : data?.health?.tamper_integrity === "Verified" ? "text-[var(--success)]" : "text-[var(--text-secondary)]"}>
+              {data?.health?.tamper_integrity ?? "—"}
+            </span>
+          </span>
         </div>
       </div>
 
@@ -100,7 +97,7 @@ export default function DashboardPage() {
               Voice governance data will appear here once you connect a voice provider and run your first session.
               Switch to <strong>Chat</strong> to see your current governance data.
             </p>
-            <a href="/dashboard/integrations" className="mt-2 text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">
+            <a href="/dashboard/connect" className="mt-2 text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline">
               Connect Voice Provider →
             </a>
           </div>
@@ -142,7 +139,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <ActiveAlertsCard data={data?.alerts} />
           <RiskBreakdownCard data={data?.risks} />
-          <GovernanceStateCard orgId={orgId ?? ""} />
+          <GovernanceStateCard />
         </div>
 
         {/* Voice Drift + Intelligence */}
