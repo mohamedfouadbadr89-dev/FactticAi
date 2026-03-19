@@ -22,40 +22,39 @@ export type AuthenticatedHandler = (
  */
 export function withAuth(handler: AuthenticatedHandler) {
   return async (req: Request, routeContext: any) => {
-    // Hard 12-second timeout on the entire authenticated handler to prevent
+    // Hard 8-second timeout on the entire authenticated handler to prevent
     // indefinite hangs from DB connection saturation or Supabase latency
     const timeoutPromise = new Promise<NextResponse>((resolve) =>
       setTimeout(() => {
         logger.error('AUTH_HANDLER_TIMEOUT', { url: req.url });
-        resolve(NextResponse.json({ error: 'Request timeout' }, { status: 504 }));
-      }, 12000)
+        resolve(NextResponse.json({ error: 'Auth Timeout - Supabase Unreachable' }, { status: 401 }));
+      }, 8000)
     );
 
     const handlerPromise = (async () => {
       try {
         const supabase = await createServerAuthClient();
 
-        // Attempt to get session — wrap in 4s timeout because getSession()
-        // can make a network call to Supabase auth to refresh an expired token,
-        // and that call can hang indefinitely (ECONNRESET from Supabase).
+        // Attempt to get user — replace getSession() with getUser() for stability
+        // Wrap in 3s timeout to fail-fast and avoid hanging the UI in 'Analyzing'
         let session: any = null;
-        let authError: any = null;
         try {
-          const sessionResult = await Promise.race([
-            supabase.auth.getSession(),
+          const { data, error } = await Promise.race([
+            supabase.auth.getUser(),
             new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('GETSESSION_TIMEOUT')), 4000)
+              setTimeout(() => reject(new Error('GETUSER_TIMEOUT')), 3000)
             ),
           ]);
-          session = sessionResult.data?.session ?? null;
-          authError = sessionResult.error ?? null;
-        } catch (sessionErr: any) {
-          logger.warn('GETSESSION_SLOW', { url: req.url, error: sessionErr.message });
-          // session stays null — fall through to Bearer token check
+          if (data?.user && !error) {
+            session = { user: data.user };
+          }
+        } catch (authErr: any) {
+          logger.warn('AUTH_GETUSER_FAILED', { url: req.url, error: authErr.message });
+          // session stays null — will trigger 401 below
         }
 
-        // Fallback: Check for Authorization header if no session
-        if (!session || authError) {
+        // Fallback: Check for Authorization header if no user was found/validated
+        if (!session) {
           const authHeader = req.headers.get('Authorization');
           if (authHeader?.startsWith('Bearer ')) {
             const token = authHeader.split(' ')[1];
