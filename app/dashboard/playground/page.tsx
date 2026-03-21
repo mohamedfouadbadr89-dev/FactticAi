@@ -42,6 +42,10 @@ export default function PlaygroundPage() {
       }
 
       setResults(data);
+      
+      // Trigger manual refresh for DashboardHome across tabs and windows
+      window.dispatchEvent(new CustomEvent('governance_refresh'));
+      new BroadcastChannel('governance_sync').postMessage('refresh');
     } catch (err: any) {
       if (err.name === 'AbortError') {
         setError('Pipeline timeout — Supabase connection is slow. Please try again.');

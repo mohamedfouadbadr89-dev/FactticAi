@@ -56,7 +56,7 @@ export default function HomePage() {
   React.useEffect(() => {
     setLoading(true)
     setApiError(false)
-    fetch('/api/product/overview')
+    fetch('/api/product/overview', { cache: 'no-store' }) // prevent caching
       .then(res => res.json())
       .then(json => {
         if (json && json.governance && json.intelligence && json.gateway && json.agents) {
@@ -72,6 +72,20 @@ export default function HomePage() {
         setLoading(false)
       })
   }, [retry])
+
+  // Manual refresh fallback
+  React.useEffect(() => {
+    const handleRefresh = () => setRetry(r => r + 1)
+    window.addEventListener('governance_refresh', handleRefresh)
+    const bc = new BroadcastChannel('governance_sync')
+    bc.onmessage = (e) => {
+      if (e.data === 'refresh') handleRefresh()
+    }
+    return () => {
+      window.removeEventListener('governance_refresh', handleRefresh)
+      bc.close()
+    }
+  }, [])
 
   // Realtime: increment counters live when a new intercept lands
   React.useEffect(() => {
