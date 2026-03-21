@@ -35,12 +35,13 @@ export class GovernancePipeline {
         voice_packet_loss?: number | null,
         voice_audio_integrity?: number | null,
         voice_collision_index?: number | null,
-        voice_barge_in_detected?: boolean | null
+        voice_barge_in_detected?: boolean | null,
+        timeout_ms?: number | null
     }): Promise<GovernanceExecutionResult> {
-        const { org_id, user_id, session_id, prompt, client_sent_at, playground_mode } = params;
+        const { org_id, user_id, session_id, prompt, client_sent_at, playground_mode, timeout_ms } = params;
         const start = performance.now();
         const sessionId = session_id || crypto.randomUUID();
-        const timeoutBudget = playground_mode ? 150 : 50;
+        const timeoutBudget = timeout_ms || (playground_mode ? 150 : 50);
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeoutBudget);
 
