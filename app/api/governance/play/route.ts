@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       session_id: session_id || undefined,
       playground_mode: true,
       client_sent_at: Date.now(), // Clock-sync required by v5.0
-      timeout_ms: 1000
+      timeout_ms: 2000
     });
     console.log('[Playground API] Pipeline result:', { decision: result.decision, latency: result.latency });
 

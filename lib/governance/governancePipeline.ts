@@ -38,6 +38,7 @@ export class GovernancePipeline {
         voice_barge_in_detected?: boolean | null,
         timeout_ms?: number | null
     }): Promise<GovernanceExecutionResult> {
+        console.log("LATENCY_BUDGET_UPDATED_TO_2000");
         const { org_id, user_id, session_id, prompt, client_sent_at, playground_mode, timeout_ms } = params;
         const start = performance.now();
         const sessionId = session_id || crypto.randomUUID();

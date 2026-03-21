@@ -31,10 +31,11 @@ import { supabaseServer } from '@/lib/supabaseServer';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SYSTEM_PRINCIPALS = new Set<string>([
-  'system-cron-health',   // Cron health monitor — verifies pipeline liveness on a schedule
-  'system-diagnostic',    // System report API — pipeline latency and end-to-end health checks
-  'system-simulator',     // Simulation runner — executes synthetic governance scenarios
-  'system-audit',         // Offline audit scripts — generateEvidenceBundle, certifyDeterminism
+  'system-cron-health',      // Cron health monitor — verifies pipeline liveness on a schedule
+  'system-diagnostic',       // System report API — pipeline latency and end-to-end health checks
+  'system-simulator',        // Simulation runner — executes synthetic governance scenarios
+  'system-audit',            // Offline audit scripts — generateEvidenceBundle, certifyDeterminism
+  'emergency-bypass-user',   // Playground emergency-auth-bypass — server-side constant in play/route.ts
 ]);
 
 /**
