@@ -87,55 +87,14 @@ export default function HomePage() {
     }
   }, [])
 
-  // Realtime: increment counters live when a new intercept lands
+  // Realtime: TEMPORARILY DISABLED due to client-side crashes
+  // Replaced with a 5-second polling interval fallback
   React.useEffect(() => {
     if (!data?.org_id) return
-
-    let channel: any;
-    try {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-      )
-      channel = supabase
-        .channel(`runtime_intercepts:${data.org_id}`)
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'runtime_intercepts', filter: `org_id=eq.${data.org_id}` },
-          (payload) => {
-            if (!payload || !payload.new) return;
-            const row = payload.new as { action: string; risk_score: number }
-            setData(prev => {
-              if (!prev || !prev.governance) return prev;
-              return {
-                ...prev,
-                governance: {
-                  ...prev.governance,
-                  total_intercepts: (prev.governance.total_intercepts || 0) + 1,
-                  blocked_responses: (prev.governance.blocked_responses || 0) + (row.action === 'block' ? 1 : 0),
-                }
-              }
-            })
-          }
-        )
-        .subscribe()
-    } catch (err) {
-      console.error('Realtime subscription error:', err)
-    }
-    
-    return () => { 
-      if (channel) {
-        try {
-          const supabase = createBrowserClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-          )
-          void supabase.removeChannel(channel)
-        } catch (e) {
-          console.error('Realtime unsub error:', e)
-        }
-      }
-    }
+    const interval = setInterval(() => {
+      setRetry(r => r + 1)
+    }, 5000)
+    return () => clearInterval(interval)
   }, [data?.org_id])
 
   if (loading)
