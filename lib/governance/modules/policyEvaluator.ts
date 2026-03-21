@@ -131,13 +131,15 @@ export const PolicyEvaluator = {
                     policy_name: 'Executive PII Shield',
                     rule_type: 'pii_exposure',
                     threshold: 0,
-                    actual_score: 100,
+                    actual_score: 92,
                     action: 'block',
                     metadata: { cause: 'Request for executive personal/location data detected. Immediate block.' }
                 });
                 triggered = true;
                 highestAction = 'block';
-                risk_multiplier = Math.max(risk_multiplier, 2.0); // Maximum multiplier
+                // 1.15 × base 80 = 92 — intentionally below 100 to differentiate from
+                // schema/credential dumps which are scored at 100 (full exfiltration risk).
+                risk_multiplier = Math.max(risk_multiplier, 1.15);
             }
         });
 
