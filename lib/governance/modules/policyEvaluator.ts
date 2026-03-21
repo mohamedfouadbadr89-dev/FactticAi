@@ -14,7 +14,8 @@ export interface PolicyEvaluationResult {
     triggered: boolean;
     highest_action: PolicyAction | null;
     violations: any[];
-    risk_multiplier: number; // NEW: amplifies RiskScorer when critical patterns hit
+    risk_multiplier: number; // amplifies RiskScorer when critical patterns hit
+    score_ceiling: number;   // hard cap applied AFTER multiplier — differentiates severity tiers
 }
 
 export const PolicyEvaluator = {
@@ -31,6 +32,7 @@ export const PolicyEvaluator = {
         let highestAction: PolicyAction | null = null;
         let triggered = false;
         let risk_multiplier = 1.0;
+        let score_ceiling = 100; // default: uncapped
 
         const normalizedPrompt = prompt.toLowerCase().trim();
 
@@ -140,6 +142,8 @@ export const PolicyEvaluator = {
                 // 1.15 × base 80 = 92 — intentionally below 100 to differentiate from
                 // schema/credential dumps which are scored at 100 (full exfiltration risk).
                 risk_multiplier = Math.max(risk_multiplier, 1.15);
+                // Executive PII is serious but NOT a full data dump — cap at 92
+                score_ceiling = Math.min(score_ceiling, 92);
             }
         });
 
@@ -217,6 +221,6 @@ export const PolicyEvaluator = {
             }
         });
 
-        return { triggered, highest_action: highestAction, violations, risk_multiplier };
+        return { triggered, highest_action: highestAction, violations, risk_multiplier, score_ceiling };
     }
 };

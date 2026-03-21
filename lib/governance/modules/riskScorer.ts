@@ -27,6 +27,8 @@ export const RiskScorer = {
         const multiplier = policyEval.risk_multiplier ?? 1.0;
         baseScore = baseScore * multiplier;
 
-        return Math.min(Math.round(baseScore), 100);
+        // score_ceiling differentiates severity tiers: executive PII = 92, schema/creds = 100
+        const ceiling = policyEval.score_ceiling ?? 100;
+        return Math.min(Math.round(baseScore), ceiling);
     }
 };

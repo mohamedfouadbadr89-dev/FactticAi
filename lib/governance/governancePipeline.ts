@@ -96,7 +96,8 @@ export class GovernancePipeline {
         if (voice_latency_ms && voice_latency_ms > 800) riskScore += 10;
         if (voice_collision_index && voice_collision_index > 0.2) riskScore += 15;
         if (voice_barge_in_detected) riskScore += 20;
-        riskScore = Math.min(riskScore, 100);
+        // Respect score_ceiling from PolicyEvaluator — executive PII max 92, others 100
+        riskScore = Math.min(riskScore, policyResult.score_ceiling ?? 100);
         const decision: PipelineDecision = riskScore >= 80 ? 'BLOCK' : riskScore >= 40 ? 'WARN' : 'ALLOW';
         return { 
             success: true, 

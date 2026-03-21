@@ -21,9 +21,17 @@ export const GuardrailDetector = {
         // ── Baseline metrics ──────────────────────────────────────────────────────
         let hallucinationRisk = 0.05 + (baseHash % 7) / 100;   // 5–12%
         let safetyRisk        = 0.0;
-        let intentDrift       = 1.0 + (baseHash % 6);           // 1–7% baseline
         let toxicity          = (baseHash % 9) / 2;             // 0–4% baseline
         let jailbreakProb     = 0.0;
+
+        // ── Intent Drift: proportional to prompt length × lexical complexity ───────
+        // Short prompts (<5 words) → <1%; medium (20 words) → ~5–8%; long (50+) → 15–20%
+        const words = text.trim().split(/\s+/).filter(Boolean);
+        const wordCount = words.length;
+        const uniqueRatio = wordCount > 0 ? new Set(words).size / wordCount : 0;
+        const complexityFactor = 0.5 + uniqueRatio * 0.5; // 0.5 (repetitive) → 1.0 (all unique)
+        const rawDrift = Math.pow(wordCount / 5, 1.2) * 2 * complexityFactor;
+        let intentDrift = Math.min(rawDrift + (baseHash % 3) * 0.15, 20);
 
         // ── Hallucination keywords ────────────────────────────────────────────────
         if (text.includes('guarantee')) hallucinationRisk += 0.6;
@@ -39,10 +47,8 @@ export const GuardrailDetector = {
             text.includes('developer mode')
         ) {
             safetyRisk    += 0.6;
-            intentDrift    = 40.0 + (baseHash % 30);   // 40–70%
+            intentDrift    = 40.0 + (baseHash % 30);   // 40–70% — evasion overrides length model
             jailbreakProb  = 70.0 + (baseHash % 20);   // 70–90%
-        } else if (text.length > 80) {
-            intentDrift += 2.0 + (baseHash % 8);        // longer prompts = more drift
         }
 
         // ── Toxicity / Sentiment analysis ────────────────────────────────────────
