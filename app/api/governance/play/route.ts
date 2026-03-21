@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     // Map to exact JSON schema required by playground UI GovernanceResults
     const mappedResponse = {
       decision: result.decision,
-      risk_score: result.risk_score,
+      risk_score: Math.ceil(result.risk_score),
       session_id: result.session_id,
       metadata: {
         latency_ms: result.latency || 0
@@ -70,14 +70,19 @@ export async function POST(req: Request) {
         jailbreak_probability: result.behavior?.jailbreak_probability ?? (result.risk_score > 60 ? 80 : 5),
         override_detect: result.behavior?.override_detect ?? (result.risk_score > 80)
       },
-      // If fail_closed is true, pass empty violations to trigger the UI's fallback
-      violations: result.fail_closed ? [] : (result.violations || []).map((v: any) => ({
-        policy_name: v.policy_name || v.rule || 'Unknown Policy',
-        action: v.action || result.decision,
-        metadata: {
-          cause: v.metadata?.cause || v.message || 'Triggered by pipeline rules'
-        }
-      })),
+      // Fix phantom timeout UI: If decision is BLOCK but there are no policy violations, it's a Guardrail score block
+      violations: result.fail_closed 
+        ? [] 
+        : (result.violations?.length > 0 
+            ? result.violations 
+            : (result.decision === 'BLOCK' ? [{ policy_name: 'Behavioral Guardrails', action: 'block', metadata: { cause: 'Aggregated guardrail metrics (Toxicity/Drift) exceeded safe threshold.' } }] : [])
+          ).map((v: any) => ({
+             policy_name: v.policy_name || v.rule || 'Unknown Policy',
+             action: v.action || result.decision,
+             metadata: {
+               cause: v.metadata?.cause || v.message || 'Triggered by pipeline rules'
+             }
+          })),
       governance_state: result.risk_score > 60 ? 'DEGRADED' : 'STABLE'
     };
 

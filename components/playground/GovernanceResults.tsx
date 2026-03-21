@@ -221,7 +221,7 @@ export default function GovernanceResults({ data }: GovernanceResultsProps) {
               </div>
               <span className="text-xs font-bold">DRIFT: {(behavior?.intent_drift ?? 0).toFixed(1)}%</span>
             </div>
-            <span className="text-[9px] font-mono text-[var(--text-secondary)] tracking-tighter">PHASE {data.session_id ? parseInt(data.session_id.substring(0, 4), 16) % 100 : 57} ACTIVE</span>
+            <span className="text-[9px] font-mono text-[var(--text-secondary)] tracking-tighter">PHASE {data.session_id ? data.session_id.split('-')[1]?.toUpperCase() || 'INIT' : 'INIT'} ACTIVE</span>
           </div>
         </div>
       </div>
