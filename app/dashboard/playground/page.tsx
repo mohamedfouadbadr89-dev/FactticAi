@@ -11,7 +11,6 @@ export default function PlaygroundPage() {
   const [error, setError] = useState<string | null>(null);
 
   const executeGovernanceAnalysis = async (config: any) => {
-    alert('Triggered');
     setLoading(true);
     setResults(null);
     setError(null);

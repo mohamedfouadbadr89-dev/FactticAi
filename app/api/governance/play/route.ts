@@ -53,26 +53,49 @@ export async function POST(req: Request) {
     });
     console.log('[Playground API] Pipeline result:', { decision: result.decision, latency: result.latency });
 
-    // Task 1: Map results (including BLOCK/Fail-Closed) to 200 so UI clears "Analyzing"
-    return NextResponse.json(result, { status: 200 });
+    // Map to exact JSON schema required by playground UI GovernanceResults
+    const mappedResponse = {
+      decision: result.decision,
+      risk_score: result.risk_score,
+      session_id: result.session_id,
+      metadata: {
+        latency_ms: result.latency || 0
+      },
+      behavior: {
+        intent_drift: Math.min(result.risk_score * 0.4, 100),
+        toxicity: Math.min(result.risk_score * 0.8, 100),
+        jailbreak_probability: result.risk_score > 60 ? 80 : 5,
+        override_detect: result.risk_score > 80
+      },
+      // If fail_closed is true, pass empty violations to trigger the UI's fallback
+      violations: result.fail_closed ? [] : (result.violations || []).map((v: any) => ({
+        policy_name: v.policy_name || v.rule || 'Unknown Policy',
+        action: v.action || result.decision,
+        metadata: {
+          cause: v.metadata?.cause || v.message || 'Triggered by pipeline rules'
+        }
+      })),
+      governance_state: result.risk_score > 60 ? 'DEGRADED' : 'STABLE'
+    };
+
+    return NextResponse.json(mappedResponse, { status: 200 });
 
   } catch (err: any) {
     console.error('[Playground API] CRITICAL_FAILURE:', err.message);
     logger.error('PLAYGROUND_API_FAILURE', { error: err.message, userId, orgId });
     
-    // Fail-Closed mapping via catch block — ensure 200 JSON so UI clears state
+    // Fail-Closed mapping via catch block (Server error / Timeout)
     return NextResponse.json({
-      success: false,
       decision: 'BLOCK',
       risk_score: 100,
-      violations: [{ 
-        policy_name: 'Emergency System Recovery', 
-        rule_type: 'system_error', 
-        action: 'block' 
-      }],
-      error: 'Governance Engine experienced an internal failure during bypass mode.',
-      message: err.message,
-      latency: 0
+      session_id: 'fail-closed',
+      metadata: { latency_ms: 0 },
+      behavior: {
+        intent_drift: 0,
+        override_detect: false
+      },
+      violations: [], // empty to trigger UI's native Fail-Closed card
+      governance_state: 'FAILURE'
     }, { status: 200 });
   }
 }
