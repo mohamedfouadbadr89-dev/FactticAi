@@ -35,8 +35,8 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { prompt, model, session_id } = body;
-    console.log('[Playground API] Body parsed', { hasPrompt: !!prompt, model });
+    const { prompt, model, session_id, channel } = body;
+    console.log('[Playground API] Body parsed', { hasPrompt: !!prompt, model, channel });
 
     if (!prompt) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
@@ -97,8 +97,19 @@ export async function POST(req: Request) {
         prompt_preview: prompt?.slice(0, 200),
         violations: mappedResponse.violations,
         behavior: mappedResponse.behavior,
+        channel: channel || 'text'
       }
     });
+
+    if (channel === 'voice') {
+      await supabase.from('voice_sessions').insert({
+        id: mappedResponse.session_id,
+        session_id: mappedResponse.session_id,
+        provider: 'playground_voice',
+        call_started_at: new Date().toISOString()
+      });
+      (mappedResponse.metadata as any).channel = 'voice';
+    }
 
     // Save to audit_logs for persistence
     const { error: insertError } = await supabase.from('audit_logs').insert({

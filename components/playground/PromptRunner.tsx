@@ -12,19 +12,37 @@ export default function PromptRunner({ onRun, loading }: PromptRunnerProps) {
   const [prompt, setPrompt] = useState('');
   const [model, setModel] = useState('gpt-4o');
   const [temperature, setTemperature] = useState(0.7);
+  const [channel, setChannel] = useState<'text' | 'voice'>('text');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim() || loading) return;
-    onRun({ prompt, model, temperature });
+    onRun({ prompt, model, temperature, channel });
   };
 
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex border border-[var(--border-primary)] rounded-xl overflow-hidden w-full max-w-xs mb-4">
+          <button 
+            type="button" 
+            onClick={() => setChannel('text')} 
+            className={`flex-1 py-2 text-xs font-bold uppercase tracking-widest transition-colors ${channel === 'text' ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--accent)]/10'}`}
+          >
+            Text Mode
+          </button>
+          <button 
+            type="button" 
+            onClick={() => setChannel('voice')} 
+            className={`flex-1 py-2 text-xs font-bold uppercase tracking-widest transition-colors ${channel === 'voice' ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--accent)]/10'}`}
+          >
+            Voice Mode
+          </button>
+        </div>
+
         <div className="space-y-2">
           <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-2">
-            <Terminal className="w-3 h-3" /> Input Prompt
+            <Terminal className="w-3 h-3" /> Input {channel === 'voice' ? 'Transcript' : 'Prompt'}
           </label>
           <textarea
             value={prompt}

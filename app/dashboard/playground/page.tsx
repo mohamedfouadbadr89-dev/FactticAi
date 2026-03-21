@@ -32,6 +32,7 @@ export default function PlaygroundPage() {
           prompt: config.prompt,
           model: config.model,
           session_id: sessionId,
+          channel: config.channel || 'text',
         }),
       });
 
