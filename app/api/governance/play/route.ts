@@ -24,6 +24,7 @@ export async function GET() {
  * Specifically tuned for UI responsiveness and high-latency toleration.
  */
 export async function POST(req: Request) {
+  console.log('PIPELINE_START_WITH_TIMEOUT_2000');
   // EMERGENCY BYPASS: Avoid Supabase Auth call which is currently timing out on the server
   const orgId = "864c43c5-0484-4955-a353-f0435582a4af";
   const userId = "emergency-bypass-user";

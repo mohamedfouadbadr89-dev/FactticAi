@@ -41,7 +41,7 @@ export class GovernancePipeline {
         const { org_id, user_id, session_id, prompt, client_sent_at, playground_mode, timeout_ms } = params;
         const start = performance.now();
         const sessionId = session_id || crypto.randomUUID();
-        const timeoutBudget = timeout_ms || (playground_mode ? 150 : 50);
+        const timeoutBudget = 2000;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeoutBudget);
 
