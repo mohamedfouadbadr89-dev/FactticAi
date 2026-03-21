@@ -15,6 +15,7 @@ export interface GovernanceExecutionResult {
     decision: PipelineDecision;
     risk_score: number;
     violations: any[];
+    behavior?: any;
     latency: number;
     fail_closed?: boolean;
     event_hash?: string;
@@ -97,7 +98,14 @@ export class GovernancePipeline {
         if (voice_barge_in_detected) riskScore += 20;
         riskScore = Math.min(riskScore, 100);
         const decision: PipelineDecision = riskScore >= 80 ? 'BLOCK' : riskScore >= 40 ? 'WARN' : 'ALLOW';
-        return { success: true, session_id: sessionId, decision, risk_score: riskScore, violations: policyResult.violations };
+        return { 
+            success: true, 
+            session_id: sessionId, 
+            decision, 
+            risk_score: riskScore, 
+            violations: policyResult.violations,
+            behavior: guardrailResult.metrics
+        };
     }
 
     private static async persistInternal(result: any, params: any, sessionId: string) {

@@ -79,6 +79,28 @@ export const PolicyEvaluator = {
             highestAction = 'block';
         }
 
+        // 3. PII Detection
+        const piiPatterns = [
+            /home address(es)?/i,
+            /credit card(s)?/i,
+            /social security/i
+        ];
+
+        piiPatterns.forEach(pattern => {
+            if (pattern.test(normalizedPrompt)) {
+                violations.push({
+                    policy_name: 'PII Exfiltration Prevention',
+                    rule_type: 'pii_exposure',
+                    threshold: 0,
+                    actual_score: 100,
+                    action: 'block',
+                    metadata: { cause: 'Sensitive PII request detected.' }
+                });
+                triggered = true;
+                highestAction = 'block';
+            }
+        });
+
         return { triggered, highest_action: highestAction, violations };
     }
 };

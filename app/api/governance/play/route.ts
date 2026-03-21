@@ -64,10 +64,10 @@ export async function POST(req: Request) {
         latency_ms: result.latency || 0
       },
       behavior: {
-        intent_drift: Math.min(result.risk_score * 0.4, 100),
-        toxicity: Math.min(result.risk_score * 0.8, 100),
-        jailbreak_probability: result.risk_score > 60 ? 80 : 5,
-        override_detect: result.risk_score > 80
+        intent_drift: result.behavior?.intent_drift ?? Math.min(result.risk_score * 0.4, 100),
+        toxicity: result.behavior?.toxicity ?? Math.min(result.risk_score * 0.8, 100),
+        jailbreak_probability: result.behavior?.jailbreak_probability ?? (result.risk_score > 60 ? 80 : 5),
+        override_detect: result.behavior?.override_detect ?? (result.risk_score > 80)
       },
       // If fail_closed is true, pass empty violations to trigger the UI's fallback
       violations: result.fail_closed ? [] : (result.violations || []).map((v: any) => ({
