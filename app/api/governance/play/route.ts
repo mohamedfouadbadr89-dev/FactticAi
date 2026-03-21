@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { GovernancePipeline } from '@/lib/governance/governancePipeline';
+import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { logger } from '@/lib/logger';
 
 /**
@@ -79,6 +80,34 @@ export async function POST(req: Request) {
       })),
       governance_state: result.risk_score > 60 ? 'DEGRADED' : 'STABLE'
     };
+
+    // Save to audit_logs for persistence (ignoring actor_id constraint due to string bypass)
+    const { error: insertError } = await supabase.from('audit_logs').insert({
+      org_id: orgId,
+      action: 'governance_event',
+      resource: mappedResponse.session_id,
+      metadata: {
+        risk_score: mappedResponse.risk_score,
+        decision: mappedResponse.decision,
+        prompt_text: prompt,
+        latency: mappedResponse.metadata.latency_ms
+      }
+    });
+    if (insertError) console.error('Failed to insert audit log', insertError);
+
+    // Broadcast for Live Monitor page to pick up instantly
+    supabase.channel(`governance:${orgId}`).send({
+      type: 'broadcast',
+      event: 'governance_event',
+      payload: {
+        session_id: mappedResponse.session_id,
+        timestamp: Date.now(),
+        risk_score: mappedResponse.risk_score,
+        decision: mappedResponse.decision,
+        prompt_text: prompt,
+        latency: mappedResponse.metadata.latency_ms
+      }
+    });
 
     return NextResponse.json(mappedResponse, { status: 200 });
 
