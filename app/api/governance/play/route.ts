@@ -86,7 +86,21 @@ export async function POST(req: Request) {
       governance_state: result.risk_score > 60 ? 'DEGRADED' : 'STABLE'
     };
 
-    // Save to audit_logs for persistence (ignoring actor_id constraint due to string bypass)
+    // Write to runtime_intercepts — the source of truth for dashboard counters
+    await supabase.from('runtime_intercepts').insert({
+      org_id: orgId,
+      session_id: mappedResponse.session_id,
+      model_name: model || 'facttic-v5',
+      risk_score: mappedResponse.risk_score,
+      action: result.decision.toLowerCase(), // 'allow' | 'warn' | 'block'
+      payload: {
+        prompt_preview: prompt?.slice(0, 200),
+        violations: mappedResponse.violations,
+        behavior: mappedResponse.behavior,
+      }
+    });
+
+    // Save to audit_logs for persistence
     const { error: insertError } = await supabase.from('audit_logs').insert({
       org_id: orgId,
       action: 'governance_event',

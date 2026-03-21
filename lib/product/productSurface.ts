@@ -16,6 +16,7 @@ export class ProductSurface {
     const { data: gateway } = await supabaseServer.from('gateway_requests').select('id, provider').eq('org_id', orgId);
 
     return {
+      org_id: orgId,
       health_score: health.health_score,
       risk_level: health.risk_level,
       metrics: health.metrics,

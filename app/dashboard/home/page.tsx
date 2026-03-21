@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
+import { createBrowserClient } from '@supabase/ssr'
 import {
   ShieldCheck,
   Zap,
@@ -24,6 +25,7 @@ import {
 } from 'recharts'
 
 type OverviewData = {
+  org_id?: string
   health_score: number
   risk_level: string
   metrics: Record<string, number>
@@ -70,6 +72,37 @@ export default function HomePage() {
         setLoading(false)
       })
   }, [retry])
+
+  // Realtime: increment counters live when a new intercept lands
+  React.useEffect(() => {
+    if (!data?.org_id) return
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const channel = supabase
+      .channel(`runtime_intercepts:${data.org_id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'runtime_intercepts', filter: `org_id=eq.${data.org_id}` },
+        (payload) => {
+          const row = payload.new as { action: string; risk_score: number }
+          setData(prev => {
+            if (!prev) return prev
+            return {
+              ...prev,
+              governance: {
+                ...prev.governance,
+                total_intercepts: prev.governance.total_intercepts + 1,
+                blocked_responses: prev.governance.blocked_responses + (row.action === 'block' ? 1 : 0),
+              }
+            }
+          })
+        }
+      )
+      .subscribe()
+    return () => { void supabase.removeChannel(channel) }
+  }, [data?.org_id])
 
   if (loading)
     return (
