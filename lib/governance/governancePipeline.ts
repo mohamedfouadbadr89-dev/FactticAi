@@ -5,6 +5,7 @@ import { RiskScorer } from './modules/riskScorer';
 import { EvidenceLedger } from '../evidence/evidenceLedger';
 import { authorizeOrgAccess } from '@/lib/security/authorizeOrgAccess';
 import { logger } from '@/lib/logger';
+import { classify } from './llmClassifier';
 import crypto from 'crypto';
 
 export type PipelineDecision = 'ALLOW' | 'WARN' | 'BLOCK';
@@ -39,11 +40,14 @@ export class GovernancePipeline {
         voice_barge_in_detected?: boolean | null,
         timeout_ms?: number | null
     }): Promise<GovernanceExecutionResult> {
-        console.log("LATENCY_BUDGET_UPDATED_TO_2000");
         const { org_id, user_id, session_id, prompt, client_sent_at, playground_mode, timeout_ms } = params;
         const start = performance.now();
         const sessionId = session_id || crypto.randomUUID();
-        const timeoutBudget = 2000;
+        
+        // Increase budget to handle LLM-based classification (Phase 50)
+        const timeoutBudget = timeout_ms || 10000;
+        console.log(`LATENCY_BUDGET_UPDATED_TO_${timeoutBudget}`);
+        
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeoutBudget);
 
@@ -71,12 +75,19 @@ export class GovernancePipeline {
             return finalResult;
         } catch (err: any) {
             clearTimeout(timeoutId);
+            logger.error('PIPELINE_CRITICAL_FAILURE', { error: err.message, stack: err.stack });
+            console.error(`PIPELINE_CRITICAL_FAILURE: ${err.message}`, err.stack);
+            
             const failResult: GovernanceExecutionResult = {
                 success: true,
                 session_id: sessionId,
                 decision: 'BLOCK',
                 risk_score: 100,
-                violations: [{ policy_name: 'Fail-Closed', rule_type: 'timeout', action: 'block' }],
+                violations: [{ 
+                    policy_name: 'Fail-Closed', 
+                    rule_type: err.message === 'GOVERNANCE_TIMEOUT' ? 'timeout' : 'failure', 
+                    action: 'block' 
+                }],
                 latency: Math.round(performance.now() - start),
                 fail_closed: true,
                 event_hash: 'FAIL_CLOSED',
@@ -88,24 +99,58 @@ export class GovernancePipeline {
     }
 
     private static async runCoreLogic(params: any, sessionId: string, signal: AbortSignal) {
-        const { org_id, prompt, voice_latency_ms, voice_collision_index, voice_barge_in_detected } = params;
-        const { data: policies } = await supabase.from('governance_policies').select('*').eq('org_id', org_id).abortSignal(signal);
-        const policyResult = PolicyEvaluator.evaluate(prompt, policies || []);
-        const guardrailResult = GuardrailDetector.evaluate(prompt, "");
-        let riskScore = RiskScorer.computeScore(policyResult, guardrailResult);
+        const { org_id, prompt, response, voice_latency_ms, voice_collision_index, voice_barge_in_detected } = params;
+        
+        // Parallel execution of standard modules and LLM-based classification
+        const [policiesRes, classification] = await Promise.all([
+            supabase.from('governance_policies').select('*').eq('org_id', org_id).abortSignal(signal),
+            classify(response || prompt, response ? 'response' : 'prompt', org_id, sessionId)
+        ]);
+
+        const policies = policiesRes.data || [];
+        const contentToEvaluate = response || prompt;
+        
+        const policyResult = PolicyEvaluator.evaluate(contentToEvaluate, policies);
+        const guardrailResult = GuardrailDetector.evaluate(contentToEvaluate, "");
+        
+        // Combine static scoring with LLM-based classification (Phase 50 Upgrade)
+        let riskScore = Math.max(
+            RiskScorer.computeScore(policyResult, guardrailResult),
+            classification.risk_score
+        );
+
         if (voice_latency_ms && voice_latency_ms > 800) riskScore += 10;
         if (voice_collision_index && voice_collision_index > 0.2) riskScore += 15;
         if (voice_barge_in_detected) riskScore += 20;
-        // Respect score_ceiling from PolicyEvaluator — executive PII max 92, others 100
-        riskScore = Math.min(riskScore, policyResult.score_ceiling ?? 100);
-        const decision: PipelineDecision = riskScore >= 80 ? 'BLOCK' : riskScore >= 40 ? 'WARN' : 'ALLOW';
+        
+        riskScore = Math.min(riskScore, 100);
+
+        // Merge violations from both sources
+        const violations = [...policyResult.violations];
+        if (classification.risk_score >= 60 || Object.values(classification.flags).some(Boolean)) {
+            violations.push({
+                policy_name: 'AI Governance Classifier',
+                rule_type: 'llm_safety',
+                action: classification.decision.toLowerCase(),
+                metadata: { ...classification.flags, explanation: classification.reason }
+            });
+        }
+
+        // NEW CALIBRATED DECISION LOGIC (Phase 65)
+        let decision: PipelineDecision = 'ALLOW';
+        if (riskScore >= 85) {
+            decision = 'BLOCK';
+        } else if (riskScore >= 60) {
+            decision = 'WARN';
+        }
+        
         return { 
             success: true, 
             session_id: sessionId, 
             decision, 
             risk_score: riskScore, 
-            violations: policyResult.violations,
-            behavior: guardrailResult.metrics
+            violations,
+            behavior: { ...guardrailResult.metrics, ...classification.flags }
         };
     }
 

@@ -9,8 +9,18 @@ import { withAuth, AuthContext } from '@/lib/middleware/auth';
 export const GET = withAuth(async (req: Request, context: AuthContext) => {
   try {
     const overview = await ProductSurface.getOverview(context.orgId);
-    return NextResponse.json(overview);
+    
+    // Return partial success if some components timed out/failed
+    const status = overview.partial_failure ? 200 : 200; // Always 200 if we have at least partial data
+
+    return NextResponse.json(overview, { status });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    // Critical fallback if entire computation crashes
+    return NextResponse.json({ 
+        error: 'OVERVIEW_FETCH_CRITICAL_FAILURE', 
+        message: err.message,
+        partial_failure: true,
+        metrics: [] 
+    }, { status: 500 });
   }
 });

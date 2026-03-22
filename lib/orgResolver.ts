@@ -16,21 +16,36 @@ export interface OrgContext {
  * @throws Error if no organization membership is found
  */
 export const resolveOrgContext = async (userId: string): Promise<OrgContext> => {
-  // Query via service role to ensure deterministic resolution regardless of RLS complexity
-  // but note that RLS is also enabled on this table for extra security.
-  const { data: member, error } = await supabaseServer
+  // PHASE 56 TRANSITION: Check both legacy 'org_members' and newer 'memberships' tables
+  // We check org_members first as it currently contains the majority of active users.
+  const { data: member } = await supabaseServer
     .from('org_members')
     .select('org_id, role')
     .eq('user_id', userId)
     .limit(1)
     .single();
 
-  if (error || !member) {
-    throw new Error('No organization membership found for this user.');
+  if (member) {
+    return {
+      org_id: member.org_id,
+      role: member.role,
+    };
   }
 
-  return {
-    org_id: member.org_id,
-    role: member.role,
-  };
+  // Fallback to enterprise memberships table if not found in legacy table
+  const { data: membership } = await supabaseServer
+    .from('memberships')
+    .select('org_id, role')
+    .eq('user_id', userId)
+    .limit(1)
+    .single();
+
+  if (membership) {
+    return {
+      org_id: (membership as any).org_id,
+      role: (membership as any).role,
+    };
+  }
+
+  throw new Error('No organization membership found for this user.');
 };

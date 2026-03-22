@@ -22,8 +22,11 @@ export async function POST(req: NextRequest) {
       }, { status: 401 });
     }
 
-    // 3. Hash raw key via Security Layer (BYOK enforcement)
-    const hashedKey = SecurityLayer.secureKeyReference(apiKey);
+    // 3. Hash AND Encrypt raw key via Security Layer (BYOK enforcement)
+    const [hashedKey, encryptedKey] = await Promise.all([
+      SecurityLayer.secureKeyReference(apiKey),
+      SecurityLayer.encryptKey(apiKey, org_id)
+    ]);
 
     // 4. Persistence
     const { error } = await supabaseServer
@@ -34,6 +37,7 @@ export async function POST(req: NextRequest) {
         interaction_mode: mode || 'chat',
         model,
         api_key_hash: hashedKey,
+        encrypted_api_key: encryptedKey,
         environment
       });
 
