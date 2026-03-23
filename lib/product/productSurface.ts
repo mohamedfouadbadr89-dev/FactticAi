@@ -7,17 +7,24 @@ import { supabaseServer } from '../supabaseServer';
  */
 export class ProductSurface {
   static async getOverview(orgId: string) {
-    const TIMEOUT_MS = 3000;
-    const timeout = (ms: number) => new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), ms));
+    const TIMEOUT_MS = 2000; // Reduced from 3000 to prevent AUTH_HANDLER_TIMEOUT
+    const controller = new AbortController();
+    const abortTimeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    const timeout = (ms: number) => new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('TIMEOUT')), ms);
+    });
 
     // Parallel execution with race-timeout for each orchestrator call
     const settledResults = await Promise.allSettled([
       Promise.race([AIHealthEngine.computeHealthScore(orgId), timeout(TIMEOUT_MS)]),
-      Promise.race([supabaseServer.from('runtime_intercepts').select('id, action, risk_score').eq('org_id', orgId), timeout(TIMEOUT_MS)]),
-      Promise.race([supabaseServer.from('model_drift').select('*').eq('org_id', orgId), timeout(TIMEOUT_MS)]),
-      Promise.race([supabaseServer.from('agent_sessions').select('*').eq('org_id', orgId), timeout(TIMEOUT_MS)]),
-      Promise.race([supabaseServer.from('gateway_requests').select('id, provider').eq('org_id', orgId), timeout(TIMEOUT_MS)])
+      Promise.race([supabaseServer.from('runtime_intercepts').select('id, action, risk_score').eq('org_id', orgId).abortSignal(controller.signal), timeout(TIMEOUT_MS)]),
+      Promise.race([supabaseServer.from('model_drift').select('*').eq('org_id', orgId).abortSignal(controller.signal), timeout(TIMEOUT_MS)]),
+      Promise.race([supabaseServer.from('agent_sessions').select('*').eq('org_id', orgId).abortSignal(controller.signal), timeout(TIMEOUT_MS)]),
+      Promise.race([supabaseServer.from('gateway_requests').select('id, provider').eq('org_id', orgId).abortSignal(controller.signal), timeout(TIMEOUT_MS)])
     ]);
+
+    clearTimeout(abortTimeout);
 
     // Helper to safely extract results or return defaults on failure
     const extract = <T>(index: number, fallback: T): T => {
