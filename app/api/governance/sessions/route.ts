@@ -23,7 +23,7 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
       .limit(limit);
 
     if (highRisk) {
-      query = query.gt('total_risk', 50);
+      query = query.gt('risk_score', 50);
     }
 
     const { data, error } = await query;

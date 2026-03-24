@@ -30,6 +30,8 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
       Promise.race([supabaseServer.from('facttic_governance_events').select('risk_score, decision, created_at').eq('org_id', orgId).gt('created_at', timeThreshold).order('created_at', { ascending: true }), timeout(TIMEOUT_MS)]),
       // Drift Trends
       Promise.race([supabaseServer.from('governance_predictions').select('created_at, drift_score').eq('org_id', orgId).order('created_at', { ascending: false }).limit(30), timeout(TIMEOUT_MS)]),
+      // Real-time Drift Metric Fallback
+      Promise.race([supabaseServer.from('drift_metrics').select('drift_score').eq('org_id', orgId).single(), timeout(TIMEOUT_MS)]),
       // Live Tamper Check RPC
       Promise.race([supabaseServer.rpc('compute_agent_version_determinism_check', { p_org_id: orgId, p_agent_id: '00000000-0000-0000-0000-000000000001', p_agent_version: 'v1.0' }), timeout(TIMEOUT_MS)])
     ]);
@@ -42,7 +44,8 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
     const { count: openIncidents, error: incidentErr } = getValue(2, { count: 0 });
     const { data: recentEvents, error: eventsErr } = getValue(3, { data: [] });
     const { data: predictions, error: predictionErr } = getValue(4, { data: [] });
-    const { data: determinismCheck, error: detErr } = getValue(5, { data: false });
+    const { data: rtDrift, error: rtDriftErr } = getValue(5, { data: null });
+    const { data: determinismCheck, error: detErr } = getValue(6, { data: false });
 
     const hasFailures = settled.some(res => res.status === 'rejected') || sessionErr || blockedErr || incidentErr || detErr;
 
@@ -51,7 +54,7 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
     }
 
     const totalSessions = sessionCount || 0;
-    const isBaseline = totalSessions < 100;
+    const isBaseline = totalSessions < 1; // Lowered for demo readiness: visibility available after 1st prompt
     
     // Policy Adherence: Real ratio
     const adherence = totalSessions > 0 
@@ -65,7 +68,7 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
     
     const driftScore = predictions && predictions.length > 0
         ? predictions.reduce((acc: any, p: any) => acc + (Number(p.drift_score) || 0), 0) / predictions.length
-        : 0;
+        : (rtDrift ? Number(rtDrift.drift_score) : 0);
 
     const healthScore = Math.max(0, Math.min(100, Math.round(100 - (avgRisk * 0.4 + (openIncidents || 0) * 5 + driftScore * 20))));
 

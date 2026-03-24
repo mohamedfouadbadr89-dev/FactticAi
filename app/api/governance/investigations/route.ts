@@ -11,7 +11,7 @@ import { supabaseServer } from '@/lib/supabaseServer';
  */
 export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
-    // Primary source for investigations: drift_alerts — contains system-level RCA
+    // 1. Primary source for investigations: drift_alerts — contains system-level RCA
     const { data: driftAlerts, error: driftError } = await supabaseServer
       .from('drift_alerts')
       .select('*, governance_root_cause_reports(*)')
@@ -19,7 +19,7 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
       .order('created_at', { ascending: false })
       .limit(30);
 
-    // Fallback to governance_alerts for individual event flags
+    // 2. Fallback to governance_alerts for individual event flags
     const { data: eventAlerts, error: eventError } = await supabaseServer
       .from('governance_alerts')
       .select('*')
@@ -27,8 +27,18 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
       .order('created_at', { ascending: false })
       .limit(20);
 
-    if (driftError || eventError) {
-      logger.error('GOVERNANCE_INVESTIGATIONS_FETCH_FAILED', { orgId, driftError: driftError?.message, eventError: eventError?.message });
+    // 3. Fallback to standard alerts for playground triggers
+    const { data: rawAlerts, error: rawError } = await supabaseServer
+      .from('alerts')
+      .select('*')
+      .eq('org_id', orgId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (driftError || eventError || rawError) {
+      logger.error('GOVERNANCE_INVESTIGATIONS_FETCH_FAILED', { 
+        orgId, driftError: driftError?.message, eventError: eventError?.message, rawError: rawError?.message 
+      });
       return NextResponse.json({ error: 'INVESTIGATIONS_FETCH_FAILED' }, { status: 500 });
     }
 
@@ -58,8 +68,21 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
       governance_root_cause_reports: [],
     }));
 
+    // Map raw alerts → Investigation shape (third source)
+    const rawInvs = (rawAlerts ?? []).map((alert: any) => ({
+      id: alert.id,
+      session_id: alert.session_id || alert.metadata?.session_id || null,
+      triggered_by: alert.alert_type?.replace(/_/g, ' ') ?? 'System Trigger',
+      status: alert.status ?? 'investigating',
+      severity: alert.risk_score > 70 ? 'critical' : 'warning',
+      description: `Automated alert triggered with risk score ${alert.risk_score}`,
+      drift_score: Math.min(1, (alert.risk_score || 75) / 100),
+      created_at: alert.created_at,
+      governance_root_cause_reports: [],
+    }));
+
     // Combine and sort by date
-    const allInvestigations = [...driftInvs, ...eventInvs].sort((a, b) => 
+    const allInvestigations = [...driftInvs, ...eventInvs, ...rawInvs].sort((a, b) => 
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
