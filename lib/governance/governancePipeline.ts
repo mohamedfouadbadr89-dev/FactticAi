@@ -179,6 +179,7 @@ export class GovernancePipeline {
             if (result.decision === 'BLOCK' || result.decision === 'WARN') {
                 await supabase.from('governance_alerts').insert({
                     org_id: params.org_id,
+                    alert_type: result.decision === 'BLOCK' ? 'guardrail_block' : 'drift_alert',
                     title: result.violations?.[0]?.policy_name || 'Policy Violation',
                     description: result.violations?.[0]?.metadata?.cause || `Governance signal: ${result.decision}`,
                     severity: result.decision === 'BLOCK' ? 'critical' : 'warning',
