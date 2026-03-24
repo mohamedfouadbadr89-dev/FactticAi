@@ -25,16 +25,54 @@ export const POST = withAuth(async (req: Request, { userId, orgId }: AuthContext
 
     // 2. Clear Tables (Sequential Deletions)
     const tables = [
+      // 1. Core Orchestration & Telemetry
       "runtime_intercepts",
-      "audit_logs",
-      "governance_alerts",
-      "drift_alerts",
-      "governance_root_cause_reports",
-      "incidents",
+      "ai_logs",
+      "telemetry_stream",
+      "facttic_governance_events",
+      "forensic_events",
+      "behavior_forensics_signals",
+      "compliance_signals",
+      "classifications",
+      
+      // 2. Sessions & Interactions (Children first)
+      "messages",
+      "session_turns",
+      "model_outputs",
+      "evaluations",
+      "sessions",
       "agent_sessions",
-      "agent_steps",
+      "agents",
+      
+      // 3. Governance & Risk
+      "governance_root_cause_reports",
       "governance_predictions",
-      "drift_metrics"
+      "governance_alerts",
+      "alerts",
+      "incidents",
+      "governance_escalation_log",
+      "governance_risk_metrics",
+      "governance_maturity_scores",
+      "governance_snapshots",
+      "governance_snapshot_v1",
+      "governance_timeseries_v1",
+      
+      // 4. Drift & Performance
+      "drift_alerts",
+      "drift_metrics",
+      "model_drift_metrics",
+      "stress_test_runs",
+      
+      // 5. System & Utility
+      "audit_logs",
+      "billing_events",
+      "billing_summaries",
+      "cost_anomalies",
+      "api_keys",
+      "data_retention_policies",
+      "webhook_events",
+      "gdpr_erasure_requests",
+      "report_definitions"
     ];
 
     const results: Record<string, number> = {};
