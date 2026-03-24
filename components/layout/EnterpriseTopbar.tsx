@@ -8,15 +8,32 @@ import { AuditModeOverlay } from "@/components/ui/AuditModeOverlay";
 import { useSimulation } from "@/lib/dashboard/SimulationContext";
 import GlobalSearch from "@/components/ui/GlobalSearch";
 import { useInteractionMode } from "@/store/interactionMode";
-import { Menu } from "lucide-react";
+import { Menu, RefreshCw, AlertTriangle } from "lucide-react";
 import AgentSwitcher from "@/components/dashboard/AgentSwitcher";
+import { supabase } from "@/lib/supabase";
 
 export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
   const { mode: channel, setMode: setChannel } = useInteractionMode();
   const [mode, setMode] = useState<"executive" | "advanced">("executive");
   const [auditMode, setAuditMode] = useState(false);
   const [healthScore, setHealthScore] = useState<number | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [clearing, setClearing] = useState(false);
   const { isSimulating, simulationStep, startSimulation, resetSimulation } = useSimulation();
+
+  useEffect(() => {
+    async function checkRole() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: member } = await supabase
+        .from('org_members')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+      setRole(member?.role || null);
+    }
+    checkRole();
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem("facttic_audit_mode");
@@ -97,9 +114,29 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
       {/* Right Section */}
       <div className="flex items-center gap-4">
 
+        {role === 'owner' && (
+          <button
+            disabled={clearing}
+            onClick={async () => {
+              if (confirm("Reset all demo data? This cannot be undone.")) {
+                setClearing(true);
+                try {
+                  const res = await fetch('/api/admin/clear-demo-data', { method: 'POST' });
+                  if (res.ok) window.location.reload();
+                } catch (e) { console.error(e); }
+                finally { setClearing(false); }
+              }
+            }}
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-500 border border-red-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-500/20 transition-all"
+          >
+            {clearing ? <RefreshCw className="w-3 h-3 animate-spin" /> : <AlertTriangle className="w-3 h-3" />}
+            Reset Demo
+          </button>
+        )}
+
         <button
           onClick={toggleAuditMode}
-          className="text-xs font-bold uppercase"
+          className="text-xs font-bold uppercase transition-all hover:text-[var(--accent)]"
         >
           {auditMode ? "Audit: ON" : "Audit Mode"}
         </button>
