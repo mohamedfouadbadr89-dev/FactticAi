@@ -177,114 +177,114 @@ export default function ConnectionPage() {
             </button>
           </div>
         ) : (
-          <>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-black uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-2">
-                  Active Constellation
-                  <span className="px-2 py-0.5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[10px]">{connections.length}</span>
-                </h2>
-                <button 
-                  onClick={fetchConnections}
-                  className={`p-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-all ${refreshing ? 'animate-spin' : ''}`}
-                >
-                  <RefreshCw className="w-4 h-4 text-[var(--text-secondary)]" />
-                </button>
-              </div>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-black uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-2">
+                Active Constellation
+                <span className="px-2 py-0.5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[10px]">{connections.length}</span>
+              </h2>
+              <button 
+                onClick={fetchConnections}
+                className={`p-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-all ${refreshing ? 'animate-spin' : ''}`}
+              >
+                <RefreshCw className="w-4 h-4 text-[var(--text-secondary)]" />
+              </button>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {connections.map((conn) => (
-                  <div 
-                    key={conn.id} 
-                    className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-3xl p-6 hover:border-[var(--accent)]/50 transition-all group relative overflow-hidden"
-                  >
-                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => handleDelete(conn.id)}
-                        className="p-2 rounded-xl hover:bg-red-500/10 text-[var(--text-secondary)] hover:text-red-500 transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {connections.map((conn) => (
+                <div 
+                  key={conn.id} 
+                  className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-3xl p-6 hover:border-[var(--accent)]/50 transition-all group relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={() => handleDelete(conn.id)}
+                      className="p-2 rounded-xl hover:bg-red-500/10 text-[var(--text-secondary)] hover:text-red-500 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-start gap-5">
+                    <div className="p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-primary)] group-hover:border-[var(--accent)]/30 transition-all">
+                      {getProviderIcon(conn.provider_type)}
                     </div>
-                    
-                    <div className="flex items-start gap-5">
-                      <div className="p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-primary)] group-hover:border-[var(--accent)]/30 transition-all">
-                        {getProviderIcon(conn.provider_type)}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-lg capitalize">{conn.provider_type}</h3>
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-[var(--accent)]/10 text-[var(--accent)]">
+                          {conn.interaction_mode || 'chat'}
+                        </span>
                       </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-lg capitalize">{conn.provider_type}</h3>
-                          <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-[var(--accent)]/10 text-[var(--accent)]">
-                            {conn.interaction_mode || 'chat'}
+                      <p className="text-xs font-mono text-[var(--text-secondary)] flex items-center gap-2">
+                        {conn.model}
+                      </p>
+                      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[var(--border-primary)]/50">
+                        <div className="flex items-center gap-1.5">
+                          <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                            conn.health === 'Connected' ? 'bg-green-500' : 
+                            conn.health === 'Degraded' ? 'bg-yellow-500' : 'bg-red-500'
+                          }`} />
+                          <span className={`text-[10px] font-bold uppercase tracking-tighter ${
+                            conn.health === 'Connected' ? 'text-green-500' : 
+                            conn.health === 'Degraded' ? 'text-yellow-500' : 'text-red-500'
+                          }`}>{conn.health || 'Checking...'}</span>
+                        </div>
+                        {conn.latency !== undefined && (
+                          <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+                            <Activity className="w-3 h-3" />
+                            <span className="text-[10px] font-bold uppercase tracking-tighter">{conn.latency}ms</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1.5 text-[var(--text-secondary)] ml-auto">
+                          <Clock className="w-3 h-3" />
+                          <span className="text-[10px] font-bold uppercase tracking-tighter">
+                            {new Date(conn.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                        <p className="text-xs font-mono text-[var(--text-secondary)] flex items-center gap-2">
-                          {conn.model}
-                        </p>
-                        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[var(--border-primary)]/50">
-                          <div className="flex items-center gap-1.5">
-                            <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                              conn.health === 'Connected' ? 'bg-green-500' : 
-                              conn.health === 'Degraded' ? 'bg-yellow-500' : 'bg-red-500'
-                            }`} />
-                            <span className={`text-[10px] font-bold uppercase tracking-tighter ${
-                              conn.health === 'Connected' ? 'text-green-500' : 
-                              conn.health === 'Degraded' ? 'text-yellow-500' : 'text-red-500'
-                            }`}>{conn.health || 'Checking...'}</span>
-                          </div>
-                          {conn.latency !== undefined && (
-                            <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
-                              <Activity className="w-3 h-3" />
-                              <span className="text-[10px] font-bold uppercase tracking-tighter">{conn.latency}ms</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1.5 text-[var(--text-secondary)] ml-auto">
-                            <Clock className="w-3 h-3" />
-                            <span className="text-[10px] font-bold uppercase tracking-tighter">
-                              {new Date(conn.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
+          </div>
+        )}
 
-            {/* Encryption & Security Section */}
-            <div className="pt-10 border-t border-[var(--border-primary)] space-y-6">
-              <h2 className="text-sm font-black uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-2">
-                Encryption & Security
-              </h2>
-              <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-[2rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-[var(--accent)]/30 transition-all group">
-                <div className="flex items-center gap-6">
-                  <div className="p-4 rounded-2xl bg-[var(--accent)]/10 text-[var(--accent)] group-hover:scale-110 transition-transform">
-                    <Lock className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold">Bring Your Own Key (BYOK)</h3>
-                    <p className="text-sm text-[var(--text-secondary)]">Manage organization-level encryption keys for data at rest.</p>
-                  </div>
+        {/* Encryption & Security Section — Always visible when not loading */}
+        {!loading && (
+          <div className="pt-10 border-t border-[var(--border-primary)] space-y-6">
+            <h2 className="text-sm font-black uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-2">
+              Encryption & Security
+            </h2>
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-[2rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-[var(--accent)]/30 transition-all group">
+              <div className="flex items-center gap-6">
+                <div className="p-4 rounded-2xl bg-[var(--accent)]/10 text-[var(--accent)] group-hover:scale-110 transition-transform">
+                  <Lock className="w-6 h-6" />
                 </div>
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                  <div className="px-4 py-2 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-primary)] flex items-center gap-3 shrink-0">
-                    <div className={`w-2 h-2 rounded-full ${byokStatus?.is_configured ? 'bg-emerald-500' : 'bg-orange-500'}`} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">
-                      {byokStatus?.is_configured ? 'Active' : 'Unconfigured'}
-                    </span>
-                  </div>
-                  <button 
-                    onClick={() => router.push('/dashboard/settings/security')}
-                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl font-bold text-sm hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
-                  >
-                    Manage Keys
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                <div>
+                  <h3 className="text-lg font-bold">Bring Your Own Key (BYOK)</h3>
+                  <p className="text-sm text-[var(--text-secondary)]">Manage organization-level encryption keys for data at rest.</p>
                 </div>
               </div>
+              <div className="flex items-center gap-4 w-full md:w-auto">
+                <div className="px-4 py-2 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-primary)] flex items-center gap-3 shrink-0">
+                  <div className={`w-2 h-2 rounded-full ${byokStatus?.is_configured ? 'bg-emerald-500' : 'bg-orange-500'}`} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">
+                    {byokStatus?.is_configured ? 'Active' : 'Unconfigured'}
+                  </span>
+                </div>
+                <button 
+                  onClick={() => router.push('/dashboard/settings/security')}
+                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl font-bold text-sm hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
+                >
+                  Manage Keys
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

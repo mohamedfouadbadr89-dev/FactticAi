@@ -27,7 +27,7 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
     // Map governance_alerts → Investigation shape expected by InvestigationsClient
     const investigations = (data ?? []).map((alert: any) => ({
       id: alert.id,
-      session_id: alert.session_id ?? null,
+      session_id: alert.session_id || alert.metadata?.session_id || null,
       triggered_by: alert.alert_type?.replace(/_/g, ' ') ?? 'Governance Alert',
       status: alert.severity === 'critical' ? 'investigating' : 'resolved',
       severity: alert.severity ?? 'warning',

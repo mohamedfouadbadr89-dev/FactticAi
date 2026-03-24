@@ -17,17 +17,31 @@ export default async function IncidentDetailPage({ params }: Props) {
   let incident = null;
 
   try {
-    // Use service role to resolve org — avoids hanging getUser() network call to Supabase auth
     const { supabaseServer } = await import('@/lib/supabaseServer');
-    const { data: orgData } = await supabaseServer
-      .from('org_members')
-      .select('org_id')
-      .limit(1)
-      .single();
-    const orgId = orgData?.org_id || null;
-    if (orgId) {
-      incident = await IncidentService.getIncidentBySession(orgId, session_id);
+    const { createServerAuthClient } = await import('@/lib/supabaseAuth');
+    const { resolveOrgContext } = await import('@/lib/orgResolver');
+
+    let orgId: string | null = null;
+
+    try {
+      const authClient = await createServerAuthClient();
+      const { data: { user } } = await authClient.auth.getUser();
+      if (user) {
+        const orgContext = await resolveOrgContext(user.id);
+        orgId = orgContext.org_id;
+      }
+    } catch {
+      // Service role fallback for system investigators
+      const { data: fallback } = await supabaseServer
+        .from('org_members')
+        .select('org_id')
+        .limit(1)
+        .maybeSingle();
+      orgId = fallback?.org_id || null;
     }
+
+    // Attempt to retrieve incident (IncidentService already handles cross-org fallback)
+    incident = await IncidentService.getIncidentBySession(orgId || '', session_id);
   } catch (e) {
     console.warn("Failed to resolve org or fetch incident", e);
   }

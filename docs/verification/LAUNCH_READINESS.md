@@ -42,3 +42,12 @@
 | FIX 3 | `lib/governance/governancePipeline.ts` | COMPLETED | Added automatic incident creation for high-risk BLOCK decisions. |
 | FIX 4 | `app/dashboard/connect/page.tsx` | COMPLETED | Integrated BYOK status and links into the infrastructure constellation view. |
 | FIX 5 | `components/dashboard/AgentSwitcher.tsx` | COMPLETED | Corrected navigation routes for agent management across the platform. |
+
+## ENTERPRISE LAUNCH SPRINT (FINAL FIXES) — 2026-03-24
+
+| Fix ID | File Path | Status | Verification Detail |
+| :--- | :--- | :--- | :--- |
+| FIX 1 | `app/api/governance/investigations/route.ts` | COMPLETED | Fixed timeline by extracting session_id from metadata and unifying schema. |
+| FIX 2 | `app/dashboard/incidents/[session_id]/page.tsx` | COMPLETED | Resolved 404 by fixing org resolution logic and adding cross-org fallback. |
+| FIX 3 | `app/dashboard/connect/page.tsx` | COMPLETED | Moved BYOK section out of conditional logic to ensure persistent visibility. |
+
