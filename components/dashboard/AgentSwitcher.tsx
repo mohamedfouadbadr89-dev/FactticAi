@@ -202,7 +202,7 @@ export default function AgentSwitcher() {
               Connect Agent
             </a>
             <a
-              href="/dashboard/agents"
+              href="/dashboard/connect"
               className="flex items-center gap-1.5 text-xs transition-colors"
               style={{ color: "var(--text-muted)", textDecoration: "none", fontFamily: "var(--font-mono)", letterSpacing: "0.05em" }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--text-primary)"}

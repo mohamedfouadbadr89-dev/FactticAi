@@ -1,22 +1,15 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
-    const { searchParams } = new URL(req.url);
-    const org_id = searchParams.get('org_id');
-    if (!org_id) return NextResponse.json({ error: 'Missing org_id' }, { status: 400 });
-
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
     const { data, error } = await supabaseServer
       .from('simulation_runs')
       .select('*')
-      // Since simulation_runs doesn't have org_id in the provided schema, 
-      // we'll filter by time and assume global for now or refine if schema allows.
-      // Actually, user specified "enforce org_id isolation" but the schema didn't show it for simulation_runs.
-      // I will assume for this task it exists as we've seen it in other tables.
-      // If it doesn't, I'll filter by scenario which is distinct enough for demo.
+      .eq('org_id', orgId)
       .gte('executed_at', oneHourAgo)
       .order('executed_at', { ascending: false });
 
@@ -30,4 +23,4 @@ export async function GET(req: Request) {
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-}
+});

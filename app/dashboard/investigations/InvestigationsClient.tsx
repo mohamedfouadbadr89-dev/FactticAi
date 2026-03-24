@@ -182,53 +182,53 @@ export function InvestigationsClient() {
                  <div className="h-24 w-full bg-[var(--bg-secondary)] rounded border border-[#ef4444]/50"></div>
                </div>
              ) : timeline.length > 0 ? (
-               timeline.map((event, idx) => (
-                <div key={idx} className="relative pl-6 border-l-2 border-[var(--border-primary)] pb-6 last:pb-0 group">
-                  <div className="absolute w-3 h-3 bg-[var(--bg-secondary)] rounded-full -left-[7px] top-1 border-2 border-[#0a0a0a] group-hover:bg-primary transition-colors"></div>
-                  
-                  <div className="text-[10px] text-[var(--text-secondary)] font-mono mb-2">
-                    {new Date(event.timestamp).toLocaleTimeString()} · {event.event_type.toUpperCase()}
-                  </div>
-
-                  {event.event_type === 'message' && (
-                    <div className={`p-4 rounded-2xl max-w-[85%] text-sm ${event.event_reference.role === 'user' ? 'bg-[var(--bg-secondary)] text-[#eee] rounded-tl-sm' : 'bg-[#3b82f6]/10 text-[#3b82f6] border border-[#3b82f6]/20 rounded-tr-sm ml-auto'}`}>
-                      {event.event_reference.content}
-                    </div>
-                  )}
-
-                  {event.event_type === 'evaluation' && (
-                    <div className="p-3 bg-[#10b981]/10 border border-[#10b981]/50 rounded flex items-center gap-2 text-xs text-[#10b981] font-mono mt-2">
-                       <Activity className="w-4 h-4" /> Inline Metric Scan: {(event.event_reference.factors?.tone_risk || 0).toFixed(2)} Target Delta
-                    </div>
-                  )}
-
-                  {event.event_type === 'drift_alert' && (
-                    <div className="p-4 bg-[#ef4444]/10 border border-[#ef4444]/50 rounded-lg flex items-start gap-3 mt-2 text-sm text-[#ef4444]">
-                      <ShieldAlert className="w-5 h-5 mt-0.5" />
-                      <div>
-                        <div className="font-bold mb-1">Drift Marker Injected</div>
-                        <div className="opacity-80 text-xs font-mono">{event.event_reference.risk}</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {event.event_type === 'governance_escalation' && (
-                    <div className="p-4 bg-[#ef4444]/20 border border-[#ef4444]/50 rounded-lg flex items-start gap-3 mt-2 text-sm text-[#ef4444]">
-                      <FileWarning className="w-5 h-5 mt-0.5" />
-                      <div>
-                        <div className="font-bold mb-1 tracking-wider uppercase text-xs">Governance Escalation</div>
-                        <div className="opacity-90">{event.event_reference.status}</div>
-                      </div>
-                    </div>
-                  )}
+                timeline.map((event, idx) => (
+                 <div key={idx} className="relative pl-6 border-l-2 border-[var(--border-primary)] pb-6 last:pb-0 group">
+                   <div className={`absolute w-3 h-3 rounded-full -left-[7px] top-1 border-2 border-[#0a0a0a] group-hover:bg-primary transition-colors ${
+                     event.event_type === 'policy_violation' ? 'bg-[#ef4444]' : 
+                     event.event_type === 'governance_decision' ? 'bg-[#3b82f6]' : 
+                     'bg-[var(--bg-secondary)]'
+                   }`}></div>
+                   
+                   <div className="text-[10px] text-[var(--text-secondary)] font-mono mb-2">
+                     {new Date(event.timestamp).toLocaleTimeString()} · {event.event_type.replace(/_/g, ' ').toUpperCase()}
+                   </div>
+ 
+                   <div className={`p-4 rounded-2xl max-w-[95%] text-sm ${
+                     event.event_type === 'prompt_submitted' 
+                       ? 'bg-[var(--bg-secondary)] text-[#eee] rounded-tl-sm border border-[var(--border-primary)]' 
+                       : event.event_type === 'governance_decision'
+                         ? 'bg-[#3b82f6]/10 text-[#3b82f6] border border-[#3b82f6]/20 rounded-tr-sm'
+                         : event.event_type === 'policy_violation'
+                           ? 'bg-[#ef4444]/10 border border-[#ef4444]/50 text-[#ef4444]'
+                           : 'bg-[var(--bg-secondary)]/50 text-[var(--text-secondary)] border border-[var(--border-primary)]'
+                   }`}>
+                     <div className="whitespace-pre-wrap">{event.content}</div>
+                     {event.risk_score > 0 && (
+                       <div className="mt-2 pt-2 border-t border-current/10 flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                           <Activity className="w-3 h-3" />
+                           <span className="font-black text-[9px] uppercase tracking-widest">Risk Assessment</span>
+                         </div>
+                         <span className="font-bold text-[10px]">{event.risk_score}% Severity</span>
+                       </div>
+                     )}
+                   </div>
+ 
+                   {event.event_type === 'policy_violation' && (
+                     <div className="flex items-center gap-1.5 mt-2 text-[#ef4444] px-1">
+                       <ShieldAlert className="w-3 h-3" />
+                       <span className="text-[9px] font-black uppercase tracking-[0.1em]">Protocol Breach Detected</span>
+                     </div>
+                   )}
+                 </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full opacity-40 py-24 text-center">
+                  <Search className="w-12 h-12 mb-4" />
+                  <p className="text-sm font-medium">No investigation data available for this session.</p>
                 </div>
-               ))
-             ) : (
-               <div className="flex flex-col items-center justify-center h-full opacity-40 py-24 text-center">
-                 <Search className="w-12 h-12 mb-4" />
-                 <p className="text-sm font-medium">No investigation data available for this session.</p>
-               </div>
-             )}
+              )}
           </div>
         </div>
       )}

@@ -174,6 +174,18 @@ export class GovernancePipeline {
                 decision: result.decision,
                 incremental_risk: result.risk_score
             });
+
+            // Create incident for high-risk blocks (Fix 3: Synchronize Incidents Page)
+            if (result.decision === 'BLOCK' && result.risk_score > 70) {
+                await supabase.from('incidents').insert({
+                    org_id: params.org_id,
+                    session_id: sessionId,
+                    risk_score: result.risk_score,
+                    decision: result.decision,
+                    violation: result.violations?.[0]?.policy_name || 'Governance Violation',
+                    timestamp: new Date().toISOString()
+                });
+            }
         } catch (e) { console.error('Persistence failed', e); }
     }
 }

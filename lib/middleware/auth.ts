@@ -30,7 +30,7 @@ export function withAuth(handler: AuthenticatedHandler) {
         controller.abort(); // Signal background work to stop
         logger.error('AUTH_HANDLER_TIMEOUT', { url: req.url, method: req.method });
         resolve(NextResponse.json({ error: 'Auth Timeout - Supabase Unreachable' }, { status: 401 }));
-      }, 8000);
+      }, 60000);
     });
 
     const handlerPromise = (async () => {

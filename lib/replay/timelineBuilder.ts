@@ -33,6 +33,27 @@ export async function buildTimeline(sessionId: string): Promise<TimelineResult |
     }
 
     if (!events || events.length === 0) {
+      // Fallback: Check session_turns if ledger is empty (for legacy or non-ledgered sessions)
+      const { data: turns } = await supabaseServer
+        .from("session_turns")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("created_at", { ascending: true });
+
+      if (turns && turns.length > 0) {
+        const timeline: TimelineEvent[] = turns.map(t => ({
+          timestamp: t.created_at,
+          event_type: "session_activity",
+          content: `Prompt Trace: "${t.prompt?.slice(0, 150)}..."\nResolution: ${t.decision}`,
+          risk_score: t.incremental_risk || 0
+        }));
+        return {
+          timeline,
+          riskPeaks: timeline.filter(e => e.risk_score >= 70),
+          policyTriggers: []
+        };
+      }
+
       return {
         timeline: [],
         riskPeaks: [],
