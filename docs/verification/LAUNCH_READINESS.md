@@ -11,3 +11,4 @@
 | FIX 3 | `app/api/dashboard/billing/usage/route.ts` | COMPLETED | Fix IDOR vulnerability. |
 | FIX 4 | `app/api/gateway/intercept/route.ts` | COMPLETED | Add auth middleware. |
 | FIX 5 | `app/api/cron/health/route.ts` | COMPLETED | Add CRON_SECRET verification. |
+| FIX 6 | `lib/middleware/auth.ts` | COMPLETED | Fixed cumulative auth timeouts and added AbortController. |
