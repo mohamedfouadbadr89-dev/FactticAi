@@ -175,6 +175,18 @@ export class GovernancePipeline {
                 incremental_risk: result.risk_score
             });
 
+            // Fill Escalation Logs (Fix ISSUE 1: Alerts page empty)
+            if (result.decision === 'BLOCK' || result.decision === 'WARN') {
+                await supabase.from('governance_alerts').insert({
+                    org_id: params.org_id,
+                    title: result.violations?.[0]?.policy_name || 'Policy Violation',
+                    description: result.violations?.[0]?.metadata?.cause || `Governance signal: ${result.decision}`,
+                    severity: result.decision === 'BLOCK' ? 'critical' : 'warning',
+                    interaction_id: sessionId,
+                    created_at: new Date().toISOString()
+                });
+            }
+
             // Create incident for high-risk blocks (Fix 3: Synchronize Incidents Page)
             if (result.decision === 'BLOCK' && result.risk_score > 70) {
                 await supabase.from('incidents').insert({

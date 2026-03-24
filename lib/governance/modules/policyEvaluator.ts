@@ -220,6 +220,24 @@ export const PolicyEvaluator = {
             }
         });
 
+        // ── 8. Uncertainty / Hedging Detection (Phase 75) ──────────────────────
+        const uncertaintyMarkers = [
+            /\b(think|possibly|might|not\s+sure|maybe|could\s+be|potentially)\b/i,
+            /\bhaven't\s+confirmed\b/i,
+            /\bi'm\s+not\s+(certain|sure)\b/i
+        ];
+
+        let uncertaintyDetected = false;
+        uncertaintyMarkers.forEach(re => {
+            if (re.test(normalizedPrompt)) uncertaintyDetected = true;
+        });
+
+        if (uncertaintyDetected) {
+            // Apply a ceiling to prevent uncertainty from triggering BLOCK on its own
+            // or to downgrade fuzzy matches. Uncertainty alone should cap risk at 65 (WARN range).
+            score_ceiling = Math.min(score_ceiling, 65);
+        }
+
         return { triggered, highest_action: highestAction, violations, risk_multiplier, score_ceiling };
     }
 };
