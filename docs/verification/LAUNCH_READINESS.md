@@ -29,3 +29,4 @@
 | FIX 2 | `app/dashboard/trust/page.tsx` | COMPLETED | Replaced hardcoded integrity with real API fetch. |
 | FIX 3 | `app/dashboard/investigations/page.tsx` | COMPLETED | Removed synthetic timeline events. |
 | FIX 4 | `app/dashboard/agents/page.tsx` | COMPLETED | Replaced hardcoded agent stats with real API fetch. |
+| FIX 5 | `app/dashboard/home/page.tsx` | COMPLETED | Updated title to 'Executive Overview' and throttled polling. |

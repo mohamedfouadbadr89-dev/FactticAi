@@ -88,12 +88,12 @@ export default function HomePage() {
   }, [])
 
   // Realtime: TEMPORARILY DISABLED due to client-side crashes
-  // Replaced with a 5-second polling interval fallback
+  // Replaced with a 30-second polling interval fallback
   React.useEffect(() => {
     if (!data?.org_id) return
     const interval = setInterval(() => {
       setRetry(r => r + 1)
-    }, 5000)
+    }, 30000)
     return () => clearInterval(interval)
   }, [data?.org_id])
 
@@ -135,7 +135,7 @@ export default function HomePage() {
         <div>
           <h1 className="text-3xl font-black tracking-tighter uppercase flex items-center gap-3">
             <LayoutGrid className="w-8 h-8 text-[#3b82f6]" />
-            Facttic v1 Dashboard
+            Executive Overview
           </h1>
 
           <p className="text-[10px] text-[var(--text-secondary)] font-mono tracking-widest uppercase mt-1">
