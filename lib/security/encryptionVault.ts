@@ -10,25 +10,17 @@ export class EncryptionVault {
 
   /**
    * Encrypts a field using organization-specific keys.
-   * Supports AWS KMS and local AES256-GCM.
    */
   static async encryptField(data: string, orgId: string): Promise<string> {
     try {
-      const keyConfig = await this.getOrgKey(orgId);
-      
-      if (!keyConfig) {
-        throw new Error('No active encryption key found for organization');
-      }
+      const keyObj = await this.getOrgKey(orgId);
+      if (!keyObj) throw new Error('No active encryption key found');
 
-      if (keyConfig.key_provider === 'local') {
-        return this.encryptLocal(data, keyConfig.key_reference);
-      } else if (keyConfig.key_provider === 'aws_kms') {
-        // Mock AWS KMS integration - in production, this would call AWS SDK
-        logger.info('ENCRYPT_VIA_AWS_KMS', { orgId, keyRef: keyConfig.key_reference });
-        return this.encryptLocal(data, `kms_mock_key_${keyConfig.key_reference}`);
-      }
+      // System master key used to decrypt the vault-stored org key
+      const masterKey = process.env.ENCRYPTION_MASTER_KEY || 'facttic-internal-vault-v1-fallback-key';
+      const rawOrgKey = this.decryptLocal(keyObj.encrypted_key, masterKey);
 
-      throw new Error(`Unsupported key provider: ${keyConfig.key_provider}`);
+      return this.encryptLocal(data, rawOrgKey);
     } catch (err: any) {
       logger.error('ENCRYPTION_FAILED', { orgId, error: err.message });
       throw err;
@@ -40,20 +32,13 @@ export class EncryptionVault {
    */
   static async decryptField(cipher: string, orgId: string): Promise<string> {
     try {
-      const keyConfig = await this.getOrgKey(orgId);
-      
-      if (!keyConfig) {
-        throw new Error('No active encryption key found for organization');
-      }
+      const keyObj = await this.getOrgKey(orgId);
+      if (!keyObj) throw new Error('No active encryption key found');
 
-      if (keyConfig.key_provider === 'local') {
-        return this.decryptLocal(cipher, keyConfig.key_reference);
-      } else if (keyConfig.key_provider === 'aws_kms') {
-        logger.info('DECRYPT_VIA_AWS_KMS', { orgId, keyRef: keyConfig.key_reference });
-        return this.decryptLocal(cipher, `kms_mock_key_${keyConfig.key_reference}`);
-      }
+      const masterKey = process.env.ENCRYPTION_MASTER_KEY || 'facttic-internal-vault-v1-fallback-key';
+      const rawOrgKey = this.decryptLocal(keyObj.encrypted_key, masterKey);
 
-      throw new Error(`Unsupported key provider: ${keyConfig.key_provider}`);
+      return this.decryptLocal(cipher, rawOrgKey);
     } catch (err: any) {
       logger.error('DECRYPTION_FAILED', { orgId, error: err.message });
       throw err;
@@ -61,35 +46,40 @@ export class EncryptionVault {
   }
 
   /**
-   * Rotates an organization's key by creating a new version.
+   * Rotates or initializes an organization's key.
    */
-  static async rotateKey(orgId: string): Promise<string> {
+  static async rotateKey(orgId: string, providedKey?: string): Promise<string> {
     try {
-      // 1. Revoke existing active keys
+      // 1. Deactivate existing keys
       await supabaseServer
         .from('org_encryption_keys')
-        .update({ key_status: 'rotated' })
+        .update({ is_active: false })
         .eq('org_id', orgId)
-        .eq('key_status', 'active');
+        .eq('is_active', true);
 
-      // 2. Generate new key reference (Deterministic for demo, unique in production)
-      const newRef = crypto.randomBytes(32).toString('hex');
+      // 2. Generate or use provided key
+      const rawKey = providedKey || crypto.randomBytes(32).toString('base64');
+      const fingerprint = rawKey.slice(-8);
+      
+      const masterKey = process.env.ENCRYPTION_MASTER_KEY || 'facttic-internal-vault-v1-fallback-key';
+      const encryptedKey = this.encryptLocal(rawKey, masterKey);
       
       const { data, error } = await supabaseServer
         .from('org_encryption_keys')
         .insert({
           org_id: orgId,
-          key_reference: newRef,
-          key_provider: 'local', // Defaulting to local for internal isolation
-          key_status: 'active'
+          key_fingerprint: fingerprint,
+          encrypted_key: encryptedKey,
+          is_active: true,
+          rotated_at: new Date().toISOString()
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      logger.info('KEY_ROTATION_SUCCESS', { orgId, newKeyId: data.id });
-      return data.key_reference;
+      logger.info('KEY_ROTATION_SUCCESS', { orgId, fingerprint });
+      return rawKey;
     } catch (err: any) {
       logger.error('KEY_ROTATION_FAILED', { orgId, error: err.message });
       throw err;
@@ -103,16 +93,10 @@ export class EncryptionVault {
       .from('org_encryption_keys')
       .select('*')
       .eq('org_id', orgId)
-      .eq('key_status', 'active')
-      .single();
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
     
-    // Fallback for demo: auto-generate if missing
-    if (!data) {
-      logger.warn('KEY_MISSING_AUTO_GENERATING', { orgId });
-      const ref = await this.rotateKey(orgId);
-      return { key_reference: ref, key_provider: 'local' };
-    }
-
     return data;
   }
 

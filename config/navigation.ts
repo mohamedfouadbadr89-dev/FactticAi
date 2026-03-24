@@ -90,6 +90,7 @@ export const navGroups = [
     group: "SYSTEM",
     items: [
       { label: "Access Control", href: "/dashboard/settings/access", icon: ShieldCheck, id: "nav-access-control" },
+      { label: "Security", href: "/dashboard/settings/security", icon: Shield, id: "nav-security" },
       { label: "Settings", href: "/dashboard/settings", icon: Settings, id: "nav-settings" },
       { label: "Profile", href: "/dashboard/profile", icon: User, id: "nav-profile" },
     ]
