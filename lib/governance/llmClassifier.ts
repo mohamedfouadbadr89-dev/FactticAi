@@ -22,7 +22,7 @@ export interface ClassificationResult {
   decision: 'ALLOW' | 'WARN' | 'BLOCK';
   flags: ClassificationFlags;
   confidence: number;
-  reason: string;
+  explanation: string;
 }
 
 // ── System prompt ─────────────────────────────────────────────────────────────
@@ -53,8 +53,7 @@ OUTPUT: Return ONLY a valid JSON object with the following fields:
     "hallucination": <boolean>,
     "policy_violation": <boolean>
   },
-  "confidence": <number 0-1>,
-  "reason": "<short explanation>"
+  "explanation": "<short explanation>"
 }
 
 SCORING RULES:
@@ -93,7 +92,7 @@ const FAIL_CLOSED_RESULT: ClassificationResult = {
     policy_violation: false,
   },
   confidence: 0,
-  reason: 'FAIL_CLOSED: Classifier unavailable or returned invalid response',
+  explanation: 'FAIL_CLOSED: Classifier unavailable or returned invalid response',
 };
 
 // ── Core classify function ────────────────────────────────────────────────────

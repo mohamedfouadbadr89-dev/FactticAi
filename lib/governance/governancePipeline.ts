@@ -132,7 +132,7 @@ export class GovernancePipeline {
                 policy_name: 'AI Governance Classifier',
                 rule_type: 'llm_safety',
                 action: classification.decision.toLowerCase(),
-                metadata: { ...classification.flags, explanation: classification.reason }
+                metadata: { ...classification.flags, explanation: classification.explanation }
             });
         }
 
