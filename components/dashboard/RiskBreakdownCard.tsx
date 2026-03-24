@@ -21,7 +21,7 @@ const defaultMetrics: RiskMetric[] = [
 const PAGE_SIZE = 4;
 
 export default function RiskBreakdownCard({ data }: Props) {
-  const metrics = data ?? defaultMetrics;
+  const metrics = data ?? [];
   const [page, setPage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(metrics.length / PAGE_SIZE));
   const pageMetrics = metrics.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -39,23 +39,27 @@ export default function RiskBreakdownCard({ data }: Props) {
 
       {/* Body */}
       <div className="p-6 grid grid-cols-2 gap-4 flex-1">
-        {pageMetrics.map((m) => (
-          <div key={m.label} className="risk-card bg-[var(--bg-secondary)] rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="risk-note text-xs font-medium text-[var(--text-secondary)]">{m.label}</span>
-              <span className={`risk-val text-sm font-bold font-mono ${m.color}`}>
-                <CountUp value={m.percent} decimals={m.value.includes('.') ? 1 : 0} />
-                {m.value.includes('%') ? '%' : ''}
-              </span>
+        {metrics.length === 0 ? (
+          <div className="col-span-2 py-8 text-center text-sm text-[var(--text-secondary)]">No risk data available</div>
+        ) : (
+          pageMetrics.map((m) => (
+            <div key={m.label} className="risk-card bg-[var(--bg-secondary)] rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="risk-note text-xs font-medium text-[var(--text-secondary)]">{m.label}</span>
+                <span className={`risk-val text-sm font-bold font-mono ${m.color}`}>
+                  <CountUp value={m.percent} decimals={m.value.includes('.') ? 1 : 0} />
+                  {m.value.includes('%') ? '%' : ''}
+                </span>
+              </div>
+              <div className="risk-track h-2 rounded bg-[var(--border-color)] overflow-hidden">
+                <div
+                  className={`h-full rounded ${m.barColor} transition-all duration-300`}
+                  style={{ width: `${Math.min(m.percent, 100)}%` }}
+                />
+              </div>
             </div>
-            <div className="risk-track h-2 rounded bg-[var(--border-color)] overflow-hidden">
-              <div
-                className={`h-full rounded ${m.barColor} transition-all duration-300`}
-                style={{ width: `${Math.min(m.percent, 100)}%` }}
-              />
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Pagination */}

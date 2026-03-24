@@ -25,11 +25,7 @@ const PAGE_SIZE = 3;
 
 export default function ActiveAlertsCard({ data }: Props) {
   const router = useRouter();
-  const alerts = data ?? [
-    { id: "INV-440", title: "Data Exfiltration Risk", description: "Outbound payload exceeded threshold on Node F-01", meta: "INV-440 · 2m ago · Chat", severity: "High" as const },
-    { id: "INV-439", title: "Unsanctioned API Access", description: "Unauthorized endpoint call detected at gateway layer", meta: "INV-439 · 15m ago · Voice", severity: "Med" as const },
-    { id: "INV-438", title: "Hallucination Spike", description: "LLM router confidence dropped below safe threshold", meta: "INV-438 · 1h ago · Chat", severity: "High" as const },
-  ];
+  const alerts = data ?? [];
 
   const [page, setPage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(alerts.length / PAGE_SIZE));
