@@ -42,10 +42,10 @@ export const POST = withAuth(async (req: Request, { userId, orgId }: AuthContext
       "evaluations",
       "sessions",
       "agent_sessions",
+      "governance_root_cause_reports", // Delete RCA reports before agents
       "agents",
       
       // 3. Governance & Risk
-      "governance_root_cause_reports",
       "governance_predictions",
       "governance_alerts",
       "alerts",
@@ -54,7 +54,6 @@ export const POST = withAuth(async (req: Request, { userId, orgId }: AuthContext
       "governance_risk_metrics",
       "governance_maturity_scores",
       "governance_snapshots",
-      "governance_snapshot_v1",
       "governance_timeseries_v1",
       
       // 4. Drift & Performance
