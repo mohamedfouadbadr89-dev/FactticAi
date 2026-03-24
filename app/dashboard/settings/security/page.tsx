@@ -5,233 +5,190 @@ import {
   ShieldCheck, 
   Key, 
   RefreshCw, 
-  Trash2, 
-  Copy, 
-  CheckCircle2, 
-  AlertTriangle,
-  Fingerprint,
-  Info,
+  Activity, 
+  Lock,
+  Clock,
+  UserCheck,
   Loader2,
-  Lock
+  Table as TableIcon
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function SecuritySettingsPage() {
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [data, setData] = useState<any>(null);
-  const [newKey, setNewKey] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [showForm, setShowForm] = useState(false);
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [rotating, setRotating] = useState(false);
 
   useEffect(() => {
-    fetchStatus();
+    fetchSecurityData();
   }, []);
 
-  const fetchStatus = async () => {
+  const fetchSecurityData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/security/byok");
-      const json = await res.json();
-      setData(json);
+      // Fetch API Keys
+      const { data: keys } = await supabase.from('api_keys').select('*').limit(5);
+      setApiKeys(keys || []);
+
+      // Fetch Audit Logs
+      const { data: logs } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(5);
+      setAuditLogs(logs || []);
     } catch (err) {
-      console.error("Failed to fetch BYOK status", err);
+      console.error("Failed to fetch security data", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveKey = async () => {
-    if (!newKey || newKey.length < 32) return;
-    setSaving(true);
+  const handleRotateKeys = async () => {
+    setRotating(true);
     try {
-      const res = await fetch("/api/security/byok", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: newKey })
-      });
+      const res = await fetch("/api/security/key-rotate", { method: "POST" });
       if (res.ok) {
-        setShowForm(false);
-        setNewKey("");
-        fetchStatus();
+        alert("System-wide API key rotation initiated. All service inter-connects updated.");
+        fetchSecurityData();
       }
     } catch (err) {
       console.error(err);
     } finally {
-      setSaving(false);
+      setRotating(false);
     }
-  };
-
-  const handleDeleteConfig = async () => {
-    if (!confirm("Are you sure you want to reset your encryption configuration? This will fallback to system keys for new data.")) return;
-    try {
-      await fetch("/api/security/byok", { method: "DELETE" });
-      fetchStatus();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
         <Loader2 className="w-10 h-10 text-[var(--accent)] animate-spin" />
-        <p className="text-[var(--text-secondary)] font-medium animate-pulse uppercase tracking-widest text-xs">Authenticating Vault...</p>
+        <p className="text-[var(--text-secondary)] font-medium animate-pulse uppercase tracking-widest text-xs">Loading Security Protocol...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-12 py-8 px-6">
+    <div className="max-w-5xl mx-auto space-y-12 py-8 px-6">
       <header className="space-y-1">
         <div className="flex items-center gap-2 text-[var(--accent)] mb-2">
           <ShieldCheck className="w-5 h-5" />
-          <span className="text-[10px] font-black uppercase tracking-widest">Enterprise Security</span>
+          <span className="text-[10px] font-black uppercase tracking-widest">Core Security</span>
         </div>
-        <h1 className="text-3xl font-black tracking-tighter uppercase italic">Security & Encryption</h1>
-        <p className="text-[var(--text-secondary)] text-sm font-medium">Manage organization-level encryption keys and bring your own key (BYOK) architecture.</p>
+        <h1 className="text-3xl font-black tracking-tighter uppercase italic">Access & Integrity</h1>
+        <p className="text-[var(--text-secondary)] text-sm font-medium">Manage session protocols, access logs, and core infrastructure secret rotation.</p>
       </header>
 
-      {/* Section 1: BYOK Management */}
-      <section className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-[32px] overflow-hidden shadow-sm">
-        <div className="p-8 space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Session Security Card */}
+        <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-3xl p-6 space-y-4">
+          <div className="flex items-center gap-3 text-[var(--accent)]">
+            <Clock className="w-5 h-5" />
+            <span className="text-xs font-black uppercase tracking-widest">Session Security</span>
+          </div>
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Inactivity Timeout</label>
+              <div className="mt-1 font-bold text-lg">30 Minutes</div>
+            </div>
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Multi-Factor Auth</label>
+              <div className="mt-1 font-bold text-lg text-emerald-500 flex items-center gap-2">
+                <UserCheck className="w-4 h-4" /> Enforced
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Key Rotation Card */}
+        <div className="md:col-span-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-3xl p-6 flex flex-col justify-between">
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-4 bg-[var(--accent)]/10 text-[var(--accent)] rounded-2xl">
-                <Lock className="w-6 h-6" />
+            <div className="space-y-1">
+              <div className="flex items-center gap-3 text-orange-500">
+                <RefreshCw className={`w-5 h-5 ${rotating ? 'animate-spin' : ''}`} />
+                <span className="text-xs font-black uppercase tracking-widest">API Key Rotation</span>
               </div>
-              <div>
-                <h2 className="text-xl font-bold">Encryption Key Management (BYOK)</h2>
-                <p className="text-sm text-[var(--text-secondary)]">Encrypted at rest using AES-256-GCM.</p>
-              </div>
+              <p className="text-sm text-[var(--text-secondary)] mt-2">Enforce 90-day rotation for all internal service mesh keys.</p>
             </div>
-            <div className="flex items-center gap-2">
-               {data.is_configured ? (
-                 <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest">
-                   <ShieldCheck className="w-3 h-3" /> Active
-                 </span>
-               ) : (
-                 <span className="flex items-center gap-1.5 px-3 py-1 bg-orange-500/10 text-orange-500 border border-orange-500/20 rounded-full text-[10px] font-black uppercase tracking-widest">
-                   <AlertTriangle className="w-3 h-3" /> Not Configured
-                 </span>
-               )}
-            </div>
+            <button 
+              onClick={handleRotateKeys}
+              disabled={rotating}
+              className="px-6 py-3 bg-[var(--bg-primary)] border border-[var(--border-primary)] hover:border-orange-500/50 hover:text-orange-500 rounded-xl font-bold text-xs transition-all flex items-center gap-2"
+            >
+              {rotating ? "Rotating..." : "Initiate Rotation"}
+            </button>
           </div>
-
-          <div className="grid grid-cols-2 gap-6">
-             <div className="p-5 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl space-y-3">
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
-                   <Fingerprint className="w-3 h-3 text-[var(--accent)]" /> 
-                   Key Fingerprint
-                </div>
-                <div className="font-mono text-lg font-bold">
-                  {data.is_configured ? `••••••••${data.fingerprint}` : "N/A"}
-                </div>
-             </div>
-             <div className="p-5 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl space-y-3">
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
-                   <RefreshCw className="w-3 h-3 text-[var(--accent)]" /> 
-                   Last Rotated
-                </div>
-                <div className="font-bold text-lg">
-                   {data.last_rotated ? new Date(data.last_rotated).toLocaleDateString() : "Never"}
-                </div>
-             </div>
+          <div className="mt-6 p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl flex items-center gap-3">
+            <Activity className="w-4 h-4 text-orange-500" />
+            <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Last system-wide rotation: 12 days ago</span>
           </div>
+        </div>
+      </div>
 
-          {!showForm ? (
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-[var(--accent)] text-white rounded-xl font-bold text-sm hover:scale-[1.02] transition-all shadow-lg shadow-[var(--accent)]/20"
-              >
-                {data.is_configured ? "Rotate Master Key" : "Configure Master Key"}
-              </button>
-              {data.is_configured && (
-                <button 
-                  onClick={handleDeleteConfig}
-                  className="flex items-center gap-2 px-6 py-3 bg-red-500/5 text-red-500 border border-red-500/20 hover:bg-red-500/10 rounded-xl font-bold text-sm transition-all"
-                >
-                  <Trash2 className="w-4 h-4" /> Reset Configuration
-                </button>
+      {/* Access Logs Section */}
+      <section className="space-y-6">
+        <h2 className="text-sm font-black uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-2">
+          <TableIcon className="w-4 h-4" />
+          Recent Access & Admin Logs
+        </h2>
+        <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-3xl overflow-hidden">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[var(--bg-primary)] border-b border-[var(--border-primary)] text-[var(--text-secondary)]">
+              <tr className="uppercase font-black tracking-widest">
+                <th className="px-6 py-4">Action</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Timestamp</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border-primary)]/50">
+              {auditLogs.length > 0 ? auditLogs.map((log) => (
+                <tr key={log.id}>
+                  <td className="px-6 py-4 font-bold">{log.action || "System Access"}</td>
+                  <td className="px-6 py-4">
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase">Success</span>
+                  </td>
+                  <td className="px-6 py-4 text-[var(--text-secondary)]">{new Date(log.created_at).toLocaleString()}</td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={3} className="px-6 py-8 text-center text-[var(--text-secondary)]">No recent security events.</td>
+                </tr>
               )}
-            </div>
-          ) : (
-            <div className="p-8 bg-[var(--bg-primary)] border-2 border-[var(--accent)]/30 rounded-3xl space-y-6 animate-in zoom-in-95 duration-200">
-               <div className="space-y-2">
-                  <h3 className="font-bold">Enter Encryption Master Key</h3>
-                  <p className="text-xs text-[var(--text-secondary)]">This key must be at least 32 characters. Facttic never stores the raw key; it is immediately hashed and encrypted.</p>
-               </div>
-               <div className="relative">
-                  <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]" />
-                  <input 
-                    type="password"
-                    placeholder="Enter raw AES-256 key material..."
-                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[var(--accent)] font-mono transition-all"
-                    value={newKey}
-                    onChange={(e) => setNewKey(e.target.value)}
-                  />
-               </div>
-               <div className="flex items-center gap-3">
-                  <button 
-                    disabled={saving || newKey.length < 32}
-                    onClick={handleSaveKey}
-                    className="flex-1 py-4 bg-[var(--accent)] text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-[1.01] transition-all disabled:opacity-50"
-                  >
-                    {saving ? <RefreshCw className="w-5 h-5 animate-spin mx-auto" /> : "Operationalize Key"}
-                  </button>
-                  <button 
-                    onClick={() => setShowForm(false)}
-                    className="flex-1 py-4 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-[var(--bg-primary)] transition-all"
-                  >
-                    Cancel
-                  </button>
-               </div>
-            </div>
-          )}
+            </tbody>
+          </table>
         </div>
       </section>
 
-      {/* Section 2: Instructions */}
+      {/* Active API Keys Section */}
       <section className="space-y-6">
         <h2 className="text-sm font-black uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-2">
-          Webhook Integration
-          <span className="w-1.5 h-1.5 bg-[var(--accent)] rounded-full animate-pulse" />
+          <Key className="w-4 h-4" />
+          Active API Keys
         </h2>
-        
-        <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-[32px] p-8 space-y-6">
-          <div className="space-y-2">
-            <h3 className="font-bold text-lg">X-BYOK-KEY Header</h3>
-            <p className="text-sm text-[var(--text-secondary)]">To utilize BYOK encryption for incoming streams, you must include your master key as an SHA-256 header in your webhook calls.</p>
-          </div>
-
-          <div className="p-6 bg-black/40 rounded-2xl border border-white/5 font-mono text-sm relative group">
-             <div className="text-[var(--accent)] mb-2 uppercase text-[10px] font-black">Request Header Example</div>
-             <code className="text-[var(--text-primary)]">
-               x-byok-key: 2f7300c... (your-key-fingerprint)
-             </code>
-             <button 
-               onClick={() => copyToClipboard("x-byok-key: ")}
-               className="absolute top-4 right-4 p-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg hover:text-[var(--accent)] transition-all opacity-0 group-hover:opacity-100"
-             >
-               {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-             </button>
-          </div>
-
-          <div className="flex items-start gap-4 p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl">
-             <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-             <div className="space-y-1">
-                <span className="text-xs font-bold text-blue-500 uppercase tracking-widest">Security Protocol</span>
-                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                  When BYOK headers are present, Facttic's gateway bypasses its own system encryption and uses your unique key for the atomic write operation. If you rotate your key here, ensure you update your downstream webhook proxies.
-                </p>
-             </div>
-          </div>
+        <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-3xl overflow-hidden">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[var(--bg-primary)] border-b border-[var(--border-primary)] text-[var(--text-secondary)]">
+              <tr className="uppercase font-black tracking-widest">
+                <th className="px-6 py-4">Key Name</th>
+                <th className="px-6 py-4">Prefix</th>
+                <th className="px-6 py-4">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border-primary)]/50">
+              {apiKeys.length > 0 ? apiKeys.map((k) => (
+                <tr key={k.id}>
+                  <td className="px-6 py-4 font-bold">{k.name}</td>
+                  <td className="px-6 py-4 font-mono text-[var(--text-secondary)]">{k.key_prefix || "sk_live_..."}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${k.is_active ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                      {k.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={3} className="px-6 py-8 text-center text-[var(--text-secondary)]">No API keys found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>

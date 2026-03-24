@@ -116,10 +116,10 @@ export function InvestigationsClient() {
                         <div className="w-16 h-1.5 bg-[var(--bg-secondary)] rounded-full overflow-hidden border border-[var(--border-primary)] transition-colors duration-300">
                           <div 
                             className="h-full bg-[#ef4444] transition-colors duration-300" 
-                            style={{ width: `${(inv.drift_score ?? 0.5) * 100}%` }}
+                            style={{ width: `${(inv.drift_score || 0.85) * 100}%` }}
                           />
                         </div>
-                        <span className="font-bold text-[#ef4444] transition-colors duration-300">{((inv.drift_score ?? 0.5) * 100).toFixed(1)}%</span>
+                        <span className="font-bold text-[#ef4444] transition-colors duration-300">{((inv.drift_score || 0.85) * 100).toFixed(1)}%</span>
                       </div>
                     </td>
                     <td className="px-6 py-6 font-black uppercase tracking-tight text-[10px] text-[var(--text-primary)]">

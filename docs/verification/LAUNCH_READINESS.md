@@ -51,3 +51,13 @@
 | FIX 2 | `app/dashboard/incidents/[session_id]/page.tsx` | COMPLETED | Resolved 404 by fixing org resolution logic and adding cross-org fallback. |
 | FIX 3 | `app/dashboard/connect/page.tsx` | COMPLETED | Moved BYOK section out of conditional logic to ensure persistent visibility. |
 
+## FINAL PRODUCTION REFINEMENT — 2026-03-24
+
+| Fix ID | File Path | Status | Verification Detail |
+| :--- | :--- | :--- | :--- |
+| FIX 1 | `app/api/governance/investigations/route.ts` | COMPLETED | Linked drill-alerts to investigations for real RCA confidence (drift_score). |
+| FIX 2 | `app/dashboard/connect/page.tsx` | COMPLETED | Consolidated full BYOK management and UI into Infrastructure page. |
+| FIX 3 | `app/dashboard/settings/security/page.tsx` | COMPLETED | Replaced BYOK with dedicated Session, Audit, and API Key rotation views. |
+| FIX 4 | `app/dashboard/incidents/page.tsx` | VERIFIED | Confirmed incident navigation directs to the fixed [session_id] detail route. |
+
+
