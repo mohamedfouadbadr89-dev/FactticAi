@@ -132,7 +132,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-[var(--bg-secondary)] text-[var(--text-primary)] p-8">
 
       {/* Demo Mode Banner */}
-      {data && data.governance.total_intercepts > 0 && (
+      {data && (
         <div className="mb-10 p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
           <div className="flex items-center gap-4">
             <div className="p-2 bg-orange-500/20 rounded-xl">

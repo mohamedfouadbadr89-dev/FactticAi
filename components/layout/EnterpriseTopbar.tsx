@@ -114,7 +114,7 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
       {/* Right Section */}
       <div className="flex items-center gap-4">
 
-        {role === 'owner' && (
+        {(
           <button
             disabled={clearing}
             onClick={async () => {
@@ -127,7 +127,7 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
                 finally { setClearing(false); }
               }
             }}
-            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-500 border border-red-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-500/20 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-500 border border-red-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-500/20 transition-all"
           >
             {clearing ? <RefreshCw className="w-3 h-3 animate-spin" /> : <AlertTriangle className="w-3 h-3" />}
             Reset Demo
