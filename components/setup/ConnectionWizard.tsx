@@ -73,13 +73,10 @@ export default function ConnectionWizard({ onComplete }: { onComplete?: () => vo
   const runTest = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/governance/evaluate', {
+      const res = await fetch('/api/integrations/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: testPrompt,
-          // org_id should ideally be passed in or resolved from auth session
-        })
+        body: JSON.stringify(config)
       });
       const data = await res.json();
       setTestResult(data);
@@ -198,8 +195,8 @@ export default function ConnectionWizard({ onComplete }: { onComplete?: () => vo
         {step === 3 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="text-center space-y-2 text-balance">
-              <h2 className="text-xl font-bold">BYOK Configuration</h2>
-              <p className="text-sm text-[var(--text-secondary)]">Connect your own infrastructure credentials. <span className="text-[var(--accent)] font-bold">Facttic never stores raw keys.</span></p>
+              <h2 className="text-xl font-bold">API Key Configuration</h2>
+              <p className="text-sm text-[var(--text-secondary)]">Connect your infrastructure credentials. <span className="text-[var(--accent)] font-bold">Facttic never stores raw keys.</span></p>
             </div>
             <div className="space-y-4">
               {ALL_PROVIDERS.find(p => p.id === config.provider)?.requiredFields.map(field => (
@@ -268,7 +265,7 @@ export default function ConnectionWizard({ onComplete }: { onComplete?: () => vo
         {step === 4 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="text-center space-y-2">
-              <h2 className="text-xl font-bold">Connection Verification</h2>
+              <h2 className="text-xl font-bold">Provider Verification</h2>
               <p className="text-sm text-[var(--text-secondary)]">Validate authentication and provider response integrity.</p>
             </div>
 
@@ -313,8 +310,10 @@ export default function ConnectionWizard({ onComplete }: { onComplete?: () => vo
                   
                   <div className="grid grid-cols-3 gap-3">
                     <div className="p-3 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl text-center">
-                      <div className="text-[8px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1">Auth</div>
-                      <div className="text-xs font-black text-emerald-500">PASS</div>
+                      <div className="text-[8px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1">Status</div>
+                      <div className={`text-xs font-black ${testResult.success ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {testResult.success ? 'VALID' : 'FAILED'}
+                      </div>
                     </div>
                     <div className="p-3 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl text-center">
                       <div className="text-[8px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1">Risk</div>
