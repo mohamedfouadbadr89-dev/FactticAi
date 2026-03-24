@@ -59,5 +59,8 @@
 | FIX 2 | `app/dashboard/connect/page.tsx` | COMPLETED | Consolidated full BYOK management and UI into Infrastructure page. |
 | FIX 3 | `app/dashboard/settings/security/page.tsx` | COMPLETED | Replaced BYOK with dedicated Session, Audit, and API Key rotation views. |
 | FIX 4 | `app/dashboard/incidents/page.tsx` | VERIFIED | Confirmed incident navigation directs to the fixed [session_id] detail route. |
+| FIX 5 | `app/api/admin/clear-demo-data/` | COMPLETED | Implemented cross-table demo data purge for organization-level resetting. |
+| FIX 6 | `app/dashboard/settings/page.tsx` | COMPLETED | Added Demo & Testing hygiene section for owners with confirmation gates. |
+
 
 
