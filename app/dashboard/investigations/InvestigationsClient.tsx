@@ -51,13 +51,7 @@ export function InvestigationsClient() {
        const json = await res.json();
        
        // If no actual data, populate mock timeline to demonstrate bounds
-       setTimeline(json.timeline?.length > 0 ? json.timeline : [
-         { id: '1', event_type: 'message', timestamp: new Date(Date.now() - 50000).toISOString(), event_reference: { role: 'user', content: 'What is my plan balance?' } },
-         { id: '2', event_type: 'evaluation', timestamp: new Date(Date.now() - 48000).toISOString(), event_reference: { factors: { tone_risk: 0.1 } } },
-         { id: '3', event_type: 'message', timestamp: new Date(Date.now() - 40000).toISOString(), event_reference: { role: 'agent', content: 'Your balance is $5,000,000.' } },
-         { id: '4', event_type: 'drift_alert', timestamp: new Date(Date.now() - 39000).toISOString(), event_reference: { risk: 'Critical hallucination detected.' } },
-         { id: '5', event_type: 'governance_escalation', timestamp: new Date(Date.now() - 38000).toISOString(), event_reference: { status: 'Escalated to human reviewer.' } }
-       ])
+       setTimeline(json.timeline || []);
      } catch (e) {
        console.error(e);
      } finally {
@@ -187,7 +181,8 @@ export function InvestigationsClient() {
                  <div className="h-16 w-3/4 bg-[var(--bg-secondary)] rounded-r-2xl rounded-bl-2xl"></div>
                  <div className="h-24 w-full bg-[var(--bg-secondary)] rounded border border-[#ef4444]/50"></div>
                </div>
-             ) : timeline.map((event, idx) => (
+             ) : timeline.length > 0 ? (
+               timeline.map((event, idx) => (
                 <div key={idx} className="relative pl-6 border-l-2 border-[var(--border-primary)] pb-6 last:pb-0 group">
                   <div className="absolute w-3 h-3 bg-[var(--bg-secondary)] rounded-full -left-[7px] top-1 border-2 border-[#0a0a0a] group-hover:bg-primary transition-colors"></div>
                   
@@ -227,7 +222,13 @@ export function InvestigationsClient() {
                     </div>
                   )}
                 </div>
-             ))}
+               ))
+             ) : (
+               <div className="flex flex-col items-center justify-center h-full opacity-40 py-24 text-center">
+                 <Search className="w-12 h-12 mb-4" />
+                 <p className="text-sm font-medium">No investigation data available for this session.</p>
+               </div>
+             )}
           </div>
         </div>
       )}

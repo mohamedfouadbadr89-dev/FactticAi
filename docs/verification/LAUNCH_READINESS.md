@@ -21,3 +21,11 @@
 | FIX 2 | `components/dashboard/ActiveAlertsCard.tsx` | COMPLETED | Removed demo alerts fallback. |
 | FIX 3 | `components/dashboard/RiskBreakdownCard.tsx` | COMPLETED | Removed demo metrics fallback. |
 | FIX 4 | `app/api/cron/prune/route.ts` | COMPLETED | Replaced Math.random with real deletions. |
+
+## PRE-LAUNCH UI CLEANUP SPRINT — Phase 3 of 3
+| Fix ID | File Path | Status | Verification Detail |
+| :--- | :--- | :--- | :--- |
+| FIX 1 | `app/dashboard/billing/page.tsx` | COMPLETED | Simplified billing to direct-managed enterprise mode. |
+| FIX 2 | `app/dashboard/trust/page.tsx` | COMPLETED | Replaced hardcoded integrity with real API fetch. |
+| FIX 3 | `app/dashboard/investigations/page.tsx` | COMPLETED | Removed synthetic timeline events. |
+| FIX 4 | `app/dashboard/agents/page.tsx` | COMPLETED | Replaced hardcoded agent stats with real API fetch. |
