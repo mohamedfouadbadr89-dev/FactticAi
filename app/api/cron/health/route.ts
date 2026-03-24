@@ -8,7 +8,14 @@ import { supabase } from "@/lib/supabase"
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
+    // ── CRON SECURITY ──────────────────────────────────────────────────────────
+    const cronSecret = req.headers.get('x-cron-secret');
+    if (!cronSecret || cronSecret !== process.env.CRON_SECRET) {
+       logger.warn('CRON_AUTH_FAILED', { url: req.url });
+       return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+    }
+
+    const body = await req.json().catch(() => ({}));
 
     const {
       prompt,

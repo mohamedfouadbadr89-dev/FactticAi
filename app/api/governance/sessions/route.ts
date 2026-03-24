@@ -29,16 +29,8 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    // If no sessions for this org, fall back to all sessions (single-tenant setup)
+    // Strict org isolation: If no sessions, return empty. Never fall back to global data.
     let sessions = data || [];
-    if (sessions.length === 0) {
-      const { data: allSessions } = await supabaseServer
-        .from('sessions')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      sessions = allSessions || [];
-    }
 
     // For sessions with total_risk = 0 (legacy data), enrich from governance events
     const zeroRiskIds = sessions

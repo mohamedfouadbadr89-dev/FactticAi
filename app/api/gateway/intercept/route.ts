@@ -1,18 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { AiInterceptorKernel } from '@/lib/gateway/aiInterceptorKernel';
 import { logger } from '@/lib/logger';
 
 /**
- * AI Gateway Interception API
- * 
- * Central gateway for pre-inference and post-inference governance.
- */
-export async function POST(req: NextRequest) {
+  * AI Gateway Interception API
+  * 
+  * Central gateway for pre-inference and post-inference governance.
+  */
+export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
-    const body = await req.json();
-    const { orgId, content, type } = body;
+    const body = await req.json().catch(() => ({}));
+    const { content, type } = body;
 
-    if (!orgId || !content || !type) {
+    if (!content || !type) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
@@ -35,7 +36,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result, { status: 200 });
 
   } catch (err: any) {
-    logger.error('INTERCEPTION_API_FAILURE', { error: err.message });
+    logger.error('INTERCEPTION_API_FAILURE', { error: err.message, orgId });
     return NextResponse.json({ error: 'INTERNAL_SERVER_ERROR' }, { status: 500 });
   }
-}
+});
+
