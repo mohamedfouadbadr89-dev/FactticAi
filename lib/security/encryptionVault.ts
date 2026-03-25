@@ -20,15 +20,7 @@ export class EncryptionVault {
         throw new Error('No active encryption key found for organization');
       }
 
-      if (keyConfig.key_provider === 'local') {
-        return this.encryptLocal(data, keyConfig.key_reference);
-      } else if (keyConfig.key_provider === 'aws_kms') {
-        // Mock AWS KMS integration - in production, this would call AWS SDK
-        logger.info('ENCRYPT_VIA_AWS_KMS', { orgId, keyRef: keyConfig.key_reference });
-        return this.encryptLocal(data, `kms_mock_key_${keyConfig.key_reference}`);
-      }
-
-      throw new Error(`Unsupported key provider: ${keyConfig.key_provider}`);
+      return this.encryptLocal(data, keyConfig.encrypted_key);
     } catch (err: any) {
       logger.error('ENCRYPTION_FAILED', { orgId, error: err.message });
       throw err;
@@ -46,14 +38,7 @@ export class EncryptionVault {
         throw new Error('No active encryption key found for organization');
       }
 
-      if (keyConfig.key_provider === 'local') {
-        return this.decryptLocal(cipher, keyConfig.key_reference);
-      } else if (keyConfig.key_provider === 'aws_kms') {
-        logger.info('DECRYPT_VIA_AWS_KMS', { orgId, keyRef: keyConfig.key_reference });
-        return this.decryptLocal(cipher, `kms_mock_key_${keyConfig.key_reference}`);
-      }
-
-      throw new Error(`Unsupported key provider: ${keyConfig.key_provider}`);
+      return this.decryptLocal(cipher, keyConfig.encrypted_key);
     } catch (err: any) {
       logger.error('DECRYPTION_FAILED', { orgId, error: err.message });
       throw err;
@@ -63,25 +48,26 @@ export class EncryptionVault {
   /**
    * Rotates an organization's key by creating a new version.
    */
-  static async rotateKey(orgId: string): Promise<string> {
+  static async rotateKey(orgId: string, customKey?: string): Promise<string> {
     try {
       // 1. Revoke existing active keys
       await supabaseServer
         .from('org_encryption_keys')
-        .update({ key_status: 'rotated' })
+        .update({ is_active: false })
         .eq('org_id', orgId)
-        .eq('key_status', 'active');
+        .eq('is_active', true);
 
-      // 2. Generate new key reference (Deterministic for demo, unique in production)
-      const newRef = crypto.randomBytes(32).toString('hex');
+      // 2. Generate/Use key and create fingerprint
+      const keyMaterial = customKey || crypto.randomBytes(32).toString('hex');
+      const fingerprint = crypto.createHash('sha256').update(keyMaterial).digest('hex').substring(0, 16);
       
       const { data, error } = await supabaseServer
         .from('org_encryption_keys')
         .insert({
           org_id: orgId,
-          key_reference: newRef,
-          key_provider: 'local', // Defaulting to local for internal isolation
-          key_status: 'active'
+          key_fingerprint: fingerprint,
+          encrypted_key: keyMaterial,
+          is_active: true
         })
         .select()
         .single();
@@ -89,7 +75,7 @@ export class EncryptionVault {
       if (error) throw error;
 
       logger.info('KEY_ROTATION_SUCCESS', { orgId, newKeyId: data.id });
-      return data.key_reference;
+      return data.encrypted_key;
     } catch (err: any) {
       logger.error('KEY_ROTATION_FAILED', { orgId, error: err.message });
       throw err;
@@ -101,16 +87,16 @@ export class EncryptionVault {
   private static async getOrgKey(orgId: string) {
     const { data } = await supabaseServer
       .from('org_encryption_keys')
-      .select('*')
+      .select('encrypted_key, is_active')
       .eq('org_id', orgId)
-      .eq('key_status', 'active')
-      .single();
+      .eq('is_active', true)
+      .maybeSingle();
     
     // Fallback for demo: auto-generate if missing
     if (!data) {
       logger.warn('KEY_MISSING_AUTO_GENERATING', { orgId });
       const ref = await this.rotateKey(orgId);
-      return { key_reference: ref, key_provider: 'local' };
+      return { encrypted_key: ref, is_active: true };
     }
 
     return data;
