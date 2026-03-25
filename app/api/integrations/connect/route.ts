@@ -6,7 +6,27 @@ import { verifyProviderConnection } from "@/lib/integrations/verifyConnection";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { provider, apiKey, model, environment, mode, org_id } = body;
+    let { provider, apiKey, model, environment, mode, org_id } = body;
+
+    // 0. Resolve org_id if missing from body
+    if (!org_id) {
+      const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
+      if (authError || !user) {
+        return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+      }
+      const { data: membership } = await supabaseServer
+        .from('memberships')
+        .select('org_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      
+      org_id = membership?.org_id;
+    }
+
+    if (!org_id) {
+      return NextResponse.json({ error: "Organization association required." }, { status: 400 });
+    }
 
     // 1. Validation
     if (!provider || !apiKey || !model) {
@@ -26,6 +46,17 @@ export async function POST(req: NextRequest) {
     const hashedKey = SecurityLayer.secureKeyReference(apiKey);
 
     // 4. Persistence
+    if (body.webhook_secret && mode === 'voice') {
+      await supabaseServer
+        .from('external_integrations')
+        .upsert({
+          org_id,
+          provider,
+          webhook_secret: body.webhook_secret,
+          status: 'active'
+        }, { onConflict: 'org_id,provider' });
+    }
+
     const { error } = await supabaseServer
       .from('ai_connections')
       .insert({

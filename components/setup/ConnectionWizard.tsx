@@ -218,6 +218,25 @@ export default function ConnectionWizard({ onComplete }: { onComplete?: () => vo
                 </div>
               ))}
 
+              {interactionMode === 'voice' && (
+                <div className="space-y-1.5 pt-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] flex items-center gap-2">
+                    <Shield className="w-3 h-3" /> Webhook Signing Secret
+                  </label>
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--accent)] opacity-50" />
+                    <input
+                      type="password"
+                      placeholder="e.g. whsec_..."
+                      className="w-full bg-[var(--bg-primary)] border border-[var(--accent)]/30 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-[var(--accent)] transition-all font-mono"
+                      value={config.webhook_secret || ''}
+                      onChange={(e) => setConfig({ ...config, webhook_secret: e.target.value })}
+                    />
+                  </div>
+                  <p className="text-[9px] text-[var(--text-secondary)] font-medium italic">Required to verify HMAC-SHA256 signatures for incoming call events.</p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Model / Stream</label>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { logger } from "@/lib/logger";
 import { CountUp } from "@/components/ui/CountUp";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -36,6 +36,7 @@ interface ConversationData {
 
 export default function VoiceConversationPage() {
   const { conversationId } = useParams();
+  const router = useRouter();
   const [data, setData] = useState<ConversationData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +82,18 @@ export default function VoiceConversationPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] p-8 animate-fadeIn">
+      {/* Breadcrumbs */}
+      <nav className="flex items-center gap-2 mb-6 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
+        <button 
+          onClick={() => router.push('/dashboard/voice')}
+          className="hover:text-[var(--accent)] hover:underline transition-colors"
+        >
+          Voice Monitor
+        </button>
+        <span className="opacity-30">/</span>
+        <span className="text-[var(--text-primary)]">Session Detail</span>
+      </nav>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>

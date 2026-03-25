@@ -12,6 +12,7 @@ export type VoiceProvider =
   | 'vapi'
   | 'retell'
   | 'elevenlabs'
+  | 'pipecat'
   | 'openai_realtime'
   | 'anthropic_agents'
 
@@ -129,6 +130,20 @@ function normalizeAnthropic(body: any): NormalizedPayload {
   }
 }
 
+function normalizePipecat(body: any): NormalizedPayload {
+  const messages: NormalizedMessage[] = (body.transcript || body.messages || []).map((m: any) => ({
+    role: m.role || (m.speaker === 'agent' ? 'assistant' : 'user'),
+    content: m.content || m.text || '',
+    timestamp: m.timestamp,
+  }))
+  return {
+    provider: 'pipecat',
+    session_id: body.session_id || body.call_id || crypto.randomUUID(),
+    messages,
+    metadata: { ...body.metadata, pipecat_version: body.version },
+  }
+}
+
 export function normalizePayload(
   provider: VoiceProvider,
   body: any
@@ -137,6 +152,7 @@ export function normalizePayload(
     case 'vapi':              return normalizeVapi(body)
     case 'retell':            return normalizeRetell(body)
     case 'elevenlabs':        return normalizeElevenLabs(body)
+    case 'pipecat':           return normalizePipecat(body)
     case 'openai_realtime':   return normalizeOpenAIRealtime(body)
     case 'anthropic_agents':  return normalizeAnthropic(body)
   }

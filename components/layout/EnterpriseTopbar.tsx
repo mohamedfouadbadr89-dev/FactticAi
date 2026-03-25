@@ -47,23 +47,35 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
     router.push("/");
   };
 
+  const handleResetDemo = async () => {
+    if (!confirm("CRITICAL: This will purge all organizational governance data for the current session. This action is IRREVERSIBLE. Proceed?")) return;
+    
+    try {
+      const res = await fetch("/api/admin/clear-demo-data", { method: "POST" });
+      if (res.ok) {
+        alert("Demo environment reset successful.");
+        window.location.reload();
+      } else {
+        const err = await res.json();
+        alert(`Reset failed: ${err.error || 'Unknown error'}`);
+      }
+    } catch (e) {
+      alert("Network error occurred during reset.");
+    }
+  };
+
   return (
     <header className="h-16 bg-[var(--card-bg)] border-b border-[var(--border-primary)] flex items-center px-6 relative z-50">
-
-      {/* Left Section */}
+      {/* Left Section (unchanged) */}
       <div className="flex items-center gap-3">
-        
         <button 
           onClick={onToggleSidebar}
           className="md:hidden p-2 -ml-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] rounded-lg transition-colors focus:ring-2 focus:ring-[var(--accent)]"
         >
           <Menu className="w-5 h-5" />
         </button>
-
         <AgentSwitcher />
-
         <div className="h-6 w-px bg-[var(--bg-primary)] mx-3" />
-
         <div className="hidden sm:flex bg-[var(--bg-primary)] rounded-xl p-1 gap-1">
           <button
             onClick={() => setChannel("chat")}
@@ -86,7 +98,6 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
             Voice
           </button>
         </div>
-
       </div>
 
       {/* Center Section (Command Palette) */}
@@ -96,6 +107,12 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
 
       {/* Right Section */}
       <div className="flex items-center gap-4">
+        <button
+          onClick={handleResetDemo}
+          className="px-3 py-1.5 bg-red-500/10 border border-red-500/40 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-red-500/20 transition-all"
+        >
+          Reset Demo
+        </button>
 
         <button
           onClick={toggleAuditMode}
