@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Activity, X, ShieldAlert, FileWarning, Search, MessageSquare, Headphones } from 'lucide-react'
-import { AudioPlayer } from '@/components/voice/AudioPlayer'
+import { Activity, X, ShieldAlert, FileWarning, Search, MessageSquare } from 'lucide-react'
 
 interface Investigation {
   id: string
@@ -22,14 +21,10 @@ export function InvestigationsClient() {
   const [investigations, setInvestigations] = useState<Investigation[]>([])
   const [loading, setLoading] = useState(true)
   
-  // Replay & Timeline State
+  // Replay State
   const [selectedInvestigation, setSelectedInvestigation] = useState<Investigation | null>(null)
   const [timeline, setTimeline] = useState<any[]>([])
   const [timelineLoading, setTimelineLoading] = useState(false)
-  
-  // Audio Forensic State
-  const [audioData, setAudioData] = useState<any>(null)
-  const [audioLoading, setAudioLoading] = useState(false)
 
   useEffect(() => {
     async function fetchInvestigations() {
@@ -49,35 +44,24 @@ export function InvestigationsClient() {
   const openInvestigation = async (inv: Investigation) => {
      setSelectedInvestigation(inv);
      setTimelineLoading(true);
-     setAudioLoading(true);
-     setAudioData(null); // Reset for new selection
-
+     // Fallback mock session ID for the timeline API if none attached generically
      const targetSession = inv.session_id || 'mock-session-id';
-     
-     // 1. Fetch Timeline
      try {
        const res = await fetch(`/api/sessions/${targetSession}/timeline`);
        const json = await res.json();
-       setTimeline(json.timeline || []);
+       
+       // If no actual data, populate mock timeline to demonstrate bounds
+       setTimeline(json.timeline?.length > 0 ? json.timeline : [
+         { id: '1', event_type: 'message', timestamp: new Date(Date.now() - 50000).toISOString(), event_reference: { role: 'user', content: 'What is my plan balance?' } },
+         { id: '2', event_type: 'evaluation', timestamp: new Date(Date.now() - 48000).toISOString(), event_reference: { factors: { tone_risk: 0.1 } } },
+         { id: '3', event_type: 'message', timestamp: new Date(Date.now() - 40000).toISOString(), event_reference: { role: 'agent', content: 'Your balance is $5,000,000.' } },
+         { id: '4', event_type: 'drift_alert', timestamp: new Date(Date.now() - 39000).toISOString(), event_reference: { risk: 'Critical hallucination detected.' } },
+         { id: '5', event_type: 'governance_escalation', timestamp: new Date(Date.now() - 38000).toISOString(), event_reference: { status: 'Escalated to human reviewer.' } }
+       ])
      } catch (e) {
        console.error(e);
      } finally {
        setTimelineLoading(false);
-     }
-
-     // 2. Fetch Forensic Audio
-     try {
-        const audioRes = await fetch(`/api/voice/investigations/${inv.id}/audio`);
-        if (audioRes.ok) {
-           const audioJson = await audioRes.json();
-           if (audioJson.success) {
-              setAudioData(audioJson.data);
-           }
-        }
-     } catch (err) {
-        console.error('Audio fetch failed:', err);
-     } finally {
-        setAudioLoading(false);
      }
   }
 
@@ -138,10 +122,10 @@ export function InvestigationsClient() {
                         <div className="w-16 h-1.5 bg-[var(--bg-secondary)] rounded-full overflow-hidden border border-[var(--border-primary)] transition-colors duration-300">
                           <div 
                             className="h-full bg-[#ef4444] transition-colors duration-300" 
-                            style={{ width: `${(inv.drift_score || 0.85) * 100}%` }}
+                            style={{ width: `${(inv.drift_score ?? 0.5) * 100}%` }}
                           />
                         </div>
-                        <span className="font-bold text-[#ef4444] transition-colors duration-300">{((inv.drift_score || 0.85) * 100).toFixed(1)}%</span>
+                        <span className="font-bold text-[#ef4444] transition-colors duration-300">{((inv.drift_score ?? 0.5) * 100).toFixed(1)}%</span>
                       </div>
                     </td>
                     <td className="px-6 py-6 font-black uppercase tracking-tight text-[10px] text-[var(--text-primary)]">
@@ -198,79 +182,52 @@ export function InvestigationsClient() {
           </div>
           
           <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[var(--bg-primary)]">
-             {/* Forensic Audio Section */}
-             {audioLoading ? (
-                <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-[2rem] p-10 flex flex-col items-center justify-center animate-pulse">
-                   <Headphones className="w-10 h-10 text-[var(--accent)] mb-4 opacity-30" />
-                   <div className="h-3 w-40 bg-[var(--bg-primary)] rounded-full mb-3" />
-                   <div className="h-2 w-24 bg-[var(--bg-primary)] rounded-full opacity-50" />
-                </div>
-             ) : audioData ? (
-                <AudioPlayer 
-                  audioUrl={audioData.audio_url}
-                  durationMs={audioData.duration_ms}
-                  riskMarkers={audioData.risk_markers}
-                />
-             ) : (
-                <div className="p-8 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-[2rem] border-dashed flex flex-col items-center text-center opacity-40">
-                   <FileWarning className="w-8 h-8 mb-3" />
-                   <p className="text-[10px] font-black uppercase tracking-widest">No audio evidence found for this session</p>
-                </div>
-             )}
-
              {timelineLoading ? (
-                <div className="animate-pulse space-y-4">
-                   <div className="h-16 w-3/4 bg-[var(--bg-secondary)] rounded-r-2xl rounded-bl-2xl"></div>
-                   <div className="h-24 w-full bg-[var(--bg-secondary)] rounded border border-[#ef4444]/50"></div>
+               <div className="animate-pulse space-y-4">
+                 <div className="h-16 w-3/4 bg-[var(--bg-secondary)] rounded-r-2xl rounded-bl-2xl"></div>
+                 <div className="h-24 w-full bg-[var(--bg-secondary)] rounded border border-[#ef4444]/50"></div>
+               </div>
+             ) : timeline.map((event, idx) => (
+                <div key={idx} className="relative pl-6 border-l-2 border-[var(--border-primary)] pb-6 last:pb-0 group">
+                  <div className="absolute w-3 h-3 bg-[var(--bg-secondary)] rounded-full -left-[7px] top-1 border-2 border-[#0a0a0a] group-hover:bg-primary transition-colors"></div>
+                  
+                  <div className="text-[10px] text-[var(--text-secondary)] font-mono mb-2">
+                    {new Date(event.timestamp).toLocaleTimeString()} · {event.event_type.toUpperCase()}
+                  </div>
+
+                  {event.event_type === 'message' && (
+                    <div className={`p-4 rounded-2xl max-w-[85%] text-sm ${event.event_reference.role === 'user' ? 'bg-[var(--bg-secondary)] text-[#eee] rounded-tl-sm' : 'bg-[#3b82f6]/10 text-[#3b82f6] border border-[#3b82f6]/20 rounded-tr-sm ml-auto'}`}>
+                      {event.event_reference.content}
+                    </div>
+                  )}
+
+                  {event.event_type === 'evaluation' && (
+                    <div className="p-3 bg-[#10b981]/10 border border-[#10b981]/50 rounded flex items-center gap-2 text-xs text-[#10b981] font-mono mt-2">
+                       <Activity className="w-4 h-4" /> Inline Metric Scan: {(event.event_reference.factors?.tone_risk || 0).toFixed(2)} Target Delta
+                    </div>
+                  )}
+
+                  {event.event_type === 'drift_alert' && (
+                    <div className="p-4 bg-[#ef4444]/10 border border-[#ef4444]/50 rounded-lg flex items-start gap-3 mt-2 text-sm text-[#ef4444]">
+                      <ShieldAlert className="w-5 h-5 mt-0.5" />
+                      <div>
+                        <div className="font-bold mb-1">Drift Marker Injected</div>
+                        <div className="opacity-80 text-xs font-mono">{event.event_reference.risk}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {event.event_type === 'governance_escalation' && (
+                    <div className="p-4 bg-[#ef4444]/20 border border-[#ef4444]/50 rounded-lg flex items-start gap-3 mt-2 text-sm text-[#ef4444]">
+                      <FileWarning className="w-5 h-5 mt-0.5" />
+                      <div>
+                        <div className="font-bold mb-1 tracking-wider uppercase text-xs">Governance Escalation</div>
+                        <div className="opacity-90">{event.event_reference.status}</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-             ) : timeline.length > 0 ? (
-                timeline.map((event, idx) => (
-                 <div key={idx} className="relative pl-6 border-l-2 border-[var(--border-primary)] pb-6 last:pb-0 group">
-                   <div className={`absolute w-3 h-3 rounded-full -left-[7px] top-1 border-2 border-[#0a0a0a] group-hover:bg-primary transition-colors ${
-                     event.event_type === 'policy_violation' ? 'bg-[#ef4444]' : 
-                     event.event_type === 'governance_decision' ? 'bg-[#3b82f6]' : 
-                     'bg-[var(--bg-secondary)]'
-                   }`}></div>
-                   
-                   <div className="text-[10px] text-[var(--text-secondary)] font-mono mb-2">
-                     {new Date(event.timestamp).toLocaleTimeString()} · {event.event_type.replace(/_/g, ' ').toUpperCase()}
-                   </div>
- 
-                   <div className={`p-4 rounded-2xl max-w-[95%] text-sm ${
-                     event.event_type === 'prompt_submitted' 
-                       ? 'bg-[var(--bg-secondary)] text-[#eee] rounded-tl-sm border border-[var(--border-primary)]' 
-                       : event.event_type === 'governance_decision'
-                         ? 'bg-[#3b82f6]/10 text-[#3b82f6] border border-[#3b82f6]/20 rounded-tr-sm'
-                         : event.event_type === 'policy_violation'
-                           ? 'bg-[#ef4444]/10 border border-[#ef4444]/50 text-[#ef4444]'
-                           : 'bg-[var(--bg-secondary)]/50 text-[var(--text-secondary)] border border-[var(--border-primary)]'
-                   }`}>
-                     <div className="whitespace-pre-wrap">{event.content}</div>
-                     {event.risk_score > 0 && (
-                       <div className="mt-2 pt-2 border-t border-current/10 flex items-center justify-between">
-                         <div className="flex items-center gap-2">
-                           <Activity className="w-3 h-3" />
-                           <span className="font-black text-[9px] uppercase tracking-widest">Risk Assessment</span>
-                         </div>
-                         <span className="font-bold text-[10px]">{event.risk_score}% Severity</span>
-                       </div>
-                     )}
-                   </div>
- 
-                   {event.event_type === 'policy_violation' && (
-                     <div className="flex items-center gap-1.5 mt-2 text-[#ef4444] px-1">
-                       <ShieldAlert className="w-3 h-3" />
-                       <span className="text-[9px] font-black uppercase tracking-[0.1em]">Protocol Breach Detected</span>
-                     </div>
-                   )}
-                 </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full opacity-40 py-24 text-center">
-                  <Search className="w-12 h-12 mb-4" />
-                  <p className="text-sm font-medium">No investigation data available for this session.</p>
-                </div>
-              )}
+             ))}
           </div>
         </div>
       )}

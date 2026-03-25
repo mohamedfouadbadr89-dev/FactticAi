@@ -219,7 +219,7 @@ export default function VoicePage() {
 
   const avgIntegrity = summaries.length
     ? Math.round(summaries.reduce((a, s) => a + s.audio_integrity_score, 0) / summaries.length)
-    : null;
+    : 0;
 
   const totalInterruptions = summaries.reduce((a, s) => a + s.interruptions, 0);
   const avgPacketLoss = summaries.length
@@ -277,7 +277,7 @@ export default function VoicePage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         {[
           { label: 'Avg Latency', value: `${avgLatency}ms`, icon: Zap, color: '#a855f7' },
-          { label: 'Audio Integrity', value: avgIntegrity !== null ? `${avgIntegrity}%` : 'N/A', icon: Radio, color: '#10b981' },
+          { label: 'Audio Integrity', value: `${avgIntegrity}%`, icon: Radio, color: '#10b981' },
           { label: 'Total Interruptions', value: String(totalInterruptions), icon: AlertTriangle, color: '#f59e0b' },
           { label: 'Avg Packet Loss', value: `${avgPacketLoss}%`, icon: Activity, color: '#3b82f6' },
         ].map((stat, i) => (
@@ -414,8 +414,11 @@ export default function VoicePage() {
             <div className="space-y-2">
               {sessions.map((s) => (
                 <div key={s.session_id} className="flex flex-col gap-2 p-3 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl hover:border-purple-500/40 transition-all group">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => toggleSession(s.session_id)}>
+                  <div
+                    onClick={() => toggleSession(s.session_id)}
+                    className="flex items-center justify-between cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0" />
                       <div>
                         <p className="text-xs font-bold font-mono">{s.session_id.substring(0, 16)}…</p>
@@ -430,19 +433,23 @@ export default function VoicePage() {
                         <p className="text-sm font-black text-purple-400">{s.latency_ms}ms</p>
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase font-bold text-[var(--text-secondary)]">Status</p>
-                        <button 
-                          onClick={() => router.push(`/dashboard/voice/${s.session_id}`)}
-                          className="flex items-center gap-1.5 px-2.5 py-1 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-[9px] font-black uppercase tracking-widest hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
-                        >
-                          View Details <ExternalLink className="w-2.5 h-2.5" />
-                        </button>
+                        <p className="text-[10px] uppercase font-bold text-[var(--text-secondary)]">Loss</p>
+                        <p className="text-sm font-black text-blue-400">{s.packet_loss}%</p>
                       </div>
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-[var(--text-secondary)]">Intr</p>
+                        <p className="text-sm font-black text-yellow-400">{s.interruptions}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-[var(--text-secondary)]">Integrity</p>
+                        <p className="text-sm font-black text-emerald-400">{s.audio_integrity_score}%</p>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0" />
                     </div>
                   </div>
                   {expandedSession === s.session_id && s.transcript && (
                     <div className="mt-2 p-3 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg">
-                      <p className="text-[10px] uppercase font-bold text-[var(--text-secondary)] mb-2">Transcript Summary</p>
+                      <p className="text-[10px] uppercase font-bold text-[var(--text-secondary)] mb-2">Transcript Viewer</p>
                       <pre className="text-xs text-[var(--text-primary)] whitespace-pre-wrap font-mono">{s.transcript}</pre>
                     </div>
                   )}

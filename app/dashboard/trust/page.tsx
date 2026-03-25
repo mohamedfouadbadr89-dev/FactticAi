@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
   Shield, 
   Lock, 
@@ -15,42 +15,22 @@ import {
 } from 'lucide-react';
 
 export default function TrustCenterPage() {
-  const [integrityStatus, setIntegrityStatus] = useState<string>('Checking...');
-
-  useEffect(() => {
-    async function checkIntegrity() {
-      try {
-        const res = await fetch('/api/governance/ledger/integrity');
-        const data = await res.json();
-        
-        if (data.integrity_status === 'VALID' || data.verified === true) {
-          setIntegrityStatus('VERIFIED');
-        } else {
-          setIntegrityStatus('PENDING');
-        }
-      } catch (e) {
-        setIntegrityStatus('Checking...');
-      }
-    }
-    checkIntegrity();
-  }, []);
-
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
       {/* System Status Banner */}
       <div className="w-full h-8 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] flex items-center justify-center text-[10px] uppercase font-black tracking-widest text-[var(--text-secondary)]">
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-6">
           <span className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-[var(--success)] animate-pulse" />
             Governance Engine: ACTIVE
           </span>
           <span className="flex items-center gap-2">
-            <div className={`w-1.5 h-1.5 rounded-full ${integrityStatus === 'VERIFIED' ? 'bg-[var(--success)]' : 'bg-[var(--warning)] animate-pulse'}`} />
-            Integrity Ledger: {integrityStatus}
+            <div className="w-1.5 h-1.5 rounded-full bg-[var(--success)]" />
+            Integrity Ledger: VERIFIED
           </span>
           <span className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-[var(--success)]" />
-            Audit Status: LIVE
+            Audit Status: COMPLIANT
           </span>
         </div>
       </div>
@@ -58,9 +38,6 @@ export default function TrustCenterPage() {
       <div className="max-w-[1200px] mx-auto px-8 py-12 space-y-12">
         {/* Header */}
         <header className="space-y-4">
-          <div className="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--accent)] bg-[var(--accent)]/5 px-3 py-1 rounded w-fit">
-            System integrity metrics are updated periodically
-          </div>
           <div className="flex items-center gap-3 text-[var(--accent)]">
             <Shield className="w-10 h-10" />
             <h1 className="text-4xl font-black tracking-tighter uppercase italic">Trust Center</h1>

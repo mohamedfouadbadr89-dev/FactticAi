@@ -57,7 +57,6 @@ export class TrafficSimulator {
       try {
         await supabaseServer.from('simulation_runs').insert({
           simulation_id: simulationId,
-          org_id: orgId,
           scenario_name: scenario.name,
           input_prompt: prompt,
           model_response: response,

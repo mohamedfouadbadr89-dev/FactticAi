@@ -11,9 +11,7 @@ import {
   BrainCircuit,
   ArrowRight,
   Bot,
-  LayoutGrid,
-  AlertTriangle,
-  RefreshCw
+  LayoutGrid
 } from 'lucide-react'
 
 import {
@@ -90,12 +88,12 @@ export default function HomePage() {
   }, [])
 
   // Realtime: TEMPORARILY DISABLED due to client-side crashes
-  // Replaced with a 30-second polling interval fallback
+  // Replaced with a 5-second polling interval fallback
   React.useEffect(() => {
     if (!data?.org_id) return
     const interval = setInterval(() => {
       setRetry(r => r + 1)
-    }, 30000)
+    }, 5000)
     return () => clearInterval(interval)
   }, [data?.org_id])
 
@@ -131,39 +129,13 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--bg-secondary)] text-[var(--text-primary)] p-8">
 
-      {/* Demo Mode Banner */}
-      {data && (
-        <div className="mb-10 p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
-          <div className="flex items-center gap-4">
-            <div className="p-2 bg-orange-500/20 rounded-xl">
-              <AlertTriangle className="w-5 h-5 text-orange-500" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-white uppercase tracking-widest">Running in Demo Mode</p>
-              <p className="text-[10px] text-[var(--text-secondary)]">Historical data detected. Reset the environment to start a fresh orchestration cycle.</p>
-            </div>
-          </div>
-          <button 
-            onClick={async () => {
-              if (confirm("Reset all demo data? This cannot be undone.")) {
-                 const res = await fetch('/api/admin/clear-demo-data', { method: 'POST' });
-                 if (res.ok) window.location.reload();
-              }
-            }}
-            className="px-6 py-2 bg-white/10 text-white border border-white/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/20 transition-all shadow-lg"
-          >
-            Reset Data
-          </button>
-        </div>
-      )}
-
       {/* Header */}
 
       <div className="flex items-center justify-between mb-12">
         <div>
           <h1 className="text-3xl font-black tracking-tighter uppercase flex items-center gap-3">
             <LayoutGrid className="w-8 h-8 text-[#3b82f6]" />
-            Executive Overview
+            Facttic v1 Dashboard
           </h1>
 
           <p className="text-[10px] text-[var(--text-secondary)] font-mono tracking-widest uppercase mt-1">

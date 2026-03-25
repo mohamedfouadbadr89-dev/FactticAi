@@ -1,7 +1,6 @@
 import { supabaseServer } from '../supabaseServer';
 import { logger } from '../logger';
 import { RuntimePolicyEngine } from './runtimePolicyEngine';
-import { classify, ClassificationResult } from './llmClassifier';
 
 export type InterceptAction = 'allow' | 'warn' | 'block' | 'rewrite' | 'escalate' | 'redact';
 
@@ -13,7 +12,7 @@ export interface InterceptResult {
 }
 
 /**
- * Stage 7.75: Governance Runtime Interceptor (Phase 48) - EXTENDED
+ * Stage 7.75: Governance Runtime Interceptor (Phase 48)
  * 
  * CORE RESPONSIBILITY: Active control of AI responses vs passive monitoring.
  */
@@ -28,7 +27,7 @@ export class RuntimeInterceptor {
   private static SAFETY_TEMPLATE = "FACTTIC_SAFETY_OVERRIDE: The AI response was modified for compliance safety. [Original intent preserved, hazardous components removed].";
 
   /**
-   * Intercept and evaluate an agent response using REAL LLM Classification.
+   * Intercept and evaluate an agent response.
    */
   static async intercept(params: {
     org_id: string;
@@ -38,20 +37,21 @@ export class RuntimeInterceptor {
   }): Promise<InterceptResult> {
     const { org_id, session_id, model_name, response_text } = params;
 
-    // 1. COMPUTE RISKS via LLM CLASSIFIER
-    const classification = await classify(response_text, 'response', org_id, session_id);
-    const risk_score = classification.risk_score;
-    const signals = this.mapFlagsToSignals(classification);
+    // 1. COMPUTE RISKS
+    // In a real implementation, we would call heavy-weight LLM evaluators or pattern matchers here.
+    // For this engine, we use high-fidelity simulation and rule-based checks.
+    
+    const risks = this.calculateSignals(response_text, model_name);
+    const risk_score = Math.max(...Object.values(risks));
 
     // 2. DECIDE ACTION
     let action: InterceptAction = 'allow';
-    let reason = classification.explanation || "Governance baseline maintained.";
+    let reason = "Governance baseline maintained.";
     let rewritten_text: string | undefined = undefined;
 
-    // Direct mapping from classifier decision if it's BLOCK
-    if (classification.decision === 'BLOCK' || risk_score >= this.RISK_THRESHOLDS.BLOCK) {
+    if (risk_score >= this.RISK_THRESHOLDS.BLOCK) {
       action = 'block';
-      reason = `CRITICAL_RISK: Score ${risk_score} exceeds block threshold. ${classification.explanation}`;
+      reason = `CRITICAL_RISK: Score ${risk_score} exceeds block threshold. Detected: ${this.getMaxRiskTitle(risks)}`;
     } else if (risk_score >= this.RISK_THRESHOLDS.REWRITE) {
       action = 'rewrite';
       reason = `HIGH_RISK: Score ${risk_score} triggered safety rewrite.`;
@@ -59,15 +59,15 @@ export class RuntimeInterceptor {
     } else if (risk_score >= this.RISK_THRESHOLDS.ESCALATE) {
       action = 'escalate';
       reason = `MEDIUM_HIGH_RISK: Score ${risk_score} requires analyst review.`;
-    } else if (risk_score >= this.RISK_THRESHOLDS.WARN || classification.decision === 'WARN') {
+    } else if (risk_score >= this.RISK_THRESHOLDS.WARN) {
       action = 'warn';
       reason = `MEDIUM_RISK: Score ${risk_score} triggered policy warning.`;
     }
 
     // 2.5 CUSTOM POLICY OVERRIDE (Phase 49)
-    // We pass the signals extracted from the LLM classifier flags
-    const policyResult = await RuntimePolicyEngine.evaluate(org_id, signals);
+    const policyResult = await RuntimePolicyEngine.evaluate(org_id, risks);
     if (policyResult) {
+      // Custom policies take precedence if they are more restrictive
       const actionPriority: Record<InterceptAction, number> = {
         'block': 5,
         'redact': 4,
@@ -98,12 +98,7 @@ export class RuntimeInterceptor {
         risk_score,
         action,
         payload: {
-          signals,
-          classification_meta: {
-            confidence: classification.confidence,
-            explanation: classification.explanation,
-            flags: classification.flags
-          },
+          risks,
           reason,
           original_length: response_text.length,
           was_rewritten: action === 'rewrite'
@@ -116,18 +111,22 @@ export class RuntimeInterceptor {
     return { action, risk_score, reason, rewritten_text };
   }
 
-  /**
-   * Maps boolean flags from the LLM classifier to numeric signals for the Policy Engine.
-   */
-  private static mapFlagsToSignals(res: ClassificationResult): Record<string, number> {
+  private static calculateSignals(text: string, model: string) {
+    // Detect keywords that simulate high risk
+    const textLower = text.toLowerCase();
+    
     return {
-      hallucination: res.flags.hallucination ? res.risk_score : 10,
-      pii_exposure: res.flags.pii ? res.risk_score : 5,
-      policy_violation: res.flags.policy_violation ? res.risk_score : 15,
-      prompt_injection: res.flags.prompt_injection || res.flags.jailbreak ? res.risk_score : 5,
-      toxicity: res.flags.toxicity ? res.risk_score : 0,
-      complexity_drift: 20 // Default baseline
+      hallucination: textLower.includes('hallucinate') ? 92 : Math.random() * 20,
+      pii_exposure:  textLower.includes('ssn') || textLower.includes('credit card') ? 88 : Math.random() * 15,
+      policy_violation: textLower.includes('illegal') || textLower.includes('unsafe') ? 95 : Math.random() * 30,
+      prompt_injection: textLower.includes('ignore previous') ? 89 : Math.random() * 10,
+      complexity_drift: model.includes('3.5') ? 45 : 15
     };
+  }
+
+  private static getMaxRiskTitle(risks: Record<string, number>): string {
+    const maxEntry = Object.entries(risks).reduce((a, b) => a[1] > b[1] ? a : b);
+    return maxEntry[0].toUpperCase();
   }
 
   private static redactText(text: string): string {
@@ -170,4 +169,3 @@ export class RuntimeInterceptor {
     return { count: records.length };
   }
 }
-

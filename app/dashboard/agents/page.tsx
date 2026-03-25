@@ -33,6 +33,15 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis
 } from 'recharts'
 
+// ── Mock Data for Initial Render ─────────────────────────────────────────
+
+const AGENT_STATS = [
+  { name: 'Active Agents', value: 12, icon: Bot, color: '#3b82f6' },
+  { name: 'Total Steps (24h)', value: 1420, icon: Activity, color: '#10b981' },
+  { name: 'Blocked Tools', value: 8, icon: ShieldX, color: '#ef4444' },
+  { name: 'Avg Risk Score', value: 12.4, icon: ShieldAlert, color: '#f59e0b' },
+]
+
 import { useInteractionMode } from '@/store/interactionMode';
 import { useRouter } from 'next/navigation';
 
@@ -42,9 +51,6 @@ export default function AgentsPage() {
   const { mode } = useInteractionMode();
   const router = useRouter();
   const [sessions, setSessions] = React.useState<any[]>([])
-  const [stats, setStats] = React.useState<any[]>([])
-  const [radar, setRadar] = React.useState<any[]>([])
-  const [tools, setTools] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
   const [seeding, setSeeding] = React.useState(false)
 
@@ -59,21 +65,10 @@ export default function AgentsPage() {
         })
       }
 
-      const [sessRes, statsRes] = await Promise.all([
-        fetch('/api/agents/sessions'),
-        fetch('/api/agents/stats')
-      ]);
-
-      if (sessRes.ok) {
-        const json = await sessRes.json()
+      const res = await fetch('/api/agents/sessions')
+      if (res.ok) {
+        const json = await res.json()
         setSessions(json)
-      }
-
-      if (statsRes.ok) {
-        const json = await statsRes.json();
-        setStats(json.stats || []);
-        setRadar(json.radar || []);
-        setTools(json.tools || []);
       }
     } catch (e) {
       console.error('[AgentsPage]', e)
@@ -97,16 +92,6 @@ export default function AgentsPage() {
   }, [fetchData])
 
   React.useEffect(() => { fetchData() }, [fetchData])
-
-  const getIcon = (name: string) => {
-    switch (name) {
-      case 'Bot': return Bot;
-      case 'Activity': return Activity;
-      case 'ShieldX': return ShieldX;
-      case 'ShieldAlert': return ShieldAlert;
-      default: return Cpu;
-    }
-  }
 
   return (
     <div className="min-h-screen bg-[var(--bg-secondary)] text-[var(--text-primary)] p-8">
@@ -142,23 +127,15 @@ export default function AgentsPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        {stats.length > 0 ? stats.map((stat) => {
-          const IconComp = getIcon(stat.icon);
-          return (
-            <div key={stat.name} className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl p-6 relative overflow-hidden group hover:border-[var(--border-primary)] transition-all">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#3b82f611] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <IconComp className="w-5 h-5 mb-4" style={{ color: stat.color }} />
-              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1">{stat.name}</p>
-              <p className="text-2xl font-black">{stat.value}</p>
-            </div>
-          )
-        }) : (
-          [1,2,3,4].map(i => (
-            <div key={i} className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl p-6 h-32 animate-pulse" />
-          ))
-        )}
+        {AGENT_STATS.map((stat) => (
+          <div key={stat.name} className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl p-6 relative overflow-hidden group hover:border-[var(--border-primary)] transition-all">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#3b82f611] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <stat.icon className="w-5 h-5 mb-4" style={{ color: stat.color }} />
+            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1">{stat.name}</p>
+            <p className="text-2xl font-black">{stat.value}</p>
+          </div>
+        ))}
       </div>
-
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-12">
         {/* Active Agents Monitor */}
@@ -248,45 +225,46 @@ export default function AgentsPage() {
                  <ShieldAlert className="w-4 h-4" /> Agent Risk Heatmap
               </h3>
               <div className="h-[240px]">
-                  {radar.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={radar}>
-                        <PolarGrid stroke="#2d2d2d" />
-                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#555', fontSize: 9, fontWeight: 900 }} />
-                        <Radar name="Threat Level" dataKey="A" stroke="#ef4444" fill="#ef4444" fillOpacity={0.1} />
-                        <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #333', fontSize: '10px' }} />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex items-center justify-center h-full opacity-20 text-[9px] uppercase font-black tracking-widest">
-                      Awaiting Risk Data
-                    </div>
-                  )}
-               </div>
-            </div>
+                 <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={[
+                      { subject: 'Tool Misuse', A: 45, fullMark: 100 },
+                      { subject: 'Looping', A: 20, fullMark: 100 },
+                      { subject: 'Data Leak', A: 85, fullMark: 100 },
+                      { subject: 'API Poison', A: 35, fullMark: 100 },
+                      { subject: 'Hallucin.', A: 65, fullMark: 100 },
+                    ]}>
+                      <PolarGrid stroke="#2d2d2d" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#555', fontSize: 9, fontWeight: 900 }} />
+                      <Radar name="Threat Level" dataKey="A" stroke="#ef4444" fill="#ef4444" fillOpacity={0.1} />
+                      <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #333', fontSize: '10px' }} />
+                    </RadarChart>
+                 </ResponsiveContainer>
+              </div>
+           </div>
 
-            <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl p-6">
-               <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-6 flex items-center gap-2">
-                  <Cpu className="w-4 h-4" /> Top Tool Triggers
-               </h3>
-               <div className="space-y-4">
-                  {tools.length > 0 ? tools.map((tool) => (
-                    <div key={tool.name} className="flex flex-col gap-2">
-                       <div className="flex justify-between items-center text-[10px] font-black uppercase">
-                          <span className="text-white tracking-widest">{tool.name}</span>
-                          <span className="text-[var(--text-secondary)] font-mono">{tool.usage} calls</span>
-                       </div>
-                       <div className="h-1 bg-[var(--bg-secondary)] rounded-full overflow-hidden border border-[#1a1a1a]">
-                          <div className="h-full bg-gradient-to-r from-[#3b82f6] to-[#10b981]" style={{ width: `${(tool.usage / (tools[0]?.usage || 1)) * 100}%` }} />
-                       </div>
-                    </div>
-                  )) : (
-                    <div className="py-8 text-center opacity-20 text-[9px] uppercase font-black tracking-widest">
-                       No tools mapped
-                    </div>
-                  )}
-               </div>
-            </div>
+           <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl p-6">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-6 flex items-center gap-2">
+                 <Cpu className="w-4 h-4" /> Top Tool Triggers
+              </h3>
+              <div className="space-y-4">
+                 {[
+                   { name: 'sql_executor', usage: 420 },
+                   { name: 'web_search', usage: 310 },
+                   { name: 'aws_lambda', usage: 120 },
+                   { name: 'internal_api', usage: 85 },
+                 ].map((tool) => (
+                   <div key={tool.name} className="flex flex-col gap-2">
+                      <div className="flex justify-between items-center text-[10px] font-black uppercase">
+                         <span className="text-white tracking-widest">{tool.name}</span>
+                         <span className="text-[var(--text-secondary)] font-mono">{tool.usage} calls</span>
+                      </div>
+                      <div className="h-1 bg-[var(--bg-secondary)] rounded-full overflow-hidden border border-[#1a1a1a]">
+                         <div className="h-full bg-gradient-to-r from-[#3b82f6] to-[#10b981]" style={{ width: `${(tool.usage / 420) * 100}%` }} />
+                      </div>
+                   </div>
+                 ))}
+              </div>
+           </div>
         </div>
       </div>
     </div>

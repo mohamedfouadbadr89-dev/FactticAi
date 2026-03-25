@@ -7,31 +7,19 @@ import { supabaseServer } from '@/lib/supabaseServer';
  */
 export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
-    const TIMEOUT_MS = 3000;
-    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT_MS));
+    const { data: agents, error } = await supabaseServer
+      .from('agents')
+      .select('id, org_id, name, type, version, is_active, created_at')
+      .eq('org_id', orgId)
+      .order('created_at', { ascending: false });
 
-    const [result] = await Promise.allSettled([
-      Promise.race([
-        supabaseServer
-          .from('agents')
-          .select('id, org_id, name, type, version, is_active, created_at')
-          .eq('org_id', orgId)
-          .order('created_at', { ascending: false }),
-        timeout
-      ])
-    ]);
+    if (error) throw error;
 
-    const agentsData = result.status === 'fulfilled' ? (result.value as any).data : [];
-    const hasError = result.status === 'rejected' || (result.status === 'fulfilled' && (result.value as any).error);
-
-    return NextResponse.json({ 
-        agents: agentsData || [],
-        partial_failure: hasError ? true : false
-    });
+    return NextResponse.json({ agents });
 
   } catch (error: any) {
     return NextResponse.json(
-      { error: 'INTERNAL_SERVER_ERROR', message: error.message, agents: [] },
+      { error: error.message || 'Failed to fetch agents' },
       { status: 500 }
     );
   }

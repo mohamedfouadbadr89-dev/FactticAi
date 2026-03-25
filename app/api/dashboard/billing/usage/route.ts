@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { supabaseServer } from '@/lib/supabaseServer';
 
 /**
@@ -9,20 +8,27 @@ import { supabaseServer } from '@/lib/supabaseServer';
  * Fetches interactions, tokens, risk evaluations, and alerts.
  */
 
-export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const org_id = searchParams.get('org_id');
+
+    if (!org_id) {
+      return NextResponse.json({ error: 'Missing org_id' }, { status: 400 });
+    }
+
     // 1. Interactions (chat_session billing events)
     const { count: interactionsCount, error: interactionError } = await supabaseServer
       .from('billing_events')
       .select('*', { count: 'exact', head: true })
-      .eq('org_id', orgId)
+      .eq('org_id', org_id)
       .eq('type', 'chat_session');
 
     // 2. Tokens (sum of token_usage from cost_metrics)
     const { data: costData, error: costError } = await supabaseServer
       .from('cost_metrics')
       .select('token_usage')
-      .eq('org_id', orgId);
+      .eq('org_id', org_id);
 
     const totalTokens = (costData || []).reduce((sum, curr) => sum + Number(curr.token_usage), 0);
 
@@ -30,13 +36,13 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
     const { count: evalCount, error: evalError } = await supabaseServer
       .from('facttic_governance_events')
       .select('*', { count: 'exact', head: true })
-      .eq('org_id', orgId);
+      .eq('org_id', org_id);
 
     // 4. Alerts (count alert_triggered in facttic_governance_events)
     const { count: alertCount, error: alertError } = await supabaseServer
       .from('facttic_governance_events')
       .select('*', { count: 'exact', head: true })
-      .eq('org_id', orgId)
+      .eq('org_id', org_id)
       .eq('alert_triggered', true);
 
     if (interactionError || costError || evalError || alertError) {
@@ -54,5 +60,4 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-});
-
+}

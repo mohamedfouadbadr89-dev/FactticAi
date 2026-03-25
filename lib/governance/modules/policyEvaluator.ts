@@ -121,11 +121,10 @@ export const PolicyEvaluator = {
 
         // ── 4. CRITICAL: Executive / Sensitive Target Requests ──────────────────
         // Any prompt mentioning C-suite roles alongside location/contact/personal data
-        // Added \b (word boundaries) to prevent 'cooperative' from matching 'coo'
         const executiveTargetPattern = [
-            /\b(ceo|cto|cfo|coo|executive|founder|director|president)\b.*\b(address|home|residence|phone|contact|personal|live|house)\b/i,
-            /\b(where\s+(does|do|is|are))\b.*\b(ceo|cto|cfo|executive|founder|director)\b/i,
-            /\b(address|contact|phone|email)\b\s+(of|for)\b\s+(the\s+)?(ceo|cto|cfo|executive|director)\b/i,
+            /(ceo|cto|cfo|coo|executive|founder|director|president).*(address|home|location|email|phone|contact|personal|live|house|where)/i,
+            /(where\s+(does|do|is|are)).*(ceo|cto|cfo|executive|founder|director)/i,
+            /(address|contact|phone|email)\s+(of|for)\s+(the\s+)?(ceo|cto|cfo|executive|director)/i,
         ];
 
         executiveTargetPattern.forEach(re => {
@@ -134,15 +133,17 @@ export const PolicyEvaluator = {
                     policy_name: 'Executive PII Shield',
                     rule_type: 'pii_exposure',
                     threshold: 0,
-                    actual_score: 75,
-                    action: 'warn',
-                    metadata: { cause: 'Request for executive personal/location data detected. Warning triggered.' }
+                    actual_score: 92,
+                    action: 'block',
+                    metadata: { cause: 'Request for executive personal/location data detected. Immediate block.' }
                 });
                 triggered = true;
-                highestAction = 'warn';
-                // 75 - will trigger a WARN in the new logic (60-84)
+                highestAction = 'block';
+                // 1.15 × base 80 = 92 — intentionally below 100 to differentiate from
+                // schema/credential dumps which are scored at 100 (full exfiltration risk).
                 risk_multiplier = Math.max(risk_multiplier, 1.15);
-                score_ceiling = Math.min(score_ceiling, 75);
+                // Executive PII is serious but NOT a full data dump — cap at 92
+                score_ceiling = Math.min(score_ceiling, 92);
             }
         });
 
@@ -219,24 +220,6 @@ export const PolicyEvaluator = {
                 risk_multiplier = Math.max(risk_multiplier, 1.8);
             }
         });
-
-        // ── 8. Uncertainty / Hedging Detection (Phase 75) ──────────────────────
-        const uncertaintyMarkers = [
-            /\b(think|possibly|might|not\s+sure|maybe|could\s+be|potentially)\b/i,
-            /\bhaven't\s+confirmed\b/i,
-            /\bi'm\s+not\s+(certain|sure)\b/i
-        ];
-
-        let uncertaintyDetected = false;
-        uncertaintyMarkers.forEach(re => {
-            if (re.test(normalizedPrompt)) uncertaintyDetected = true;
-        });
-
-        if (uncertaintyDetected) {
-            // Apply a ceiling to prevent uncertainty from triggering BLOCK on its own
-            // or to downgrade fuzzy matches. Uncertainty alone should cap risk at 65 (WARN range).
-            score_ceiling = Math.min(score_ceiling, 65);
-        }
 
         return { triggered, highest_action: highestAction, violations, risk_multiplier, score_ceiling };
     }

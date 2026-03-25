@@ -1,12 +1,10 @@
 import { hashApiKey } from '../hash';
-import { EncryptionVault } from './encryptionVault';
 
 /**
  * BYOK Security Helper
  * 
  * This module facilitates the "Bring Your Own Key" architecture by ensuring
- * that all incoming provider keys are immediately processed into non-reversible hashes,
- * AND as reversible but shielded encrypted blobs.
+ * that all incoming provider keys are immediately processed into non-reversible hashes.
  */
 export const SecurityLayer = {
   /**
@@ -15,12 +13,5 @@ export const SecurityLayer = {
    */
   secureKeyReference: (rawKey: string) => {
     return hashApiKey(rawKey);
-  },
-
-  /**
-   * Securely encrypts a provider key for reversible use by the AI Gateway.
-   */
-  encryptKey: async (rawKey: string, orgId: string) => {
-    return await EncryptionVault.encryptField(rawKey, orgId);
   }
 };

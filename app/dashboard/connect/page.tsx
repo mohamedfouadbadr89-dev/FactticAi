@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import ConnectionWizard from "@/components/setup/ConnectionWizard";
 import { 
   ShieldCheck, 
@@ -13,9 +12,7 @@ import {
   ExternalLink, 
   Loader2,
   RefreshCw,
-  Clock,
-  Lock,
-  ChevronRight
+  Clock
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getProviderStatus, HealthStatus } from "@/lib/integrations/providerHealth";
@@ -32,16 +29,10 @@ interface Connection {
 }
 
 export default function ConnectionPage() {
-  const router = useRouter();
   const [showWizard, setShowWizard] = useState(false);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [byokStatus, setByokStatus] = useState<any>(null);
-  const [newKey, setNewKey] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [showForm, setShowForm] = useState(false);
 
   const fetchConnections = async () => {
     setRefreshing(true);
@@ -70,56 +61,8 @@ export default function ConnectionPage() {
     }
   };
 
-  const fetchByokStatus = async () => {
-    try {
-      const res = await fetch("/api/security/byok");
-      const json = await res.json();
-      setByokStatus(json);
-    } catch (err) {
-      console.error("Failed to fetch BYOK status:", err);
-    }
-  };
-
-  const handleSaveKey = async () => {
-    if (!newKey || newKey.length < 32) return;
-    setSaving(true);
-    try {
-      const res = await fetch("/api/security/byok", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: newKey })
-      });
-      if (res.ok) {
-        setShowForm(false);
-        setNewKey("");
-        fetchByokStatus();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteConfig = async () => {
-    if (!confirm("Are you sure you want to reset your encryption configuration? This will fallback to system keys for new data.")) return;
-    try {
-      await fetch("/api/security/byok", { method: "DELETE" });
-      fetchByokStatus();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   useEffect(() => {
     fetchConnections();
-    fetchByokStatus();
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -289,111 +232,6 @@ export default function ConnectionPage() {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* Consolidated Encryption & Security Section */}
-        {!loading && (
-          <div className="pt-10 border-t border-[var(--border-primary)] space-y-8 pb-20">
-            <h2 className="text-sm font-black uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-2">
-              Encryption & Security Protocol
-            </h2>
-            
-            <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-[32px] overflow-hidden shadow-sm">
-              <div className="p-8 space-y-8">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="p-4 bg-[var(--accent)]/10 text-[var(--accent)] rounded-2xl">
-                      <Lock className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold">Encryption Key Management (BYOK)</h2>
-                      <p className="text-sm text-[var(--text-secondary)]">Encrypted at rest using AES-256-GCM. Active for Chat & Voice streams.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {byokStatus?.is_configured ? (
-                      <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest">
-                        <ShieldCheck className="w-3 h-3" /> Active
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 px-3 py-1 bg-orange-500/10 text-orange-500 border border-orange-500/20 rounded-full text-[10px] font-black uppercase tracking-widest">
-                        <RefreshCw className="w-3 h-3 animate-spin" /> Unconfigured
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {!showForm ? (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="p-5 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl space-y-3">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Key Fingerprint</div>
-                        <div className="font-mono text-lg font-bold">
-                          {byokStatus?.is_configured ? `••••••••${byokStatus.fingerprint}` : "N/A"}
-                        </div>
-                      </div>
-                      <div className="p-5 bg-[var(--bg-primary)] border border(--border-primary)] rounded-2xl space-y-3 text-right">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Last Rotated</div>
-                        <div className="font-bold text-lg">
-                          {byokStatus?.last_rotated ? new Date(byokStatus.last_rotated).toLocaleDateString() : "Never"}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button 
-                        onClick={() => setShowForm(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-[var(--accent)] text-white rounded-xl font-bold text-sm hover:scale-[1.02] transition-all shadow-lg"
-                      >
-                        {byokStatus?.is_configured ? "Rotate Master Key" : "Configure Master Key"}
-                      </button>
-                      {byokStatus?.is_configured && (
-                        <button 
-                          onClick={handleDeleteConfig}
-                          className="flex items-center gap-2 px-6 py-3 border border-red-500/20 text-red-500 rounded-xl font-bold text-sm hover:bg-red-500/5 transition-all"
-                        >
-                          Reset Configuration
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-8 bg-[var(--bg-primary)] border-2 border-[var(--accent)]/30 rounded-3xl space-y-6">
-                    <div className="space-y-2">
-                       <h3 className="font-bold">Enter Encryption Master Key</h3>
-                       <p className="text-xs text-[var(--text-secondary)]">Facttic never stores raw keys. material is hashed and used for atomic write bypass.</p>
-                    </div>
-                    <input 
-                      type="password"
-                      placeholder="Enter raw AES-256 key material..."
-                      className="w-full bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl py-4 px-6 text-sm font-mono focus:outline-none focus:border-[var(--accent)]"
-                      value={newKey}
-                      onChange={(e) => setNewKey(e.target.value)}
-                    />
-                    <div className="flex gap-3">
-                      <button 
-                        disabled={saving || newKey.length < 32}
-                        onClick={handleSaveKey}
-                        className="flex-1 py-4 bg-[var(--accent)] text-white rounded-2xl font-black uppercase tracking-widest text-sm disabled:opacity-50"
-                      >
-                        {saving ? "Executing..." : "Operationalize Key"}
-                      </button>
-                      <button onClick={() => setShowForm(false)} className="flex-1 py-4 bg-[var(--bg-secondary)] rounded-2xl font-black uppercase tracking-widest text-sm">Cancel</button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="pt-8 border-t border-[var(--border-primary)]/50 space-y-4">
-                  <div className="p-4 bg-black/20 rounded-2xl border border-white/5 font-mono text-xs relative group">
-                    <div className="text-[var(--accent)] mb-2 uppercase font-black text-[9px]">Webhook Authentication Header</div>
-                    <code>x-byok-key: {byokStatus?.fingerprint || "YOUR_KEY_FINGERPRINT"}</code>
-                    <button onClick={() => copyToClipboard(`x-byok-key: ${byokStatus?.fingerprint || ""}`)} className="absolute top-4 right-4 text-[var(--text-secondary)] hover:text-white transition-all">
-                      {copied ? "Copied!" : <Plus className="w-3 h-3 rotate-45" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}

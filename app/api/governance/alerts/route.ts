@@ -10,7 +10,7 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
     const { data, error } = await supabaseServer
       .from('governance_alerts')
-      .select('id, alert_type, severity, metadata, created_at, title, description, interaction_id')
+      .select('*')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false })
       .limit(50);
@@ -23,12 +23,12 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
     // Map governance_alerts → AlertsClient shape
     const mapped = (data || []).map((a: any) => ({
       id: a.id,
-      escalation_reason: a.title || a.alert_type?.replace(/_/g, ' ') || 'Governance Alert',
+      escalation_reason: a.metadata?.reason || a.alert_type?.replace(/_/g, ' ') || 'Governance Alert',
       previous_severity: a.metadata?.previous_severity || 'info',
       new_severity: a.severity === 'critical' ? 'critical' : a.severity === 'warning' ? 'high' : 'low',
       created_at: a.created_at,
-      interaction_id: a.interaction_id || a.metadata?.session_id || null,
-      metadata: { ...a.metadata, description: a.description },
+      interaction_id: a.metadata?.session_id || null,
+      metadata: a.metadata,
     }));
 
     return NextResponse.json({ data: mapped });

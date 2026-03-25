@@ -22,123 +22,102 @@ export type AuthenticatedHandler = (
  */
 export function withAuth(handler: AuthenticatedHandler) {
   return async (req: Request, routeContext: any) => {
-    const controller = new AbortController();
-    let timeoutId: NodeJS.Timeout | undefined;
-
-    const timeoutPromise = new Promise<NextResponse>((resolve) => {
-      timeoutId = setTimeout(() => {
-        controller.abort(); // Signal background work to stop
-        logger.error('AUTH_HANDLER_TIMEOUT', { url: req.url, method: req.method });
+    // Hard 8-second timeout on the entire authenticated handler to prevent
+    // indefinite hangs from DB connection saturation or Supabase latency
+    const timeoutPromise = new Promise<NextResponse>((resolve) =>
+      setTimeout(() => {
+        logger.error('AUTH_HANDLER_TIMEOUT', { url: req.url });
         resolve(NextResponse.json({ error: 'Auth Timeout - Supabase Unreachable' }, { status: 401 }));
-      }, 60000);
-    });
+      }, 8000)
+    );
 
     const handlerPromise = (async () => {
       try {
         const supabase = await createServerAuthClient();
-        if (controller.signal.aborted) return null;
 
-        // Attempt to get user with timeout
-        let getUserTimerId: NodeJS.Timeout | undefined;
-        const getUserTimeout = new Promise<never>((_, reject) => {
-          getUserTimerId = setTimeout(() => reject(new Error('GETUSER_TIMEOUT')), 2000);
-        });
-
+        // Attempt to get user — replace getSession() with getUser() for stability
+        // Wrap in 3s timeout to fail-fast and avoid hanging the UI in 'Analyzing'
         let session: any = null;
         try {
           const { data, error } = await Promise.race([
             supabase.auth.getUser(),
-            getUserTimeout
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('GETUSER_TIMEOUT')), 3000)
+            ),
           ]);
-          if (getUserTimerId) clearTimeout(getUserTimerId);
-          if (controller.signal.aborted) return null;
           if (data?.user && !error) {
             session = { user: data.user };
           }
         } catch (authErr: any) {
-          if (getUserTimerId) clearTimeout(getUserTimerId);
-          if (!controller.signal.aborted && authErr.message !== 'GETUSER_TIMEOUT') {
-             logger.warn('AUTH_GETUSER_FAILED', { url: req.url, error: authErr.message });
-          }
+          logger.warn('AUTH_GETUSER_FAILED', { url: req.url, error: authErr.message });
+          // session stays null — will trigger 401 below
         }
 
         // Fallback: Check for Authorization header if no user was found/validated
-        if (!session && !controller.signal.aborted) {
+        if (!session) {
           const authHeader = req.headers.get('Authorization');
           if (authHeader?.startsWith('Bearer ')) {
             const token = authHeader.split(' ')[1];
-            let bearerTimerId: NodeJS.Timeout | undefined;
-            const bearerTimeout = new Promise<never>((_, reject) => {
-              bearerTimerId = setTimeout(() => reject(new Error('GETUSER_TIMEOUT')), 2000);
-            });
-
             try {
               const { data, error } = await Promise.race([
                 supabase.auth.getUser(token),
-                bearerTimeout
+                new Promise<never>((_, reject) =>
+                  setTimeout(() => reject(new Error('GETUSER_TIMEOUT')), 4000)
+                ),
               ]);
-              if (bearerTimerId) clearTimeout(bearerTimerId);
-              if (controller.signal.aborted) return null;
               if (data?.user && !error) {
                 session = { user: data.user } as any;
               }
             } catch {
-              if (bearerTimerId) clearTimeout(bearerTimerId);
+              // Bearer token check timed out — session stays null
             }
           }
         }
 
-        if (controller.signal.aborted) return null;
         if (!session) {
           logger.warn('UNAUTHORIZED_ACCESS_ATTEMPT', { url: req.url });
-          return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+          return NextResponse.json(
+            { error: 'UNAUTHORIZED' },
+            { status: 401 }
+          );
         }
 
-        // resolveOrgContext wraps a DB query with timeout
-        let orgTimerId: NodeJS.Timeout | undefined;
-        const orgTimeout = new Promise<never>((_, reject) => {
-          orgTimerId = setTimeout(() => reject(new Error('ORG_RESOLVE_TIMEOUT')), 3000);
-        });
-
+        // resolveOrgContext wraps a DB query — add a 5s timeout to prevent hanging
         const orgCtx = await Promise.race([
           resolveOrgContext(session.user.id),
-          orgTimeout
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('ORG_RESOLVE_TIMEOUT')), 5000)
+          ),
         ]);
-        if (orgTimerId) clearTimeout(orgTimerId);
-        if (controller.signal.aborted) return null;
 
         const { org_id, role } = orgCtx;
 
         if (!org_id) {
           logger.error('ORG_CONTEXT_MISSING', { userId: session.user.id });
-          return NextResponse.json({ error: 'ORG_CONTEXT_MISSING' }, { status: 400 });
+          return NextResponse.json(
+            { error: 'ORG_CONTEXT_MISSING' },
+            { status: 400 }
+          );
         }
 
-        const result = await handler(req, {
+        return await handler(req, {
           userId: session.user.id,
           orgId: org_id,
           role,
           session,
           params: routeContext?.params || {}
         });
-
-        if (timeoutId) clearTimeout(timeoutId);
-        return result;
-
       } catch (err: unknown) {
-        if (timeoutId) clearTimeout(timeoutId);
-        if (controller.signal.aborted) return null;
-
         logger.error('AUTH_MIDDLEWARE_ERROR', {
           error: err instanceof Error ? err.message : 'UNKNOWN_ERROR',
         });
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json(
+          { error: 'Internal Server Error' },
+          { status: 500 }
+        );
       }
     })();
 
-    const result = await Promise.race([handlerPromise, timeoutPromise]);
-    if (timeoutId) clearTimeout(timeoutId);
-    return result || NextResponse.json({ error: 'Auth Timeout' }, { status: 401 });
+    return Promise.race([handlerPromise, timeoutPromise]);
   };
 }
-

@@ -53,6 +53,7 @@ export const navGroups = [
     group: "ANALYTICS",
     items: [
       { label: "Reports", href: "/dashboard/reports", icon: BarChart, id: "nav-reports" },
+      { label: "Live Report", href: "/dashboard/forensics/live-report", icon: FileText, id: "nav-live-report" },
       { label: "Forensics", href: "/dashboard/forensics", icon: Search, id: "nav-forensics" },
       { label: "Incidents", href: "/dashboard/incidents", icon: AlertCircle, id: "nav-incidents" },
     ]
@@ -90,7 +91,6 @@ export const navGroups = [
     group: "SYSTEM",
     items: [
       { label: "Access Control", href: "/dashboard/settings/access", icon: ShieldCheck, id: "nav-access-control" },
-      { label: "Security", href: "/dashboard/settings/security", icon: Shield, id: "nav-security" },
       { label: "Settings", href: "/dashboard/settings", icon: Settings, id: "nav-settings" },
       { label: "Profile", href: "/dashboard/profile", icon: User, id: "nav-profile" },
     ]

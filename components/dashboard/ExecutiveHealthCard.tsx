@@ -82,7 +82,7 @@ export default function ExecutiveHealthCard({ data }: Props) {
             <div className="text-xs uppercase tracking-widest text-white/70 mb-1">
               Drift Freq
             </div>
-            <div className="text-lg font-bold"><CountUp value={parseFloat(d.drift_freq) || 0} decimals={1} />%</div>
+            <div className="text-lg font-bold"><CountUp value={parseFloat(d.drift_freq)} decimals={1} />%</div>
           </div>
           <div className="bg-white/10 border border-white/15 rounded-[6px] p-4">
             <div className="text-xs uppercase tracking-widest text-white/70 mb-1">

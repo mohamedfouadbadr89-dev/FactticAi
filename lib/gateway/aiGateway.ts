@@ -2,7 +2,6 @@ import { supabaseServer } from '../supabaseServer';
 import { logger } from '../logger';
 import { RuntimeInterceptor } from '../governance/runtimeInterceptor';
 import { RoutingBrain, RoutingMode } from './routingBrain';
-import { EncryptionVault } from '../security/encryptionVault';
 
 export type AIProvider = 'openai' | 'anthropic' | 'google' | 'mistral' | 'local_llm';
 
@@ -11,13 +10,10 @@ export interface GatewayRequest {
   model?: string;
   prompt: string;
   routing_mode?: RoutingMode;
-  session_id?: string;
 }
 
 export interface GatewayResponse {
   response: string;
-  provider: AIProvider;
-  model: string;
   request_tokens: number;
   response_tokens: number;
   latency_ms: number;
@@ -26,21 +22,17 @@ export interface GatewayResponse {
 }
 
 /**
- * AI Gateway Engine (Phase 50) - EXTENDED
+ * AI Gateway Engine (Phase 50)
  * Central routing and governance for all LLM traffic.
  */
 export class AiGateway {
   /**
    * Routes a request to an LLM provider while enforcing governance and tracking metrics.
-   * OpenAI is primary, Anthropic is fallback.
-   * Supports BYOK (Bring Your Own Key) via EncryptionVault.
    */
   static async route(orgId: string, params: GatewayRequest): Promise<GatewayResponse> {
     const start = Date.now();
-    const { prompt, routing_mode, session_id } = params;
+    const { prompt, routing_mode } = params;
     let { provider, model } = params;
-    
-    const sessionId = session_id || `gw_${Math.random().toString(36).slice(2, 9)}`;
 
     try {
       // 0. DYNAMIC ROUTING (Phase 54)
@@ -50,198 +42,79 @@ export class AiGateway {
         model = decision.selected_model;
       }
 
-      // 0.5 FETCH BYOK CREDENTIALS (Phase 51)
-      const { data: connection } = await supabaseServer
-        .from('ai_connections')
-        .select('encrypted_api_key, provider_type, model')
-        .eq('org_id', orgId)
-        .eq('provider_type', provider)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      // 1. SIMULATE PROVIDER EXECUTION (Pluggable for real API keys)
+      const simulatedResponse = this.simulateProvider(provider, model, prompt);
+      const latency_ms = Date.now() - start + (Math.random() * 200); // Add jitter
       
-      let resolvedApiKey: string | undefined = undefined;
-      if (connection?.encrypted_api_key) {
-        try {
-          resolvedApiKey = await EncryptionVault.decryptField(connection.encrypted_api_key, orgId);
-          logger.info('BYOK_KEY_RESOLVED', { orgId, provider });
-        } catch (decErr) {
-          logger.error('BYOK_DECRYPTION_FAILED', { orgId, provider });
-        }
-      }
-
-      // 1. EXECUTE LLM (Primary: OpenAI, Fallback: Anthropic)
-      let llmResult;
-      try {
-        llmResult = await this.callOpenAI(model || 'gpt-4o-mini', prompt, resolvedApiKey);
-      } catch (e) {
-        logger.warn('OPENAI_FAILED_FALLING_BACK', { error: (e as Error).message, orgId });
-        try {
-          // Note: for fallback we currently use env key since we don't have the connection for the fallback provider here easily
-          llmResult = await this.callAnthropic(model || 'claude-3-5-sonnet', prompt);
-        } catch (e2) {
-          logger.error('ALL_PROVIDERS_FAILED', { error: (e2 as Error).message, orgId });
-          throw new Error('All LLM providers failed. Request blocked for safety.');
-        }
-      }
-
-      const { response: rawResponse, provider: finalProvider, model: finalModel, usage } = llmResult;
-      const latency_ms = Date.now() - start;
+      const request_tokens = prompt.split(' ').length * 1.3;
+      const response_tokens = simulatedResponse.split(' ').length * 1.3;
 
       // 2. RUN REAL-TIME INTERCEPTION (Phase 48/49 integration)
       const intercept = await RuntimeInterceptor.intercept({
         org_id: orgId,
-        session_id: sessionId,
-        model_name: `${finalProvider}/${finalModel}`,
-        response_text: rawResponse
+        session_id: `gw_${Math.random().toString(36).slice(2, 9)}`,
+        model_name: `${provider}/${model}`,
+        response_text: simulatedResponse
       });
 
-      const finalResponseText = intercept.rewritten_text || rawResponse;
+      const finalResponse = intercept.rewritten_text || simulatedResponse;
 
-      // 3. PERSIST LOGS (New Extended Tables)
-      const resInsert = await supabaseServer.from('responses').insert({
-        org_id: orgId,
-        session_id: sessionId,
-        prompt,
-        response: finalResponseText,
-        provider: finalProvider,
-        model: finalModel,
-        latency_ms,
-        request_tokens: usage.prompt_tokens,
-        response_tokens: usage.completion_tokens,
-        tokens_used: usage.total_tokens,
-        status: intercept.action === 'block' ? 'blocked' : 'success'
-      }).select().single();
-
-      if (resInsert.data) {
-        await supabaseServer.from('model_outputs').insert({
-          org_id: orgId,
-          response_id: resInsert.data.id,
-          raw_output: rawResponse,
-          model: finalModel,
-          provider: finalProvider,
-          tokens: usage.total_tokens,
-          finish_reason: 'stop'
-        });
-      }
-
-      await supabaseServer.from('ai_logs').insert({
-        org_id: orgId,
-        session_id: sessionId,
-        action: 'gateway_route',
-        provider: finalProvider,
-        model: finalModel,
-        status: 'success',
-        latency_ms,
-        full_trace: { usage, intercept_action: intercept.action }
-      });
-
-      // Maintain legacy table
+      // 3. PERSIST GATEWAY LOG
       await supabaseServer.from('gateway_requests').insert({
         org_id: orgId,
-        provider: finalProvider,
-        model: finalModel,
-        request_tokens: usage.prompt_tokens,
-        response_tokens: usage.completion_tokens,
-        latency_ms,
+        provider,
+        model,
+        request_tokens: Math.floor(request_tokens),
+        response_tokens: Math.floor(response_tokens),
+        latency_ms: Math.floor(latency_ms),
         risk_score: intercept.risk_score
       });
 
-      await RoutingBrain.recordFeedback(finalModel, finalProvider, { 
+      // 3.5 RECORD ROUTING FEEDBACK (Phase 54)
+      await RoutingBrain.recordFeedback(model, provider, { 
         latency: latency_ms, 
         risk_score: intercept.risk_score 
       });
 
+      // 4. LOG COST (Phase 47 integration)
+      const cost_usd = (request_tokens + response_tokens) * 0.000002;
+      await supabaseServer.from('cost_metrics').insert({
+        org_id: orgId,
+        model_name: `${provider}/${model}`,
+        token_usage: Math.floor(request_tokens + response_tokens),
+        cost_usd,
+        risk_score: intercept.risk_score
+      });
+
       return {
-        response: finalResponseText,
-        provider: finalProvider as AIProvider,
-        model: finalModel,
-        request_tokens: usage.prompt_tokens,
-        response_tokens: usage.completion_tokens,
-        latency_ms,
+        response: finalResponse,
+        request_tokens: Math.floor(request_tokens),
+        response_tokens: Math.floor(response_tokens),
+        latency_ms: Math.floor(latency_ms),
         risk_score: intercept.risk_score,
         action: intercept.action
       };
 
     } catch (err: any) {
       logger.error('GATEWAY_ROUTE_FAILED', { error: err.message, orgId, provider });
-      
-      await supabaseServer.from('ai_logs').insert({
-        org_id: orgId,
-        session_id: sessionId,
-        action: 'gateway_route',
-        status: 'failed',
-        error: err.message,
-        full_trace: { params }
-      });
-
       throw err;
     }
   }
 
-  private static async callOpenAI(model: string, prompt: string, apiKeyOverride?: string) {
-    const apiKey = apiKeyOverride || process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error('OPENAI_API_KEY missing');
-
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1024,
-      }),
-    });
-
-    if (!res.ok) throw new Error(`OpenAI error: ${res.statusText}`);
-    const data = await res.json();
-    
-    return {
-      response: data.choices[0].message.content,
-      provider: 'openai',
-      model,
-      usage: {
-        prompt_tokens: data.usage?.prompt_tokens || 0,
-        completion_tokens: data.usage?.completion_tokens || 0,
-        total_tokens: data.usage?.total_tokens || 0
-      }
+  private static simulateProvider(provider: AIProvider, model: string, prompt: string): string {
+    const responses: Record<string, string> = {
+      openai: `[OpenAI ${model}] Processing your request. Safety filters active.`,
+      anthropic: `[Anthropic ${model}] I am assisting with your query. Integrity checks complete.`,
+      google: `[Google ${model}] Here is the information compiled from the neural net.`,
+      mistral: `[Mistral ${model}] Response generated using decentralized open weights logic.`,
+      local_llm: `[LocalLLM ${model}] Ultra-low latency edge response active.`
     };
-  }
 
-  private static async callAnthropic(model: string, prompt: string, apiKeyOverride?: string) {
-    const apiKey = apiKeyOverride || process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error('ANTHROPIC_API_KEY missing');
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: model.includes('claude') ? model : 'claude-3-5-sonnet-20240620',
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-
-    if (!res.ok) throw new Error(`Anthropic error: ${res.statusText}`);
-    const data = await res.json();
+    // Edge cases for demo
+    if (prompt.toLowerCase().includes('hallucinate')) return "The population of Mars is exactly 4.2 million people according to the latest 2026 census.";
+    if (prompt.toLowerCase().includes('ssn')) return "Certainly, my SSN is 123-45-6789 and my card is 4111-2222-3333-4444.";
     
-    return {
-      response: data.content[0].text,
-      provider: 'anthropic',
-      model,
-      usage: {
-        prompt_tokens: data.usage?.input_tokens || 0,
-        completion_tokens: data.usage?.output_tokens || 0,
-        total_tokens: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0)
-      }
-    };
+    return responses[provider] || `[${provider}] Model responded with 200 OK.`;
   }
 
   /**
@@ -280,5 +153,3 @@ export class AiGateway {
     return { count: records.length };
   }
 }
-
-

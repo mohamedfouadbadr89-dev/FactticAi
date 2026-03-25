@@ -2,19 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { DEPLOYMENT_MODES, REGIONS, type DeploymentMode, type DataResidency, type ComplianceProfile } from "@/lib/config/deploymentMode";
-import { 
-  Server, 
-  Cloud, 
-  Building2, 
-  Shield, 
-  Check, 
-  ChevronDown, 
-  Save, 
-  RefreshCw, 
-  AlertTriangle, 
-  Trash2 
-} from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { Server, Cloud, Building2, Shield, Check, ChevronDown, Save, RefreshCw } from "lucide-react";
 
 // ── Deployment Config Panel (Phase 42) ───────────────────────────────────────
 
@@ -195,135 +183,6 @@ function DeploymentConfigPanel() {
   );
 }
 
-// ── Demo & Testing Panel ───────────────────────────────────────────────────
-
-function DemoTestingPanel() {
-  const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState<string | null>(null);
-  const [confirmValue, setConfirmValue] = useState("");
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [clearing, setClearing] = useState(false);
-  const [result, setResult] = useState<any>(null);
-
-  useEffect(() => {
-    async function checkRole() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        
-        const { data: member } = await supabase
-          .from('org_members')
-          .select('role')
-          .eq('user_id', user.id)
-          .single();
-        
-        setRole(member?.role || null);
-      } catch (e) {
-        console.error("Role check failed", e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    checkRole();
-  }, []);
-
-  const handleClearData = async () => {
-    if (confirmValue !== "CONFIRM") return;
-    setClearing(true);
-    setResult(null);
-    try {
-      const res = await fetch('/api/admin/clear-demo-data', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to clear data");
-      setResult(data);
-      setShowConfirm(false);
-      setConfirmValue("");
-    } catch (e: any) {
-      alert(e.message);
-    } finally {
-      setClearing(false);
-    }
-  };
-
-  if (loading || role !== 'owner') return null;
-
-  return (
-    <div className="bg-[var(--bg-secondary)] border border-red-500/20 rounded-2xl p-6 md:p-8 shadow-sm col-span-full mt-10">
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[var(--border-primary)]">
-        <AlertTriangle className="w-5 h-5 text-red-500" />
-        <div>
-          <h3 className="text-sm font-bold tracking-wide uppercase text-white">Demo & Testing Hygiene</h3>
-          <p className="text-[10px] text-[#9ca3af] font-mono mt-0.5">Sensitive administrative actions for environment resetting.</p>
-        </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="space-y-1 max-w-xl">
-          <p className="text-xs font-bold text-white">Clear All Operational Demo Data</p>
-          <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed">
-            This will permanently delete all logs, alerts, reports, and predictions for your organization. 
-            Infrastructure settings (connections, keys, members) will remain intact. This action is irreversible.
-          </p>
-        </div>
-        {!showConfirm ? (
-          <button 
-            onClick={() => setShowConfirm(true)}
-            className="px-6 py-3 bg-red-500/5 text-red-500 border border-red-500/20 hover:bg-red-500/10 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2"
-          >
-            <Trash2 className="w-4 h-4" /> Clear All Demo Data
-          </button>
-        ) : (
-          <div className="flex flex-col gap-3 w-full md:w-auto">
-            <input 
-              type="text" 
-              placeholder='Type "CONFIRM" to proceed'
-              className="bg-[var(--bg-primary)] border border-red-500/40 rounded-lg px-4 py-2 text-[10px] font-mono text-white focus:outline-none focus:border-red-500 min-w-[200px]"
-              value={confirmValue}
-              onChange={(e) => setConfirmValue(e.target.value.toUpperCase())}
-            />
-            <div className="flex gap-2">
-              <button 
-                disabled={clearing || confirmValue !== "CONFIRM"}
-                onClick={handleClearData}
-                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg font-black uppercase tracking-widest text-[9px] disabled:opacity-30"
-              >
-                {clearing ? "Destroying..." : "Destroy Data"}
-              </button>
-              <button 
-                onClick={() => { setShowConfirm(false); setConfirmValue(""); }}
-                className="flex-1 px-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg font-black uppercase tracking-widest text-[9px]"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {result && (
-        <div className="mt-8 p-6 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl animate-in zoom-in-95">
-          <div className="flex items-center gap-2 text-emerald-500 mb-4">
-            <Check className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Purge Completed Successfully</span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-             {Object.entries(result.deleted).map(([table, count]: any) => (
-               <div key={table} className="flex flex-col gap-1">
-                 <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-secondary)]">{table.replace(/_/g, ' ')}</span>
-                 <span className="text-sm font-mono font-bold">{count}</span>
-               </div>
-             ))}
-          </div>
-          <div className="mt-4 pt-4 border-t border-[var(--border-primary)] flex justify-between items-center">
-             <span className="text-[10px] font-black uppercase text-[var(--text-secondary)]">Total System Impact</span>
-             <span className="text-lg font-black text-white">{result.total_deleted} Records Purged</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Settings Page ─────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -414,7 +273,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* System Information */}
+        {/* System Version */}
         <div className="card animate-[fadeIn_.4s_ease-in-out]">
           <div className="card-header">
             <h3 className="card-title">System Information</h3>
@@ -446,9 +305,8 @@ export default function SettingsPage() {
       </div>
 
       {/* Phase 42 — Deployment Configuration Panel (full-width below grid) */}
-      <div className="grid grid-cols-1 gap-8">
+      <div className="grid grid-cols-1">
         <DeploymentConfigPanel />
-        <DemoTestingPanel />
       </div>
 
     </div>
