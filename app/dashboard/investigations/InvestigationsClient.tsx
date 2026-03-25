@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Activity, X, ShieldAlert, FileWarning, Search, MessageSquare } from 'lucide-react'
+import { Activity, X, ShieldAlert, FileWarning, Search, MessageSquare, Headphones } from 'lucide-react'
+import { AudioPlayer } from '@/components/voice/AudioPlayer'
 
 interface Investigation {
   id: string
@@ -21,10 +22,14 @@ export function InvestigationsClient() {
   const [investigations, setInvestigations] = useState<Investigation[]>([])
   const [loading, setLoading] = useState(true)
   
-  // Replay State
+  // Replay & Timeline State
   const [selectedInvestigation, setSelectedInvestigation] = useState<Investigation | null>(null)
   const [timeline, setTimeline] = useState<any[]>([])
   const [timelineLoading, setTimelineLoading] = useState(false)
+  
+  // Audio Forensic State
+  const [audioData, setAudioData] = useState<any>(null)
+  const [audioLoading, setAudioLoading] = useState(false)
 
   useEffect(() => {
     async function fetchInvestigations() {
@@ -44,18 +49,35 @@ export function InvestigationsClient() {
   const openInvestigation = async (inv: Investigation) => {
      setSelectedInvestigation(inv);
      setTimelineLoading(true);
-     // Fallback mock session ID for the timeline API if none attached generically
+     setAudioLoading(true);
+     setAudioData(null); // Reset for new selection
+
      const targetSession = inv.session_id || 'mock-session-id';
+     
+     // 1. Fetch Timeline
      try {
        const res = await fetch(`/api/sessions/${targetSession}/timeline`);
        const json = await res.json();
-       
-       // If no actual data, populate mock timeline to demonstrate bounds
        setTimeline(json.timeline || []);
      } catch (e) {
        console.error(e);
      } finally {
        setTimelineLoading(false);
+     }
+
+     // 2. Fetch Forensic Audio
+     try {
+        const audioRes = await fetch(`/api/voice/investigations/${inv.id}/audio`);
+        if (audioRes.ok) {
+           const audioJson = await audioRes.json();
+           if (audioJson.success) {
+              setAudioData(audioJson.data);
+           }
+        }
+     } catch (err) {
+        console.error('Audio fetch failed:', err);
+     } finally {
+        setAudioLoading(false);
      }
   }
 
@@ -176,11 +198,31 @@ export function InvestigationsClient() {
           </div>
           
           <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[var(--bg-primary)]">
+             {/* Forensic Audio Section */}
+             {audioLoading ? (
+                <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-[2rem] p-10 flex flex-col items-center justify-center animate-pulse">
+                   <Headphones className="w-10 h-10 text-[var(--accent)] mb-4 opacity-30" />
+                   <div className="h-3 w-40 bg-[var(--bg-primary)] rounded-full mb-3" />
+                   <div className="h-2 w-24 bg-[var(--bg-primary)] rounded-full opacity-50" />
+                </div>
+             ) : audioData ? (
+                <AudioPlayer 
+                  audioUrl={audioData.audio_url}
+                  durationMs={audioData.duration_ms}
+                  riskMarkers={audioData.risk_markers}
+                />
+             ) : (
+                <div className="p-8 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-[2rem] border-dashed flex flex-col items-center text-center opacity-40">
+                   <FileWarning className="w-8 h-8 mb-3" />
+                   <p className="text-[10px] font-black uppercase tracking-widest">No audio evidence found for this session</p>
+                </div>
+             )}
+
              {timelineLoading ? (
-               <div className="animate-pulse space-y-4">
-                 <div className="h-16 w-3/4 bg-[var(--bg-secondary)] rounded-r-2xl rounded-bl-2xl"></div>
-                 <div className="h-24 w-full bg-[var(--bg-secondary)] rounded border border-[#ef4444]/50"></div>
-               </div>
+                <div className="animate-pulse space-y-4">
+                   <div className="h-16 w-3/4 bg-[var(--bg-secondary)] rounded-r-2xl rounded-bl-2xl"></div>
+                   <div className="h-24 w-full bg-[var(--bg-secondary)] rounded border border-[#ef4444]/50"></div>
+                </div>
              ) : timeline.length > 0 ? (
                 timeline.map((event, idx) => (
                  <div key={idx} className="relative pl-6 border-l-2 border-[var(--border-primary)] pb-6 last:pb-0 group">

@@ -13,6 +13,7 @@
 - **BYOK Protocol**: Implemented `org_encryption_keys` with master-vaulting and secure UI.
 - **Agent Governance**: `agent_sessions` and `agent_steps` tables initialized and connected to the dashboard.
 - **Connect AI**: Implementation of real-time provider authentication verification (OpenAI, Anthropic, Vapi, etc.).
+- **Voice Governance Expansion**: Real-time transcript polling, forensic audio playback with risk markers, and live stream (SSE) API completed.
 
 ---
 

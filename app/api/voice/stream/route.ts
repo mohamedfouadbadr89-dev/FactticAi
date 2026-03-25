@@ -16,6 +16,91 @@ const StreamEventSchema = z.object({
   latency_ms:       z.number().int().min(0).optional(),
 })
 
+/**
+ * GET /api/voice/stream
+ * 
+ * High-performance governance stream for live monitoring.
+ * Delivers real-time audit signals to the dashboard or external SOC consoles.
+ */
+export async function GET(req: Request) {
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { get: (name) => cookieStore.get(name)?.value } }
+    );
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) {
+       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const orgId = session.user.user_metadata?.org_id || 'unknown';
+
+    const responseStream = new TransformStream();
+    const writer = responseStream.writable.getWriter();
+    const encoder = new TextEncoder();
+
+    const sendEvent = async (data: any) => {
+      try {
+        const payload = `data: ${JSON.stringify(data)}\n\n`;
+        await writer.write(encoder.encode(payload));
+      } catch (e) {}
+    };
+
+    // Heartbeat
+    const keepAlive = setInterval(() => {
+      writer.write(encoder.encode(': heartbeat\n\n')).catch(() => clearInterval(keepAlive));
+    }, 20000);
+
+    // Initial Status
+    await sendEvent({ status: 'MONITORING_ACTIVE', org_id: orgId });
+
+    // Stream Loop (Realtime Proxy)
+    const interval = setInterval(async () => {
+      try {
+        const { data: latest } = await supabase
+          .from('facttic_governance_events')
+          .select('*')
+          .eq('org_id', orgId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (latest) {
+          await sendEvent({
+            event: 'voice-governance-event',
+            speaker: latest.prompt ? 'user' : 'agent',
+            text: latest.prompt || latest.model_response,
+            risk_score: latest.risk_score,
+            decision: latest.decision || 'ALLOW',
+            latency: latest.latency || 0,
+            timestamp: latest.created_at
+          });
+        }
+      } catch (e) {}
+    }, 2500);
+
+    req.signal.onabort = () => {
+      clearInterval(keepAlive);
+      clearInterval(interval);
+      writer.close().catch(() => {});
+    };
+
+    return new NextResponse(responseStream.readable, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no',
+      },
+    });
+  } catch (err: any) {
+    return NextResponse.json({ error: 'Internal Stream Error' }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? 'unknown'

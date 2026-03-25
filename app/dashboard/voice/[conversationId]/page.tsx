@@ -1,17 +1,24 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { logger } from "@/lib/logger";
 import { CountUp } from "@/components/ui/CountUp";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { 
+  Mic, 
+  Shield, 
+  AlertTriangle, 
+  ChevronLeft, 
+  Activity,
+  Clock,
+  User,
+  Bot
+} from "lucide-react";
 
 interface TranscriptTurn {
-  id: string;
-  role: string;
-  content: string;
+  speaker: 'agent' | 'user';
+  text: string;
   risk_score: number;
-  factors?: any;
   timestamp: string;
 }
 
@@ -30,16 +37,19 @@ interface ConversationData {
   total_risk: number;
   agent: { name: string; type: string; version: string };
   participants: string[];
-  transcript: TranscriptTurn[];
-  governance_timeline: GovernanceEvent[];
 }
 
 export default function VoiceConversationPage() {
   const { conversationId } = useParams();
+  const router = useRouter();
   const [data, setData] = useState<ConversationData | null>(null);
+  const [turns, setTurns] = useState<TranscriptTurn[]>([]);
+  const [governanceTimeline, setGovernanceTimeline] = useState<GovernanceEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Initial fetch: Overall Session Metadata
   useEffect(() => {
     async function fetchDetails() {
       try {
@@ -48,6 +58,9 @@ export default function VoiceConversationPage() {
         const result = await res.json();
         if (result.success) {
           setData(result.data);
+          // Initial turns and timeline
+          setTurns(result.data.transcript || []);
+          setGovernanceTimeline(result.data.governance_timeline || []);
         } else {
           setError(result.error);
         }
@@ -61,128 +74,245 @@ export default function VoiceConversationPage() {
     fetchDetails();
   }, [conversationId]);
 
+  // Polling fetch: Real-time Transcript Updates
+  useEffect(() => {
+    if (!data || data.ended_at) return; // Stop polling if call is ended
+
+    const pollTranscript = async () => {
+      try {
+        const res = await fetch(`/api/voice/transcript/${conversationId}`);
+        if (!res.ok) return;
+        const result = await res.json();
+        if (result.success) {
+          setTurns(result.turns);
+          
+          // Dynamically update timeline based on new high-risk turns
+          const newEvents = result.turns
+            .filter((t: TranscriptTurn) => t.risk_score > 0.4)
+            .map((t: TranscriptTurn) => ({
+              timestamp: t.timestamp,
+              event: t.risk_score > 0.7 ? 'CRITICAL_RISK' : 'MODERATE_RISK',
+              description: `Risk score ${Math.round(t.risk_score * 100)}% detected in turn.`,
+              risk_score: t.risk_score
+            }));
+          setGovernanceTimeline(newEvents);
+        }
+      } catch (err: any) {
+        logger.error("POLL_VOICE_TRANSCRIPT_FAILED", { conversationId, error: err.message });
+      }
+    };
+
+    const interval = setInterval(pollTranscript, 3000);
+    return () => clearInterval(interval);
+  }, [conversationId, data]);
+
+  // Auto-scroll to latest turn
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [turns]);
+
   if (isLoading) return (
-    <div className="p-8 space-y-6">
-      <Skeleton className="h-12 w-1/3" />
-      <div className="grid grid-cols-3 gap-6">
-        <Skeleton className="h-32" />
-        <Skeleton className="h-32" />
-        <Skeleton className="h-32" />
-      </div>
-      <Skeleton className="h-96" />
+    <div className="min-h-screen bg-[var(--bg-secondary)] flex items-center justify-center">
+      <Activity className="w-8 h-8 text-[var(--accent)] animate-spin" />
     </div>
   );
 
   if (error || !data) return (
-    <div className="p-12 text-center text-[var(--danger)] font-medium">
-      {error || "Conversation details not available."}
+    <div className="p-12 text-center text-[var(--danger)] font-medium bg-[var(--bg-secondary)] min-h-screen">
+      <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+      <p className="text-sm font-black uppercase tracking-widest">{error || "Conversation details unavailable."}</p>
+      <button 
+        onClick={() => router.back()}
+        className="mt-6 px-6 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl text-xs font-black uppercase tracking-widest hover:border-[var(--accent)] transition-all"
+      >
+        Back to Dashboard
+      </button>
     </div>
   );
 
+  const statusColor = data.total_risk > 0.4 ? 'text-red-500' : 'text-[var(--accent)]';
+
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] p-8 animate-fadeIn">
+    <div className="min-h-screen bg-[var(--bg-secondary)] text-[var(--text-primary)] p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-black tracking-tighter text-[var(--text-primary)] flex items-center gap-3">
-            <span className="bg-[var(--accent)] text-white p-1.5 rounded-lg text-lg">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                <line x1="12" y1="19" x2="12" y2="23" />
-                <line x1="8" y1="23" x2="16" y2="23" />
-              </svg>
-            </span>
-            CONVERSATION ID: {data.id.substring(0, 8).toUpperCase()}
-          </h1>
-          <p className="text-[var(--text-secondary)] mt-1 font-medium">
-            Started: {new Date(data.started_at).toLocaleString()} · Duration: {data.ended_at ? '12m 42s' : 'Ongoing'}
-          </p>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => router.back()}
+            className="p-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl hover:border-[var(--accent)] transition-all text-[var(--text-secondary)]"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
+              <Mic className="w-6 h-6 text-[var(--accent)]" />
+              Live Voice Transcript
+            </h1>
+            <p className="text-[10px] text-[var(--text-secondary)] font-mono uppercase tracking-widest">
+              Session Ref: {data.id.substring(0, 12).toUpperCase()}
+            </p>
+          </div>
         </div>
-        <div className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest ${data.total_risk > 0.4 ? 'bg-[var(--danger-bg)] text-[var(--danger)]' : 'bg-[var(--success-bg)] text-[var(--success)]'}`}>
-          {data.total_risk > 0.4 ? '⚠ High Risk Detected' : '✓ Compliant'}
+
+        <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-xl">
+          <div className={`w-2 h-2 rounded-full ${!data.ended_at ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}`} />
+          <span className={`text-[10px] font-black uppercase tracking-widest ${!data.ended_at ? 'text-red-500' : 'text-gray-500'}`}>
+            {!data.ended_at ? 'Live Governance Monitoring' : 'Session Completed'}
+          </span>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card p-6">
-          <p className="text-[10px] uppercase font-black tracking-widest text-[var(--text-secondary)] mb-2">Total Risk Score</p>
-          <div className="text-3xl font-bold tracking-tighter"><CountUp value={Math.round(data.total_risk * 100)} />%</div>
+        <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl p-6 hover:border-[var(--accent)] transition-all cursor-default group">
+          <p className="text-[9px] uppercase font-black tracking-widest text-[var(--text-secondary)] mb-2 group-hover:text-[var(--accent)] transition-colors">Session Risk Score</p>
+          <div className={`text-4xl font-black tracking-tighter ${statusColor}`}>
+            <CountUp value={Math.round(data.total_risk * 100)} />%
+          </div>
         </div>
-        <div className="card p-6">
-          <p className="text-[10px] uppercase font-black tracking-widest text-[var(--text-secondary)] mb-2">Agent Name</p>
-          <div className="text-xl font-bold tracking-tight">{data.agent.name} <span className="text-[10px] bg-[var(--bg-secondary)] px-2 py-0.5 rounded ml-2">{data.agent.version}</span></div>
+        <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl p-6">
+          <p className="text-[9px] uppercase font-black tracking-widest text-[var(--text-secondary)] mb-2">Authenticated Agent</p>
+          <div className="text-xl font-black tracking-tight flex items-baseline gap-2">
+            {data.agent?.name || 'Vapi Agent'}
+            <span className="text-[9px] bg-[var(--bg-secondary)] border border-[var(--border-primary)] px-2 py-0.5 rounded font-mono">{data.agent?.version || 'v1.0'}</span>
+          </div>
         </div>
-        <div className="card p-6">
-          <p className="text-[10px] uppercase font-black tracking-widest text-[var(--text-secondary)] mb-2">Participants</p>
-          <div className="text-sm font-medium">{data.participants.join(', ')}</div>
+        <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl p-6">
+          <p className="text-[9px] uppercase font-black tracking-widest text-[var(--text-secondary)] mb-2">Active Participants</p>
+          <div className="text-sm font-bold truncate">{data.participants.join(', ')}</div>
         </div>
-        <div className="card p-6 border-l-4 border-l-[var(--accent)]">
-          <p className="text-[10px] uppercase font-black tracking-widest text-[var(--accent)] mb-2">Voiceprint Status</p>
-          <div className="text-lg font-bold text-[var(--success)]">Verified (99.2%)</div>
+        <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl p-6 border-l-4 border-l-[var(--accent)]">
+          <p className="text-[9px] uppercase font-black tracking-widest text-[var(--accent)] mb-2">Voice Integrity</p>
+          <div className="text-lg font-black text-[var(--accent)]">VERIFIED <span className="text-[10px] opacity-60">(99.2%)</span></div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Transcript View */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="card overflow-hidden">
-            <div className="card-header border-b border-[var(--border-primary)] flex items-center justify-between">
-              <h3 className="card-title">Live Transcript</h3>
-              <div className="flex items-center gap-2">
-                 <button className="text-[var(--accent)] text-xs font-bold hover:underline">Download Metadata</button>
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[calc(100vh-320px)]">
+        {/* Transcript Container */}
+        <div className="lg:col-span-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-3xl overflow-hidden flex flex-col shadow-2xl">
+          <div className="p-6 border-b border-[var(--border-primary)] flex justify-between items-center bg-[var(--bg-secondary)]/50">
+            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Conversation Feed</span>
+            <div className="flex items-center gap-4">
+               <div className="flex items-center gap-2">
+                 <div className="w-3 h-3 bg-[var(--accent)] rounded-sm" />
+                 <span className="text-[9px] font-black uppercase text-[var(--text-secondary)]">User Signal</span>
+               </div>
+               <div className="flex items-center gap-2">
+                 <div className="w-3 h-3 bg-purple-500 rounded-sm" />
+                 <span className="text-[9px] font-black uppercase text-[var(--text-secondary)]">Agent Output</span>
+               </div>
             </div>
-            <div className="p-6 max-h-[600px] overflow-y-auto space-y-6 font-medium">
-              {data.transcript.map((turn) => (
-                <div key={turn.id} className={`flex flex-col ${turn.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`p-4 rounded-2xl max-w-[85%] ${turn.role === 'user' ? 'bg-[var(--accent)] text-white rounded-tr-none' : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-tl-none border border-[var(--border-primary)]'}`}>
-                    <p className="text-sm">{turn.content}</p>
-                    <div className="mt-2 flex items-center gap-3 text-[10px] font-bold opacity-70">
-                      <span>{turn.role.toUpperCase()}</span>
-                      <span>·</span>
-                      <span className={turn.risk_score > 0.4 ? 'text-red-300' : ''}>RISK: {Math.round(turn.risk_score * 100)}%</span>
-                    </div>
+          </div>
+
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 scroll-smooth bg-[var(--bg-primary)]">
+            {turns.map((turn, idx) => (
+              <div 
+                key={idx} 
+                className={`flex gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
+                  turn.speaker === 'user' ? 'flex-row' : 'flex-row-reverse'
+                }`}
+              >
+                <div className={`mt-1 p-2 rounded-xl shrink-0 border border-[var(--border-primary)] isolate overflow-hidden relative ${
+                  turn.speaker === 'user' ? 'bg-[var(--accent)]/10' : 'bg-purple-500/10'
+                }`}>
+                   <div className={`absolute inset-0 opacity-10 ${turn.speaker === 'user' ? 'bg-[var(--accent)]' : 'bg-purple-500'}`} />
+                  {turn.speaker === 'user' ? (
+                    <User className="w-5 h-5 text-[var(--accent)] relative z-10" />
+                  ) : (
+                    <Bot className="w-5 h-5 text-purple-500 relative z-10" />
+                  )}
+                </div>
+
+                <div className={`max-w-[75%] space-y-2 ${turn.speaker === 'agent' ? 'text-right flex flex-col items-end' : ''}`}>
+                  <div className={`p-5 rounded-2xl border transition-all duration-500 ${
+                    turn.risk_score > 0.7 
+                      ? 'bg-red-500/10 border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.15)] ring-1 ring-red-500/20' 
+                      : turn.risk_score > 0.4
+                      ? 'bg-orange-500/10 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.1)]'
+                      : 'bg-[var(--bg-secondary)] border-[var(--border-primary)] shadow-sm'
+                  }`}>
+                    <p className="text-sm leading-relaxed font-medium">{turn.text}</p>
+                  </div>
+
+                  <div className={`flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.1em] ${
+                    turn.speaker === 'agent' ? 'flex-row-reverse' : ''
+                  }`}>
+                    <span className="text-[var(--text-secondary)] font-mono">
+                      {new Date(turn.timestamp).toLocaleTimeString()}
+                    </span>
+                    <span className={`${
+                      turn.risk_score > 0.7 
+                        ? 'text-red-500' 
+                        : turn.risk_score > 0.4 
+                        ? 'text-orange-500' 
+                        : 'text-[var(--accent)]'
+                    }`}>
+                      Risk Score: {Math.round(turn.risk_score * 100)}%
+                    </span>
+                    {turn.risk_score > 0.7 && (
+                      <AlertTriangle className="w-3 h-3 text-red-500 animate-bounce" />
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+            {turns.length === 0 && (
+              <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)] opacity-40">
+                <Clock className="w-16 h-16 mb-4 animate-pulse" />
+                <p className="text-xs font-black uppercase tracking-[0.2em] animate-pulse">Establishing Governance Lock...</p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Sidebar: Governance Timeline */}
-        <div className="space-y-6">
-          <div className="card">
-            <div className="card-header border-b border-[var(--border-primary)]">
-              <h3 className="card-title">Governance Timeline</h3>
+        <div className="space-y-6 overflow-y-auto">
+          <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-3xl overflow-hidden shadow-lg">
+            <div className="p-6 border-b border-[var(--border-primary)] bg-[var(--bg-secondary)]/50">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-2">
+                <Shield className="w-4 h-4" /> Governance Timeline
+              </h3>
             </div>
-            <div className="p-6">
-              <div className="relative border-l-2 border-[var(--border-primary)] pl-6 space-y-8">
-                {data.governance_timeline.map((event, i) => (
-                  <div key={i} className="relative">
-                    <span className={`absolute -left-[31px] top-1 w-2.5 h-2.5 rounded-full ${event.risk_score > 0.7 ? 'bg-[var(--danger)]' : 'bg-[var(--warning)]'} border-2 border-[var(--bg-primary)] shadow-sm`} />
-                    <time className="text-[10px] font-black uppercase text-[var(--text-secondary)]">{new Date(event.timestamp).toLocaleTimeString()}</time>
-                    <h4 className="text-sm font-bold text-[var(--text-primary)] mt-0.5">{event.event}</h4>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1">{event.description}</p>
+            <div className="p-8">
+              <div className="relative border-l-2 border-[var(--border-primary)] pl-8 space-y-12">
+                {governanceTimeline.map((event, i) => (
+                  <div key={i} className="relative animate-in slide-in-from-left-4 duration-500">
+                    <span className={`absolute -left-[41px] top-1 w-4 h-4 rounded-full ${event.risk_score > 0.7 ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.4)]'} border-4 border-[var(--bg-primary)]`} />
+                    <time className="text-[10px] font-black uppercase text-[var(--text-secondary)] font-mono">{new Date(event.timestamp).toLocaleTimeString()}</time>
+                    <h4 className={`text-xs font-black uppercase tracking-wider mt-1 ${event.risk_score > 0.7 ? 'text-red-500' : 'text-orange-500'}`}>
+                      {event.event}
+                    </h4>
+                    <p className="text-[11px] text-[var(--text-secondary)] mt-1 font-medium leading-relaxed">{event.description}</p>
                   </div>
                 ))}
-                {data.governance_timeline.length === 0 && (
-                  <div className="text-sm text-[var(--text-secondary)] opacity-60">No significant risks detected in this session.</div>
+                {governanceTimeline.length === 0 && (
+                  <div className="text-xs font-black uppercase tracking-widest text-[var(--text-secondary)] opacity-40 italic">
+                    All signals nominal.
+                  </div>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="card bg-[var(--accent-bg)] border-[var(--accent)]/30">
-            <div className="p-6 text-center">
-              <h4 className="text-sm font-black uppercase tracking-widest text-[var(--accent)] mb-4">Voice Integrity Check</h4>
-              <div className="text-4xl font-black text-[var(--accent)] mb-2">PASS</div>
-              <p className="text-[10px] text-[var(--text-secondary)] font-medium">Deterministic verification of audio stream hashes completed at 12:44:21.</p>
-            </div>
+          <div className="bg-red-500/5 border border-red-500/20 rounded-3xl p-8 relative overflow-hidden group hover:border-red-500/40 transition-all">
+             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+               <Shield className="w-20 h-20 text-red-500" />
+             </div>
+             <div className="relative z-10">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-4 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+                  Fail-Closed Protocol
+                </h3>
+                <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed font-medium">
+                  Autonomous interceptor is active. Any turn exceeding the <span className="text-red-500 font-bold">85% threshold</span> will terminate the audio stream and revoke provider API tokens immediately.
+                </p>
+             </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
