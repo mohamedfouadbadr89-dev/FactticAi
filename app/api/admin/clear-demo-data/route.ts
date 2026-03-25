@@ -1,31 +1,35 @@
 import { NextResponse } from "next/server";
-import { withAuth, AuthContext } from "@/lib/middleware/auth";
+import { createServerAuthClient } from "@/lib/supabaseAuth";
+import { resolveOrgContext } from "@/lib/orgResolver";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { logger } from "@/lib/logger";
 
 /**
  * POST /api/admin/clear-demo-data
  * Reset all organizational governance data for demos.
- * Restricted to owners only.
+ * Parallel execution via service role to avoid auth timeouts.
  */
-export const POST = withAuth(async (req: Request, { userId, orgId }: AuthContext) => {
+export async function POST(req: Request) {
   try {
-    // 1. Verify Role (must be 'owner')
-    const { data: membership, error: mError } = await supabaseServer
-      .from("org_members")
-      .select("role")
-      .eq("org_id", orgId)
-      .eq("user_id", userId)
-      .single();
+    // 1. Manual Auth Check (Bypass withAuth 8s timeout)
+    const supabaseBase = await createServerAuthClient();
+    const { data: { user }, error: authError } = await supabaseBase.auth.getUser();
 
-    if (mError || !membership || membership.role !== "owner") {
-      logger.warn("CLEAN_DATA_ACCESS_DENIED", { userId, orgId });
-      return NextResponse.json({ error: "UNAUTHORIZED_ROLE_REQUIRED" }, { status: 403 });
+    if (authError || !user) {
+      logger.warn("UNAUTHORIZED_RESET_ATTEMPT", { url: req.url });
+      return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
     }
 
-    // 2. Clear Tables (Sequential Deletions)
+    // 2. Resolve Context
+    const { org_id, role } = await resolveOrgContext(user.id);
+
+    if (!org_id || role !== "owner") {
+      logger.warn("FORBIDDEN_RESET_ATTEMPT", { userId: user.id, org_id, role });
+      return NextResponse.json({ error: "FORBIDDEN_OWNER_REQUIRED" }, { status: 403 });
+    }
+
+    // 3. Define Tables (Dependency Order Sensitive)
     const tables = [
-      // 1. Core Orchestration & Telemetry
       "runtime_intercepts",
       "ai_logs",
       "telemetry_stream",
@@ -34,18 +38,14 @@ export const POST = withAuth(async (req: Request, { userId, orgId }: AuthContext
       "behavior_forensics_signals",
       "compliance_signals",
       "classifications",
-      
-      // 2. Sessions & Interactions (Children first)
       "messages",
       "session_turns",
       "model_outputs",
       "evaluations",
       "sessions",
       "agent_sessions",
-      "governance_root_cause_reports", // Delete RCA reports before agents
+      "governance_root_cause_reports",
       "agents",
-      
-      // 3. Governance & Risk
       "governance_predictions",
       "governance_alerts",
       "alerts",
@@ -55,14 +55,10 @@ export const POST = withAuth(async (req: Request, { userId, orgId }: AuthContext
       "governance_maturity_scores",
       "governance_snapshots",
       "governance_timeseries_v1",
-      
-      // 4. Drift & Performance
       "drift_alerts",
       "drift_metrics",
       "model_drift_metrics",
       "stress_test_runs",
-      
-      // 5. System & Utility
       "audit_logs",
       "billing_events",
       "billing_summaries",
@@ -74,37 +70,43 @@ export const POST = withAuth(async (req: Request, { userId, orgId }: AuthContext
       "report_definitions"
     ];
 
-    const results: Record<string, number> = {};
+    logger.info("INITIATING_BULK_RESET", { orgId: org_id, tableCount: tables.length });
 
-    for (const table of tables) {
-      const { data, count, error } = await supabaseServer
-        .from(table)
-        .delete({ count: "exact" })
-        .eq("org_id", orgId);
-      
-      if (error) {
-        logger.error(`CLEAR_DATA_FAILED_FOR_${table.toUpperCase()}`, { orgId, error: error.message });
-      } else {
-        results[table] = count || 0;
-      }
+    // 4. Parallel Execution via Service Role (Bypasses RLS & Throttle)
+    const results = await Promise.allSettled(
+      tables.map(table => 
+        supabaseServer
+          .from(table)
+          .delete()
+          .eq("org_id", org_id)
+      )
+    );
+
+    const failures = results.filter(r => r.status === 'rejected');
+    if (failures.length > 0) {
+      logger.error("BULK_RESET_PARTIAL_FAILURE", { orgId: org_id, failureCount: failures.length });
     }
 
-    // 3. Log the action to audit_logs (AFTER clearing)
+    // 5. Audit record of the reset
     await supabaseServer.from("audit_logs").insert({
-      org_id: orgId,
-      actor_id: userId,
+      org_id: org_id,
+      actor_id: user.id,
       action: "DEMO_DATA_CLEARED",
-      metadata: { deleted_counts: results, triggered_at: new Date().toISOString() }
+      metadata: { 
+        triggered_at: new Date().toISOString(),
+        tables_processed: tables.length,
+        failures: failures.length
+      }
     });
 
     return NextResponse.json({
       success: true,
-      deleted: results,
-      total_deleted: Object.values(results).reduce((a, b) => a + b, 0)
+      tables_processed: tables.length,
+      failures: failures.length
     });
 
   } catch (error: any) {
     logger.error("CLEAR_DATA_API_ERROR", { error: error.message });
     return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });
   }
-});
+}
