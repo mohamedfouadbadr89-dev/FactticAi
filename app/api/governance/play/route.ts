@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { GovernancePipeline } from '@/lib/governance/governancePipeline';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { logger } from '@/lib/logger';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 
 /**
  * Diagnostic Connectivity Check
@@ -11,8 +12,7 @@ import { logger } from '@/lib/logger';
 export async function GET() {
   return NextResponse.json({ 
     status: 'ONLINE', 
-    engine: 'Facttic Governance Engine v5.0', 
-    bypass: 'EMERGENCY_AUTH_ACTIVE' 
+    engine: 'Facttic Governance Engine v5.0'
   });
 }
 
@@ -21,29 +21,19 @@ export async function GET() {
  * Specifically tuned for UI responsiveness and high-latency toleration.
  */
 /**
- * Playground Execution Route — EMERGENCY AUTH BYPASS ACTIVE
+ * Playground Execution Route
  * Specifically tuned for UI responsiveness and high-latency toleration.
  */
-export async function POST(req: Request) {
-  console.log('PIPELINE_START_WITH_TIMEOUT_2000');
-  // EMERGENCY BYPASS: Avoid Supabase Auth call which is currently timing out on the server
-  const orgId = "864c43c5-0484-4955-a353-f0435582a4af";
-  const userId = "emergency-bypass-user";
-  
-  console.log('[Playground API] (BYPASS ACTIVE) Request received', { userId, orgId });
-  console.log('[Playground API] Supabase URL:', !!process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Loaded' : 'MISSING');
-
+export const POST = withAuth(async (req: Request, { orgId, userId }: AuthContext) => {
   try {
     const body = await req.json().catch(() => ({}));
     const { prompt, model, session_id, channel } = body;
-    console.log('[Playground API] Body parsed', { hasPrompt: !!prompt, model, channel });
 
     if (!prompt) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
     }
 
     // Task 1: Execute with strict v5.0 contracts + playground flags
-    console.log('[Playground API] Calling GovernancePipeline.execute...');
     const result = await GovernancePipeline.execute({
       org_id: orgId,
       user_id: userId,
@@ -159,4 +149,4 @@ export async function POST(req: Request) {
       governance_state: 'FAILURE'
     }, { status: 200 });
   }
-}
+});
