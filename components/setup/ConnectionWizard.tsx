@@ -264,7 +264,12 @@ export default function ConnectionWizard({ onComplete }: { onComplete?: () => vo
                 </div>
               </div>
             </div>
-            
+            {error && (
+              <div className="p-3 text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg">
+                {error}
+              </div>
+            )}
+
             <div className="pt-4 flex gap-3">
               <button 
                 onClick={prevStep}

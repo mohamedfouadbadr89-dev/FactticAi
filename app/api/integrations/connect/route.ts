@@ -1,32 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { SecurityLayer } from "@/lib/security/byok";
 import { verifyProviderConnection } from "@/lib/integrations/verifyConnection";
+import { withAuth, AuthContext } from "@/lib/middleware/auth";
 
-export async function POST(req: NextRequest) {
+/**
+ * POST /api/integrations/connect
+ * Securely persists dynamic AI infrastructure configurations.
+ * Enforces BYOK (Bring Your Own Key) via SHA-256 reference hashing.
+ */
+export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
     const body = await req.json();
-    let { provider, apiKey, model, environment, mode, org_id } = body;
-
-    // 0. Resolve org_id if missing from body
-    if (!org_id) {
-      const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
-      if (authError || !user) {
-        return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-      }
-      const { data: membership } = await supabaseServer
-        .from('memberships')
-        .select('org_id')
-        .eq('user_id', user.id)
-        .limit(1)
-        .maybeSingle();
-      
-      org_id = membership?.org_id;
-    }
-
-    if (!org_id) {
-      return NextResponse.json({ error: "Organization association required." }, { status: 400 });
-    }
+    const { provider, apiKey, model, environment, mode } = body;
 
     // 1. Validation
     if (!provider || !apiKey || !model) {
@@ -43,6 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Hash raw key via Security Layer (BYOK enforcement)
+    // We never store the raw key.
     const hashedKey = SecurityLayer.secureKeyReference(apiKey);
 
     // 4. Persistence
@@ -50,7 +37,7 @@ export async function POST(req: NextRequest) {
       await supabaseServer
         .from('external_integrations')
         .upsert({
-          org_id,
+          org_id: orgId,
           provider,
           webhook_secret: body.webhook_secret,
           status: 'active'
@@ -60,7 +47,7 @@ export async function POST(req: NextRequest) {
     const { error } = await supabaseServer
       .from('ai_connections')
       .insert({
-        org_id,
+        org_id: orgId,
         provider_type: provider,
         interaction_mode: mode || 'chat',
         model,
@@ -79,4 +66,4 @@ export async function POST(req: NextRequest) {
     console.error('CONNECTION_WIZARD_API_ERROR:', err);
     return NextResponse.json({ error: "Internal server error." }, { status: 500 });
   }
-}
+});
