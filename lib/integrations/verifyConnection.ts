@@ -57,10 +57,10 @@ export async function verifyProviderConnection(
       }
 
       case 'vapi': {
-        const res = await fetch('https://api.vapi.ai/agent', {
+        const res = await fetch('https://api.vapi.ai/assistant', {
           headers: { 'Authorization': `Bearer ${apiKey}` }
         });
-        if (!res.ok) throw new Error('Invalid Vapi Private Key or Agent configuration.');
+        if (!res.ok) throw new Error('Invalid Vapi Private Key or Assistant configuration.');
         break;
       }
 

@@ -61,7 +61,10 @@ export default function ConnectionWizard({ onComplete }: { onComplete?: () => vo
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...config, mode: interactionMode })
       });
-      if (!res.ok) throw new Error('Failed to save connection.');
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to save connection.');
+      }
       nextStep();
     } catch (err: any) {
       setError(err.message);

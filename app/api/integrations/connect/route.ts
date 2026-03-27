@@ -22,6 +22,11 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
     // 2. Pre-save Verification
     const verification = await verifyProviderConnection(provider, body);
     if (!verification.success) {
+      console.error('VERIFICATION_FAILED:', { 
+        provider, 
+        message: verification.message,
+        orgId 
+      });
       return NextResponse.json({ 
         error: verification.message,
         details: "Facttic cannot authenticate with the provider using these credentials." 
@@ -56,8 +61,12 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
       });
 
     if (error) {
-      console.error('PERSISTENCE_ERROR:', error);
-      return NextResponse.json({ error: "Failed to persist AI connection." }, { status: 500 });
+      console.error('SUPABASE_PERSISTENCE_ERROR:', {
+        error,
+        org_id: orgId,
+        provider_type: provider
+      });
+      return NextResponse.json({ error: error.message || "Failed to persist AI connection." }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
