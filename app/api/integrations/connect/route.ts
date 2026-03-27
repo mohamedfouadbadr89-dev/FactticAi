@@ -53,8 +53,7 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
       .from('ai_connections')
       .insert({
         org_id: orgId,
-        provider_type: provider,
-        interaction_mode: mode || 'chat',
+        provider,
         model,
         api_key_hash: hashedKey,
         environment
@@ -64,7 +63,7 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
       console.error('SUPABASE_PERSISTENCE_ERROR:', {
         error,
         org_id: orgId,
-        provider_type: provider
+        provider
       });
       return NextResponse.json({ error: error.message || "Failed to persist AI connection." }, { status: 500 });
     }
