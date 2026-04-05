@@ -14,9 +14,10 @@ export async function GET(
       return NextResponse.json({ error: 'Missing session ID.' }, { status: 400 });
     }
 
-    // Verify the user session using the cookie-aware auth client
+    // Verify the user session — getSession() reads JWT locally, no Supabase network round-trip
     const authClient = await createServerAuthClient();
-    const { data: { user }, error: authError } = await authClient.auth.getUser();
+    const { data: { session }, error: authError } = await authClient.auth.getSession();
+    const user = session?.user;
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 
 /**
  * GDPR Session Erasure API
- * 
+ *
  * CORE PRINCIPLE: Right-to-Erasure. Purge all data linked to a specific session ID.
  */
 export const POST = withAuth(async (req: Request, { orgId, userId, role }: AuthContext) => {
@@ -51,10 +51,10 @@ export const POST = withAuth(async (req: Request, { orgId, userId, role }: AuthC
       metadata: { session_id, initiated_by: userId }
     });
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Session erasure initiated and completed successfully.',
-      session_id 
+      session_id
     }, { status: 200 });
 
   } catch (error: any) {

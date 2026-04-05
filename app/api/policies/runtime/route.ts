@@ -1,62 +1,40 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { supabaseServer } from '@/lib/supabaseServer';
 
 /**
  * GET /api/policies/runtime
  * List all runtime policies for an organization.
  */
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
-    const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { data: member } = await supabaseServer
-      .from('org_members')
-      .select('org_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!member) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
     const { data: policies, error: fetchError } = await supabaseServer
       .from('runtime_policies')
       .select('*')
-      .eq('org_id', member.org_id)
+      .eq('org_id', orgId)
       .order('created_at', { ascending: false });
 
     if (fetchError) throw fetchError;
 
     return NextResponse.json({ policies });
-
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-}
+});
 
 /**
  * POST /api/policies/runtime
  * Create a new runtime policy.
  */
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
     const body = await req.json();
     const { name, condition, action, enabled } = body;
 
-    const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { data: member } = await supabaseServer
-      .from('org_members')
-      .select('org_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!member) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
     const { data: policy, error: createError } = await supabaseServer
       .from('runtime_policies')
       .insert({
-        org_id: member.org_id,
+        org_id: orgId,
         name,
         condition,
         action,
@@ -68,8 +46,7 @@ export async function POST(req: NextRequest) {
     if (createError) throw createError;
 
     return NextResponse.json({ policy });
-
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-}
+});

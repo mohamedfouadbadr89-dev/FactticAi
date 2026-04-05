@@ -35,28 +35,6 @@ export async function GET(req: NextRequest) {
   const verifiedOrgId = authResult.org_id;
 
   try {
-    // ── Auth ──────────────────────────────────────────────────────────────────
-    const { data: { user }, error: authError } = await supabaseServer.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // ── RBAC — resolve caller's org ───────────────────────────────────────────
-    const { data: orgMember, error: rbacError } = await supabaseServer
-      .from('org_members')
-      .select('org_id')
-      .eq('user_id', user.id)
-      .limit(1)
-      .single()
-
-    if (rbacError || !orgMember) {
-      return NextResponse.json(
-        { error: 'Forbidden. No associated organisation.' },
-        { status: 403 }
-      )
-    }
-
     const { searchParams } = new URL(req.url)
     const session_id = searchParams.get('session_id')
     const event_id   = searchParams.get('event_id')
@@ -70,7 +48,7 @@ export async function GET(req: NextRequest) {
 
     // ── Mode 1: Full session chain verification ───────────────────────────────
     if (session_id) {
-      const result = await verifyLedgerIntegrity(session_id, orgMember.org_id)
+      const result = await verifyLedgerIntegrity(session_id, verifiedOrgId)
 
       const status =
         result.integrity_status === 'VALID'
