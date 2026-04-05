@@ -54,9 +54,10 @@ export default function HomePage() {
   const [executiveMode, setExecutiveMode] = React.useState(false)
 
   React.useEffect(() => {
-    setLoading(true)
+    // Only show loading spinner on initial load
+    if (!data) setLoading(true)
     setApiError(false)
-    fetch('/api/product/overview', { cache: 'no-store' }) // prevent caching
+    fetch('/api/product/overview', { cache: 'no-store' })
       .then(res => res.json())
       .then(json => {
         if (json && json.governance && json.intelligence && json.gateway && json.agents) {
@@ -71,30 +72,48 @@ export default function HomePage() {
         setApiError(true)
         setLoading(false)
       })
-  }, [retry])
+  }, [retry]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Manual refresh fallback
-  React.useEffect(() => {
-    const handleRefresh = () => setRetry(r => r + 1)
-    window.addEventListener('governance_refresh', handleRefresh)
-    const bc = new BroadcastChannel('governance_sync')
-    bc.onmessage = (e) => {
-      if (e.data === 'refresh') handleRefresh()
-    }
-    return () => {
-      window.removeEventListener('governance_refresh', handleRefresh)
-      bc.close()
-    }
-  }, [])
-
-  // Realtime: TEMPORARILY DISABLED due to client-side crashes
-  // Replaced with a 5-second polling interval fallback
+  // Realtime: subscribe to runtime_intercepts for live counter updates
   React.useEffect(() => {
     if (!data?.org_id) return
-    const interval = setInterval(() => {
-      setRetry(r => r + 1)
-    }, 5000)
-    return () => clearInterval(interval)
+
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    const channel = supabase
+      .channel(`home_intercepts:${data.org_id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'runtime_intercepts',
+          filter: `org_id=eq.${data.org_id}`,
+        },
+        (payload) => {
+          const row = payload.new as { action: string }
+          setData(prev => {
+            if (!prev) return prev
+            return {
+              ...prev,
+              governance: {
+                ...prev.governance,
+                total_intercepts: prev.governance.total_intercepts + 1,
+                blocked_responses:
+                  prev.governance.blocked_responses + (row.action === 'block' ? 1 : 0),
+              },
+            }
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [data?.org_id])
 
   if (loading)
