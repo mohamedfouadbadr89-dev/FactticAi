@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import type { DashboardData } from "./types";
-import { useSimulation } from "./SimulationContext";
+import { useSimulationState } from "./SimulationContext";
 const FALLBACK: DashboardData | null = null;
 
 interface UseDashboardResult {
@@ -15,7 +15,7 @@ export function useDashboardData(endpoint?: string): UseDashboardResult {
   const [baseData, setBaseData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isSimulating, simulationStep } = useSimulation();
+  const { isSimulating, simulationStep } = useSimulationState();
 
   useEffect(() => {
     let cancelled = false;

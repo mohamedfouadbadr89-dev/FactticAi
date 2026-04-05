@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ShieldCheck, Trash2, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
-import { supabaseServer } from '@/lib/supabaseServer';
+import { createBrowserClient } from '@supabase/ssr';
 
 interface RetentionPolicy {
   org_id: string;
@@ -20,6 +20,11 @@ interface ErasureRequest {
 }
 
 export default function DataGovernancePage() {
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
   const [policies, setPolicies] = useState<RetentionPolicy[]>([]);
   const [requests, setRequests] = useState<ErasureRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,11 +40,11 @@ export default function DataGovernancePage() {
     setLoading(true);
     try {
       // Fetch Policies
-      const { data: pData } = await (supabaseServer as any).from('data_retention_policies').select('*');
+      const { data: pData } = await supabase.from('data_retention_policies').select('*');
       setPolicies(pData || []);
 
       // Fetch Requests
-      const { data: rData } = await (supabaseServer as any).from('gdpr_erasure_requests').select('*').order('requested_at', { ascending: false });
+      const { data: rData } = await supabase.from('gdpr_erasure_requests').select('*').order('requested_at', { ascending: false });
       setRequests(rData || []);
     } catch (err) {
       console.error('Failed to fetch governance data:', err);

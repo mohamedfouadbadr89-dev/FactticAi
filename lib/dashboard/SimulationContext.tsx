@@ -2,14 +2,18 @@
 
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
 
-interface SimulationContextType {
+interface SimulationState {
   isSimulating: boolean;
   simulationStep: number;
+}
+
+interface SimulationActions {
   startSimulation: () => void;
   resetSimulation: () => void;
 }
 
-const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
+const SimulationStateContext = createContext<SimulationState | undefined>(undefined);
+const SimulationActionsContext = createContext<SimulationActions | undefined>(undefined);
 
 export function SimulationProvider({ children }: { children: React.ReactNode }) {
   const [isSimulating, setIsSimulating] = useState(false);
@@ -49,16 +53,37 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   return (
-    <SimulationContext.Provider value={{ isSimulating, simulationStep, startSimulation, resetSimulation }}>
-      {children}
-    </SimulationContext.Provider>
+    <SimulationStateContext.Provider value={{ isSimulating, simulationStep }}>
+      <SimulationActionsContext.Provider value={{ startSimulation, resetSimulation }}>
+        {children}
+      </SimulationActionsContext.Provider>
+    </SimulationStateContext.Provider>
   );
 }
 
 export function useSimulation() {
-  const context = useContext(SimulationContext);
-  if (context === undefined) {
+  const state = useContext(SimulationStateContext);
+  const actions = useContext(SimulationActionsContext);
+  
+  if (state === undefined || actions === undefined) {
     throw new Error("useSimulation must be used within a SimulationProvider");
   }
-  return context;
+  
+  return { ...state, ...actions };
+}
+
+export function useSimulationActions() {
+  const actions = useContext(SimulationActionsContext);
+  if (actions === undefined) {
+    throw new Error("useSimulationActions must be used within a SimulationProvider");
+  }
+  return actions;
+}
+
+export function useSimulationState() {
+  const state = useContext(SimulationStateContext);
+  if (state === undefined) {
+    throw new Error("useSimulationState must be used within a SimulationProvider");
+  }
+  return state;
 }

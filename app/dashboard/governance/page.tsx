@@ -100,7 +100,7 @@ export default function GovernanceDashboard() {
   useEffect(() => {
     if (!orgId) return;
     fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 10000); // 10s refresh
+    const interval = setInterval(fetchDashboardData, 30000); // 30s refresh (reduced from 10s)
     return () => clearInterval(interval);
   }, [orgId]);
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { CountUp } from "@/components/ui/CountUp";
 import { AuditModeOverlay } from "@/components/ui/AuditModeOverlay";
-import { useSimulation } from "@/lib/dashboard/SimulationContext";
+import { useSimulationState, useSimulationActions } from "@/lib/dashboard/SimulationContext";
 import GlobalSearch from "@/components/ui/GlobalSearch";
 import { useInteractionMode } from "@/store/interactionMode";
 import { Menu } from "lucide-react";
@@ -16,7 +16,8 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
   const [mode, setMode] = useState<"executive" | "advanced">("executive");
   const [auditMode, setAuditMode] = useState(false);
   const [healthScore, setHealthScore] = useState<number | null>(null);
-  const { isSimulating, simulationStep, startSimulation, resetSimulation } = useSimulation();
+  const { startSimulation, resetSimulation } = useSimulationActions();
+  const { isSimulating, simulationStep } = useSimulationState();
 
   useEffect(() => {
     const saved = localStorage.getItem("facttic_audit_mode");
