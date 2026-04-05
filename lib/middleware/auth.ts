@@ -35,25 +35,21 @@ export function withAuth(handler: AuthenticatedHandler) {
       try {
         const supabase = await createServerAuthClient();
 
-        // Attempt to get user — replace getSession() with getUser() for stability
-        // Wrap in 3s timeout to fail-fast and avoid hanging the UI in 'Analyzing'
+        // Use getSession() — reads JWT locally from cookie, no Supabase network round-trip.
+        // This is the fix for AUTH_HANDLER_TIMEOUT: getUser() was hitting Supabase auth
+        // on every request (~3-8s latency). getSession() is instant (<1ms).
         let session: any = null;
         try {
-          const { data, error } = await Promise.race([
-            supabase.auth.getUser(),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('GETUSER_TIMEOUT')), 3000)
-            ),
-          ]);
-          if (data?.user && !error) {
-            session = { user: data.user };
+          const { data, error } = await supabase.auth.getSession();
+          if (data?.session?.user && !error) {
+            session = data.session;
           }
         } catch (authErr: any) {
-          logger.warn('AUTH_GETUSER_FAILED', { url: req.url, error: authErr.message });
-          // session stays null — will trigger 401 below
+          logger.warn('AUTH_GETSESSION_FAILED', { url: req.url, error: authErr.message });
         }
 
         // Fallback: Check for Authorization header if no user was found/validated
+        // Fallback: Bearer token for external API integrations (not dashboard sessions)
         if (!session) {
           const authHeader = req.headers.get('Authorization');
           if (authHeader?.startsWith('Bearer ')) {
@@ -62,7 +58,7 @@ export function withAuth(handler: AuthenticatedHandler) {
               const { data, error } = await Promise.race([
                 supabase.auth.getUser(token),
                 new Promise<never>((_, reject) =>
-                  setTimeout(() => reject(new Error('GETUSER_TIMEOUT')), 4000)
+                  setTimeout(() => reject(new Error('BEARER_TIMEOUT')), 4000)
                 ),
               ]);
               if (data?.user && !error) {
@@ -101,7 +97,7 @@ export function withAuth(handler: AuthenticatedHandler) {
         }
 
         return await handler(req, {
-          userId: session.user.id,
+          userId: session.user?.id,
           orgId: org_id,
           role,
           session,
