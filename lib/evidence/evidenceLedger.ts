@@ -156,11 +156,15 @@ export async function verifyLedgerIntegrity(
 ): Promise<LedgerIntegrityResult> {
   const verified_at = new Date().toISOString()
 
-  const { data: events, error } = await supabaseServer
+  const query = supabaseServer
     .from('facttic_governance_events')
     .select('id, session_id, org_id, timestamp, prompt, decision, risk_score, violations, previous_hash, event_hash, signature')
     .eq('session_id', session_id)
     .order('timestamp', { ascending: true })
+
+  if (org_id) query.eq('org_id', org_id)
+
+  const { data: events, error } = await query
 
   if (error) {
     logger.error('INTEGRITY_FETCH_FAILED', { session_id, error: error.message })
@@ -381,11 +385,12 @@ export const EvidenceLedger = {
    * Throws on the first integrity failure with the event ID embedded in the
    * error message. Use verifyLedgerIntegrity for non-throwing structured results.
    */
-  async readSession(sessionId: string): Promise<LedgedEvent[]> {
+  async readSession(sessionId: string, orgId: string): Promise<LedgedEvent[]> {
     const { data, error } = await supabaseServer
       .from('facttic_governance_events')
       .select('*')
       .eq('session_id', sessionId)
+      .eq('org_id', orgId)
       .order('timestamp', { ascending: true })
 
     if (error) throw new Error(error.message)

@@ -27,6 +27,7 @@ export async function GET(
       .from('facttic_governance_events')
       .select('*')
       .eq('session_id', sessionId)
+      .eq('org_id', verifiedOrgId)
       .order('timestamp', { ascending: true });
 
     if (error) throw error;
