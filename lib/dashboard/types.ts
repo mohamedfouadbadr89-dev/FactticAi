@@ -10,6 +10,7 @@ export interface HealthData {
   behavioral_drift: string;
   open_alerts: number;
   tamper_integrity: string;
+  avg_risk_24h?: number | string;
 }
 
 export interface DriftData {

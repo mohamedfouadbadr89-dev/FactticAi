@@ -15,26 +15,7 @@ export async function GET(req: NextRequest) {
   const verifiedOrgId = authResult.org_id;
 
   try {
-    const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // RBAC: Verify user owns the org associated 
-    const { data: orgMember, error: rbacError } = await supabaseServer
-      .from('org_members')
-      .select('org_id')
-      .eq('user_id', user.id)
-      .limit(1)
-      .single();
-
-    if (rbacError || !orgMember) {
-      return NextResponse.json({ error: 'Forbidden. No associated root org.' }, { status: 403 });
-    }
-
-    // Execute Cryptographic Verification scan against active hashes
-    const verification = await GovernanceLedger.verifyIntegrity(orgMember.org_id);
+    const verification = await GovernanceLedger.verifyIntegrity(verifiedOrgId);
 
     return NextResponse.json({ verification }, { status: 200 });
 

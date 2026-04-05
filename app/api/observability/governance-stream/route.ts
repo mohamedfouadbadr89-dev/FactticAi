@@ -1,31 +1,32 @@
 import { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
+import { createServerAuthClient } from '@/lib/supabaseAuth';
+import { resolveOrgContext } from '@/lib/orgResolver';
 import { GovernanceOtelStream, GovernanceOtelEvent } from '@/lib/observability/governanceOtelStream';
 import { logger } from '@/lib/logger';
 
 /**
  * OpenTelemetry Governance Stream API
- * 
+ *
  * CORE PRINCIPLE: Real-time export of governance events via SSE for external collectors.
  */
 export async function GET(req: NextRequest) {
-  const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
+  // Use getSession() — reads JWT locally, no Supabase network round-trip
+  const authClient = await createServerAuthClient();
+  const { data: { session }, error: authError } = await authClient.auth.getSession();
+  const user = session?.user;
+
   if (authError || !user) {
     return new Response(JSON.stringify({ error: 'UNAUTHORIZED' }), { status: 401 });
   }
 
-  // Fetch org_id
-  const { data: orgMember } = await supabaseServer
-    .from('org_members')
-    .select('org_id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!orgMember) {
+  let orgId: string;
+  try {
+    const ctx = await resolveOrgContext(user.id);
+    orgId = ctx.org_id;
+  } catch {
     return new Response(JSON.stringify({ error: 'FORBIDDEN' }), { status: 403 });
   }
-
-  const orgId = orgMember.org_id;
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({

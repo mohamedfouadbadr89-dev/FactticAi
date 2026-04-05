@@ -1,6 +1,5 @@
 import { verifyApiKey } from '@/lib/security/verifyApiKey';
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabaseServer';
 import { GdprEraseEngine } from '@/lib/governance/gdprEraseEngine';
 import { logger } from '@/lib/logger';
 
@@ -27,39 +26,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing session_id' }, { status: 400 });
     }
 
-    // 1. Authenticate user
-    const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-    }
-
-    // 2. Fetch session to get org_id
-    const { data: session, error: sessionError } = await supabaseServer
-      .from('sessions')
-      .select('org_id')
-      .eq('id', session_id)
-      .single();
-
-    if (sessionError || !session) {
-      return NextResponse.json({ error: 'Session not found or inaccessible.' }, { status: 404 });
-    }
-
-    const orgId = session.org_id;
-
-    // 3. RBAC: Verify user is admin/owner of the organization
-    const { data: orgMember, error: rbacError } = await supabaseServer
-      .from('org_members')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('org_id', orgId)
-      .single();
-
-    if (rbacError || !orgMember || !['admin', 'owner'].includes(orgMember.role)) {
-      return NextResponse.json({ error: 'FORBIDDEN: Administrative privileges required.' }, { status: 403 });
-    }
-
-    // 4. Trigger Erasure
-    const result = await GdprEraseEngine.eraseSession(orgId, session_id);
+    // Trigger Erasure using org_id from the verified API key
+    const result = await GdprEraseEngine.eraseSession(verifiedOrgId, session_id);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 });

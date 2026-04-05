@@ -26,19 +26,17 @@ export function OrganizationClient() {
  useEffect(() => {
  async function fetchData() {
  try {
- // We use the executive-state or a dedicated endpoint to get org info
- // For now, we'll fetch from /api/agents and mock the org part as the resolver is server-side
- const agentRes = await fetch('/api/agents')
+ const [agentRes, orgRes] = await Promise.all([
+   fetch('/api/agents'),
+   fetch('/api/org/current'),
+ ])
  const agentJson = await agentRes.json()
  setAgents(agentJson.agents || [])
- 
- // In a real scenario, we'd have a /api/org/current endpoint
- setOrg({
- id:'b84fd624-2190-4347-8c01-48c85b9e9b47',
- name:'Institutional Sandbox',
- slug:'institutional-sandbox',
- created_at: new Date().toISOString()
- })
+
+ if (orgRes.ok) {
+   const orgJson = await orgRes.json()
+   setOrg(orgJson)
+ }
  } catch (err) {
  console.error('Failed to fetch organization data:', err)
  } finally {
