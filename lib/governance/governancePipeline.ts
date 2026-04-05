@@ -4,6 +4,7 @@ import { GuardrailDetector } from './modules/guardrailDetector';
 import { RiskScorer } from './modules/riskScorer';
 import { EvidenceLedger } from '../evidence/evidenceLedger';
 import { authorizeOrgAccess } from '@/lib/security/authorizeOrgAccess';
+import { classify } from './llmClassifier';
 import { logger } from '@/lib/logger';
 import crypto from 'crypto';
 
@@ -89,6 +90,8 @@ export class GovernancePipeline {
 
     private static async runCoreLogic(params: any, sessionId: string, signal: AbortSignal) {
         const { org_id, prompt, voice_latency_ms, voice_collision_index, voice_barge_in_detected } = params;
+
+        // ── Layer 1: Rule-based (fast, deterministic) ─────────────────────────
         const { data: policies } = await supabase.from('governance_policies').select('*').eq('org_id', org_id).abortSignal(signal);
         const policyResult = PolicyEvaluator.evaluate(prompt, policies || []);
         const guardrailResult = GuardrailDetector.evaluate(prompt, "");
@@ -96,16 +99,45 @@ export class GovernancePipeline {
         if (voice_latency_ms && voice_latency_ms > 800) riskScore += 10;
         if (voice_collision_index && voice_collision_index > 0.2) riskScore += 15;
         if (voice_barge_in_detected) riskScore += 20;
-        // Respect score_ceiling from PolicyEvaluator — executive PII max 92, others 100
         riskScore = Math.min(riskScore, policyResult.score_ceiling ?? 100);
+
+        // ── Layer 2: LLM classifier (context-aware, ambiguous zone only) ──────
+        // Only invoked when rule-based lands in the uncertain middle (25–79).
+        // Clear ALLOW (<25) and clear BLOCK (≥80) skip LLM to preserve latency.
+        let llmFlags: any = null;
+        if (riskScore >= 25 && riskScore < 80 && !signal.aborted) {
+            try {
+                const llmResult = await Promise.race([
+                    classify(prompt, 'prompt', org_id, sessionId),
+                    // Respect the remaining pipeline budget — never exceed 1500ms for LLM
+                    new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+                ]);
+                if (llmResult && !signal.aborted) {
+                    // Conservative merge: take the higher risk score
+                    riskScore = Math.max(riskScore, llmResult.risk_score);
+                    riskScore = Math.min(riskScore, policyResult.score_ceiling ?? 100);
+                    llmFlags = llmResult.flags;
+                    logger.info('LLM_CLASSIFIER_APPLIED', {
+                        session_id: sessionId,
+                        org_id,
+                        llm_score: llmResult.risk_score,
+                        final_score: riskScore,
+                        decision: llmResult.decision,
+                    });
+                }
+            } catch {
+                // LLM failed — rule-based result stands, no disruption
+            }
+        }
+
         const decision: PipelineDecision = riskScore >= 80 ? 'BLOCK' : riskScore >= 40 ? 'WARN' : 'ALLOW';
-        return { 
-            success: true, 
-            session_id: sessionId, 
-            decision, 
-            risk_score: riskScore, 
+        return {
+            success: true,
+            session_id: sessionId,
+            decision,
+            risk_score: riskScore,
             violations: policyResult.violations,
-            behavior: guardrailResult.metrics
+            behavior: { ...guardrailResult.metrics, llm_flags: llmFlags },
         };
     }
 
