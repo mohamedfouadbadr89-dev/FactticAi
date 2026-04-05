@@ -12,13 +12,11 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
 
   try {
     const config: ReportConfig = await req.json();
-    const { format } = (await req.json() as any); // Re-parsing for format if not in config, but let's assume it's there
 
     if (!config.startDate || !config.endDate || !config.metrics) {
       return NextResponse.json({ error: 'Missing required configuration fields' }, { status: 400 });
     }
 
-    // Determine format from request or default to csv
     const requestedFormat = (config as any).format || 'csv';
 
     let content: string;

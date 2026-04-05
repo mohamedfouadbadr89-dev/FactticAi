@@ -262,7 +262,7 @@ export default function LiveReportClient({ parsedData, voiceSessionsCorrelated, 
                   </td>
                   <td className="px-4 py-3">
                     <span className="font-mono text-xs text-[var(--text-secondary)]">
-                      {(row.intent_drift * 100).toFixed(2)}%
+                      {Math.min(row.intent_drift, 100).toFixed(1)}%
                     </span>
                   </td>
                   <td className="px-4 py-3 max-w-[200px]">
