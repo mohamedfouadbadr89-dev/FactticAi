@@ -95,16 +95,7 @@ export const IncidentService = {
       .eq('session_id', sessionId)
       .order('timestamp', { ascending: true });
 
-    if (error || !data || data.length === 0) {
-      // Fall back: some sessions may have been written under a different org context
-      const fallback = await supabaseServer
-        .from('facttic_governance_events')
-        .select('id, session_id, org_id, timestamp, prompt, decision, risk_score, violations, guardrail_signals, latency, model, simulation_id')
-        .eq('session_id', sessionId)
-        .order('timestamp', { ascending: true });
-      data = fallback.data;
-      error = fallback.error;
-    }
+    // Fallback removed — cross-org query was a data isolation vulnerability
 
     if (error || !data || data.length === 0) {
       return null;
