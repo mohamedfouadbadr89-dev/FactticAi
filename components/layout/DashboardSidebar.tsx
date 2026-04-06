@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { navGroups } from "@/config/navigation";
+import { navGroups, planAllows, PlanTier } from "@/config/navigation";
 import { createBrowserClient } from '@supabase/ssr';
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface Props {
   isOpen?: boolean;
@@ -13,7 +14,6 @@ interface Props {
   onToggleCollapse?: () => void;
 }
 
-// Facttic Signal Stack icon — inline SVG
 function SignalIcon({ size = 24 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -25,8 +25,28 @@ function SignalIcon({ size = 24 }: { size?: number }) {
   );
 }
 
+const PLAN_BADGE_LABEL: Record<string, string> = {
+  growth: 'GROWTH',
+  scale:  'SCALE',
+};
+
+const PLAN_BADGE_COLOR: Record<string, string> = {
+  growth: 'text-violet-400 bg-violet-500/10 border-violet-500/20',
+  scale:  'text-amber-400  bg-amber-500/10  border-amber-500/20',
+};
+
 export default function DashboardSidebar({ isOpen = false, close, collapsed = false, onToggleCollapse }: Props) {
   const pathname = usePathname();
+  const [currentPlan, setCurrentPlan] = useState<PlanTier>('starter');
+
+  useEffect(() => {
+    fetch('/api/dashboard/billing/plan')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.plan?.tier) setCurrentPlan(data.plan.tier as PlanTier);
+      })
+      .catch(() => {/* stay on starter fallback */});
+  }, []);
 
   const handleSignOut = async () => {
     const supabase = createBrowserClient(
@@ -68,7 +88,40 @@ export default function DashboardSidebar({ isOpen = false, close, collapsed = fa
                   ? pathname === "/dashboard"
                   : pathname.startsWith(item.href);
 
+                const allowed = planAllows(currentPlan, item.minPlan);
                 const Icon = item.icon;
+                const badgeLabel = item.minPlan ? PLAN_BADGE_LABEL[item.minPlan] : null;
+                const badgeColor = item.minPlan ? PLAN_BADGE_COLOR[item.minPlan] : '';
+
+                const baseClass = `group flex items-center gap-3 rounded-lg text-sm font-medium transition-all ${
+                  collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2"
+                }`;
+
+                if (!allowed) {
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        id={item.id}
+                        href="/dashboard/billing"
+                        onClick={() => close?.()}
+                        title={collapsed ? `${item.label} — ${badgeLabel} plan required` : undefined}
+                        className={`${baseClass} text-[var(--text-secondary)]/40 hover:bg-[var(--bg-primary)] hover:text-[var(--text-secondary)]/60`}
+                      >
+                        <Icon className="w-4 h-4 shrink-0 opacity-40" />
+                        {!collapsed && (
+                          <>
+                            <span className="flex-1 truncate">{item.label}</span>
+                            <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border ${badgeColor}`}>
+                              {badgeLabel}
+                            </span>
+                            <Lock className="w-3 h-3 opacity-40 shrink-0" />
+                          </>
+                        )}
+                        {collapsed && <Lock className="w-2.5 h-2.5 opacity-40 absolute bottom-1 right-1" />}
+                      </Link>
+                    </li>
+                  );
+                }
 
                 return (
                   <li key={item.href}>
@@ -77,7 +130,7 @@ export default function DashboardSidebar({ isOpen = false, close, collapsed = fa
                       href={item.href}
                       onClick={() => close?.()}
                       title={collapsed ? item.label : undefined}
-                      className={`group flex items-center gap-3 rounded-lg text-sm font-medium transition-all ${collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2"} ${
+                      className={`${baseClass} ${
                         isActive
                           ? "bg-[var(--accent)]/10 text-[var(--accent)]"
                           : "text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]"
@@ -94,9 +147,27 @@ export default function DashboardSidebar({ isOpen = false, close, collapsed = fa
         ))}
       </nav>
 
+      {/* Plan badge in footer */}
+      {!collapsed && (
+        <div className="px-3 pb-1">
+          <Link
+            href="/dashboard/billing"
+            className="flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-primary)] hover:border-[var(--accent)]/40 transition-all"
+          >
+            <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Plan</span>
+            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${
+              currentPlan === 'scale'  ? PLAN_BADGE_COLOR.scale  :
+              currentPlan === 'growth' ? PLAN_BADGE_COLOR.growth :
+              'text-[var(--text-secondary)] bg-white/5 border-white/10'
+            }`}>
+              {currentPlan === 'starter' ? 'STARTER' : currentPlan === 'growth' ? 'GROWTH' : 'SCALE'}
+            </span>
+          </Link>
+        </div>
+      )}
+
       {/* Footer */}
-      <div className={`border-t border-[var(--border-primary)] p-3 flex flex-col gap-2`}>
-        {/* Collapse toggle — desktop only */}
+      <div className="border-t border-[var(--border-primary)] p-3 flex flex-col gap-2">
         <button
           onClick={onToggleCollapse}
           className="hidden md:flex items-center justify-center w-full py-2 rounded-lg border border-[var(--border-primary)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-all"

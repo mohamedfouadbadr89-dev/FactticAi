@@ -1,59 +1,64 @@
 import { NextResponse } from 'next/server';
+import { withAuth, AuthContext } from '@/lib/middleware/auth';
 import { supabaseServer } from '@/lib/supabaseServer';
-import { pricingConfig, getAllTiers } from '@/config/pricing';
+import { getAllTiers } from '@/config/pricing';
 
 /**
  * Plan Management API
- * 
- * CORE PRINCIPLE: Predictive Tiering.
- * Fetches current plan details and usage thresholds.
+ * Returns the current plan + tier metadata for the authenticated org.
  */
-
-export async function GET(req: Request) {
+export const GET = withAuth(async (_req: Request, { orgId }: AuthContext) => {
   try {
-    const { searchParams } = new URL(req.url);
-    const org_id = searchParams.get('org_id');
-
-    if (!org_id) {
-      return NextResponse.json({ error: 'Missing org_id' }, { status: 400 });
-    }
-
     const { data: summary, error } = await supabaseServer
       .from('billing_summaries')
-      .select('*')
-      .eq('org_id', org_id)
+      .select('eu_limit, total_eu_consumed, last_reset_at')
+      .eq('org_id', orgId)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // Ignore "no rows returned" for fallback
-       throw error;
-    }
+    if (error && error.code !== 'PGRST116') throw error;
 
-    // Default to Starter if no record
-    const limit = summary?.eu_limit || 10000;
-    const consumed = summary?.total_eu_consumed || 0;
+    const limit    = summary?.eu_limit          || 10_000;
+    const consumed = summary?.total_eu_consumed  || 0;
 
-    let tierName = "Starter";
-    if (limit >= 200000) tierName = "Scale";
-    else if (limit >= 50000) tierName = "Growth";
+    // Infer tier from EU limit thresholds
+    let tier: 'starter' | 'growth' | 'scale' = 'starter';
+    if (limit >= 200_000) tier = 'scale';
+    else if (limit >= 50_000) tier = 'growth';
+
+    // Human-readable tier names for display
+    const DISPLAY_NAME: Record<typeof tier, string> = {
+      starter: 'Starter',
+      growth:  'Growth',
+      scale:   'Scale',
+    };
+
+    const nextBillingDate = summary?.last_reset_at
+      ? new Date(
+          new Date(summary.last_reset_at).setMonth(
+            new Date(summary.last_reset_at).getMonth() + 1
+          )
+        ).toISOString()
+      : new Date().toISOString();
 
     return NextResponse.json({
       plan: {
-        name: tierName,
-        limit: limit,
-        consumed: consumed,
-        usage_percentage: limit > 0 ? (consumed / limit) * 100 : 0,
-        currency: "USD",
-        next_billing_date: summary?.last_reset_at ? new Date(new Date(summary.last_reset_at).setMonth(new Date(summary.last_reset_at).getMonth() + 1)).toISOString() : new Date().toISOString()
+        tier,
+        name:             DISPLAY_NAME[tier],
+        limit,
+        consumed,
+        usage_percentage: limit > 0 ? Math.round((consumed / limit) * 100) : 0,
+        currency:         'USD',
+        next_billing_date: nextBillingDate,
       },
       tiers: getAllTiers().map(t => ({
-        id: t.id,
-        name: `${t.planName} (${(t.interactions / 1000)}k)`,
+        id:    t.id,
+        name:  `${t.planName} (${(t.interactions / 1000)}k)`,
         limit: t.interactions,
-        price: t.price
-      }))
+        price: t.price,
+      })),
     });
 
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-}
+});
