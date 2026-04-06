@@ -11,6 +11,10 @@ import * as jailbreak from './jailbreakAnalyzer';
 import * as systemPromptDisclosure from './systemPromptDisclosureAnalyzer';
 import * as policyOverride from './policyOverrideAnalyzer';
 import * as roleManipulation from './roleManipulationAnalyzer';
+import * as sentiment from './sentimentAnalyzer';
+
+export { scoreSentiment } from './sentimentAnalyzer';
+export type { SentimentScore } from './sentimentAnalyzer';
 
 /**
  * Centralized orchestrator for prompt analysis.
@@ -31,6 +35,7 @@ export async function runAnalyzers(prompt: string): Promise<{ signals: RiskSigna
     systemPromptDisclosure.analyze(prompt),
     policyOverride.analyze(prompt),
     roleManipulation.analyze(prompt),
+    sentiment.analyze(prompt),
   ]);
 
   const allSignals: RiskSignal[] = results.flatMap(r => r.signals);

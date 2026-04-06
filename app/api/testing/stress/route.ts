@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 /**
  * Stress Test Initiation API
  */
-export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
+export const POST = withAuth(async (req: Request, { orgId, userId }: AuthContext) => {
   try {
     const { concurrency, duration_seconds } = await req.json();
 
@@ -16,8 +16,9 @@ export const POST = withAuth(async (req: Request, { orgId }: AuthContext) => {
 
     const result = await StressTestingEngine.runStressTest({
       org_id: orgId,
-      concurrency: parseInt(concurrency),
-      duration_seconds: parseInt(duration_seconds || '5')
+      user_id: userId,
+      concurrency: Math.min(parseInt(concurrency), 50),
+      duration_seconds: Math.min(parseInt(duration_seconds || '5'), 30),
     });
 
     if (!result) {
