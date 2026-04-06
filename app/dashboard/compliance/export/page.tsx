@@ -2,18 +2,19 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  FileDown, 
-  Database, 
-  ShieldCheck, 
-  History, 
-  CheckCircle2, 
-  Download, 
-  FileJson, 
-  FileSpreadsheet, 
+import {
+  FileDown,
+  Database,
+  ShieldCheck,
+  History,
+  CheckCircle2,
+  Download,
+  FileJson,
+  FileSpreadsheet,
   FileText,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Mic2
 } from 'lucide-react';
 
 export default function EvidenceExportPage() {
@@ -28,14 +29,40 @@ export default function EvidenceExportPage() {
     );
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     setExporting(true);
-    // Simulated export delay
-    setTimeout(() => {
-      setExporting(false);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      const res = await fetch('/api/compliance/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          types: selectedTypes,
+          format,
+          date_start: thirtyDaysAgo,
+          date_end: today,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Export failed');
+
+      const blob = await res.blob();
+      const ext = format === 'JSON' ? 'json' : format === 'CSV' ? 'csv' : 'pdf';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Facttic_Evidence_${Date.now()}.${ext}`;
+      a.click();
+      URL.revokeObjectURL(url);
       setCompleted(true);
       setTimeout(() => setCompleted(false), 3000);
-    }, 2000);
+    } catch {
+      alert('Export failed. Please try again.');
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -62,10 +89,11 @@ export default function EvidenceExportPage() {
             <h3 className="text-xs font-black uppercase tracking-widest text-[var(--text-secondary)] mb-8">1. Select Evidence Domains</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
               {[
-                { id: 'ledger', label: 'Governance Ledger', desc: 'Cryptographic chain of all policy events.' },
-                { id: 'replay', label: 'Session Replay', desc: 'Deterministic reconstruction of chat interactions.' },
-                { id: 'compliance', label: 'Compliance Signals', desc: 'PII detection and data leakage logs.' },
-                { id: 'risk', label: 'Risk Evaluations', desc: 'Historical drift and hallucination risk scores.' }
+                { id: 'ledger',     label: 'Governance Ledger',   desc: 'Cryptographic chain of all policy events.'                  },
+                { id: 'replay',     label: 'Session Replay',      desc: 'Deterministic reconstruction of chat interactions.'          },
+                { id: 'compliance', label: 'Compliance Signals',  desc: 'PII detection and data leakage logs.'                        },
+                { id: 'risk',       label: 'Risk Evaluations',    desc: 'Historical drift and hallucination risk scores.'              },
+                { id: 'voice',      label: 'Voice Metrics',       desc: 'Latency, packet loss, interruptions and audio integrity.'    },
               ].map(type => (
                 <button 
                   key={type.id}

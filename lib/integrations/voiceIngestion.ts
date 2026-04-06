@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
+import { BargeInDetector } from '@/lib/voice/bargeInDetector'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -202,13 +203,36 @@ export async function ingestConversation(
     }
   }
 
-  // 3. Forward to governance evaluation pipeline (fire-and-forget)
+  // 3. Barge-in detection — runs on normalized transcript before governance eval
+  const bargeInAnalysis = BargeInDetector.analyze(payload.messages)
+
+  // 4. Forward to governance evaluation pipeline (fire-and-forget)
+  // Builds prompt from all user messages so policy rules can evaluate content
   try {
+    const userContent = payload.messages
+      .filter(m => m.role === 'user')
+      .map(m => m.content)
+      .join(' ')
+      .trim()
+
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
     void fetch(`${baseUrl}/api/governance/execute`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-internal-key': process.env.INTERNAL_API_KEY ?? '' },
-      body: JSON.stringify({ session_id: internalSessionId, org_id: orgId }),
+      body: JSON.stringify({
+        session_id:              internalSessionId,
+        org_id:                  orgId,
+        prompt:                  userContent || '[voice session — no transcript]',
+        voice_barge_in_detected: bargeInAnalysis.detected,
+        voice_collision_index:   bargeInAnalysis.collision_index,
+        metadata: {
+          barge_in_events:  bargeInAnalysis.event_count,
+          barge_in_rate:    bargeInAnalysis.barge_in_rate,
+          detection_method: bargeInAnalysis.method,
+          provider:         payload.provider,
+          message_count:    payload.messages.length,
+        },
+      }),
     })
   } catch (e) {
     console.warn('[VoiceIngestion] Pipeline forward warning:', e)
