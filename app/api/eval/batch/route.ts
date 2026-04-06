@@ -93,6 +93,7 @@ export const POST = withAuth(async (req: Request, ctx: AuthContext) => {
     try {
       pipelineResult = await GovernancePipeline.execute({
         org_id: ctx.orgId,
+        user_id: ctx.userId,
         session_id: `eval_${suiteId}`,
         prompt: tc.prompt,
       });
