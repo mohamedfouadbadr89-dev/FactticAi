@@ -17,6 +17,7 @@ export const GET = withAuth(async (req: Request, { orgId, params }: any) => {
       .from('sessions')
       .select(`
         *,
+        recording_url,
         agents (
           name,
           type,
@@ -52,6 +53,7 @@ export const GET = withAuth(async (req: Request, { orgId, params }: any) => {
       ended_at: session.ended_at,
       status: session.status,
       total_risk: session.total_risk,
+      recording_url: session.recording_url ?? null,
       agent: session.agents,
       participants: ['User', session.agents?.name || 'AI Assistant'],
       transcript: turns.map(t => ({

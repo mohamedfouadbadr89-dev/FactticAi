@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { logger } from "@/lib/logger";
 import { CountUp } from "@/components/ui/CountUp";
 import { Skeleton } from "@/components/ui/Skeleton";
+import AudioPlayer from "@/components/replay/AudioPlayer";
 
 interface TranscriptTurn {
   id: string;
@@ -28,6 +29,7 @@ interface ConversationData {
   ended_at: string;
   status: string;
   total_risk: number;
+  recording_url?: string | null;
   agent: { name: string; type: string; version: string };
   participants: string[];
   transcript: TranscriptTurn[];
@@ -122,6 +124,18 @@ export default function VoiceConversationPage() {
           <p className="text-[10px] uppercase font-black tracking-widest text-[var(--accent)] mb-2">Voiceprint Status</p>
           <div className="text-lg font-bold text-[var(--success)]">Verified (99.2%)</div>
         </div>
+      </div>
+
+      {/* Audio Player */}
+      <div className="mb-8">
+        <AudioPlayer
+          recordingUrl={data.recording_url}
+          transcript={data.transcript.map(t => ({
+            role: t.role,
+            content: t.content,
+            timestamp: t.timestamp,
+          }))}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AudioPlayer from "@/components/replay/AudioPlayer";
 
 interface TimelineEvent {
   timestamp: string;
@@ -11,6 +12,7 @@ interface TimelineEvent {
 
 interface ReplayViewerProps {
   sessionId: string;
+  recordingUrl?: string | null;
 }
 
 const EVENT_TYPE_STYLES: Record<string, { label: string; border: string; badge: string }> = {
@@ -36,10 +38,11 @@ function riskBarColor(score: number): string {
   return "bg-emerald-500";
 }
 
-export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
+export default function ReplayViewer({ sessionId, recordingUrl }: ReplayViewerProps) {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTurnIdx, setActiveTurnIdx] = useState<number>(-1);
 
   useEffect(() => {
     async function fetchTimeline() {
@@ -101,13 +104,26 @@ export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] p-6 lg:p-10">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-2xl font-black tracking-tighter text-[var(--text-primary)] uppercase">
           Session Replay
         </h1>
         <p className="text-[var(--text-secondary)] font-mono text-xs mt-1">
           {sessionId} &middot; {events.length} events
         </p>
+      </div>
+
+      {/* Audio Player */}
+      <div className="mb-8">
+        <AudioPlayer
+          recordingUrl={recordingUrl}
+          transcript={events.map(e => ({
+            role: e.event_type === "prompt_submitted" ? "user" : "assistant",
+            content: e.content,
+            timestamp: e.timestamp,
+          }))}
+          onTurnChange={setActiveTurnIdx}
+        />
       </div>
 
       {/* Timeline */}
@@ -124,7 +140,7 @@ export default function ReplayViewer({ sessionId }: ReplayViewerProps) {
             };
 
             return (
-              <div key={idx} className="relative flex gap-5 items-start">
+              <div key={idx} className={`relative flex gap-5 items-start transition-all ${activeTurnIdx === idx ? "opacity-100 scale-[1.01]" : activeTurnIdx >= 0 ? "opacity-50" : "opacity-100"}`}>
                 {/* Timeline dot */}
                 <div className={`relative z-10 mt-4 w-[10px] h-[10px] shrink-0 rounded-full border-2 ${
                   event.event_type === "policy_violation"
