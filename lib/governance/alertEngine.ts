@@ -1,5 +1,6 @@
 import { supabaseServer } from '../supabaseServer';
 import { logger } from '../logger';
+import { WebhookDispatcher } from '../webhookDispatcher';
 
 export type AlertSeverity = 'info' | 'warning' | 'critical';
 
@@ -39,10 +40,19 @@ export class GovernanceAlertEngine {
 
         if (error) throw error;
 
-        logger.info('GOVERNANCE_ALERT_GENERATED', { 
-          org_id, 
-          type: alert_type, 
-          severity 
+        logger.info('GOVERNANCE_ALERT_GENERATED', {
+          org_id,
+          type: alert_type,
+          severity
+        });
+
+        // Dispatch to customer webhook endpoints (fire-and-forget)
+        WebhookDispatcher.dispatch({
+          event: alert_type,
+          org_id,
+          severity,
+          metadata: metadata || {},
+          triggered_at: new Date().toISOString(),
         });
 
       } catch (err: any) {
