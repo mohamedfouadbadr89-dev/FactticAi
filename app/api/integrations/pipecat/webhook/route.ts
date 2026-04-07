@@ -1,43 +1,32 @@
 import { NextResponse } from 'next/server'
-import {
-  verifySignature,
-  normalizePayload,
-  ingestConversation,
-  getIntegrationSecret,
-} from '@/lib/integrations/voiceIngestion'
+import { normalizePayload, ingestConversation } from '@/lib/integrations/voiceIngestion'
 
+/**
+ * Pipecat webhook — Pipecat is self-hosted so no platform signature.
+ * Customers POST their own session JSON to this endpoint.
+ * Expected body: { org_id, session_id, messages: [{role, content, timestamp?}] }
+ */
 export async function POST(req: Request) {
   try {
-    const rawBody = await req.text()
-    const signature = req.headers.get('x-pipecat-signature') ?? ''
-
     let body: any
-    try { body = JSON.parse(rawBody) } catch {
+    try { body = await req.json() } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
 
-    const orgId: string | undefined = body.metadata?.org_id ?? body.org_id
+    const orgId: string | undefined = body.org_id
 
-    // If org is configured, verify signature; otherwise accept (onboarding mode)
-    if (orgId) {
-      const secret = await getIntegrationSecret(orgId, 'pipecat')
-      if (secret && !verifySignature('pipecat', rawBody, signature, secret)) {
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-      }
+    if (!orgId) {
+      return NextResponse.json({ error: 'org_id required' }, { status: 400 })
     }
 
-    // Process transcription events or final call reports
-    // Pipecat usually doesn't have a single report unless we define it,
-    // so we handle 'call_completed' or a custom 'final_transcript' event.
-    if (body.event !== 'call_completed' && body.type !== 'call_completed') {
-      return NextResponse.json({ received: true })
-    }
+    // Pipecat: treat as anthropic_agents payload shape (messages array)
+    const normalized = normalizePayload('anthropic_agents', {
+      session_id: body.session_id,
+      messages: body.messages ?? [],
+      model: 'pipecat',
+    })
 
-    const normalized = normalizePayload('pipecat', body)
-
-    if (orgId) {
-      await ingestConversation(normalized, orgId)
-    }
+    await ingestConversation(normalized, orgId)
 
     return NextResponse.json({ received: true, session_id: normalized.session_id })
   } catch (error: any) {
