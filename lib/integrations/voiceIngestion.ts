@@ -15,6 +15,7 @@ export type VoiceProvider =
   | 'elevenlabs'
   | 'openai_realtime'
   | 'anthropic_agents'
+  | 'bland'
 
 export interface NormalizedMessage {
   role: 'user' | 'assistant' | 'system'
@@ -130,6 +131,21 @@ function normalizeAnthropic(body: any): NormalizedPayload {
   }
 }
 
+function normalizeBland(body: any): NormalizedPayload {
+  // Bland sends transcripts as an array of {user, text} objects
+  // where user is "Human" or "AI / agent name"
+  const messages: NormalizedMessage[] = (body.transcripts ?? []).map((t: any) => ({
+    role: t.user === 'Human' ? ('user' as const) : ('assistant' as const),
+    content: t.text ?? '',
+  }))
+  return {
+    provider: 'bland',
+    session_id: body.call_id ?? body.c_id ?? crypto.randomUUID(),
+    messages,
+    metadata: { status: body.status, duration: body.call_length, to: body.to },
+  }
+}
+
 export function normalizePayload(
   provider: VoiceProvider,
   body: any
@@ -140,6 +156,7 @@ export function normalizePayload(
     case 'elevenlabs':        return normalizeElevenLabs(body)
     case 'openai_realtime':   return normalizeOpenAIRealtime(body)
     case 'anthropic_agents':  return normalizeAnthropic(body)
+    case 'bland':             return normalizeBland(body)
   }
 }
 
