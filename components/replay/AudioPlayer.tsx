@@ -310,9 +310,9 @@ export default function AudioPlayer({ recordingUrl, transcript = [], onTurnChang
       </div>
 
       {recordingUrl ? (
-        <FilePlayer url={recordingUrl} transcript={transcript} onTurnChange={onTurnChange} />
+        <FilePlayer url={recordingUrl} transcript={transcript} {...(onTurnChange ? { onTurnChange } : {})} />
       ) : transcript.length > 0 ? (
-        <TtsPlayer transcript={transcript} onTurnChange={onTurnChange} />
+        <TtsPlayer transcript={transcript} {...(onTurnChange ? { onTurnChange } : {})} />
       ) : (
         <p className="text-[var(--text-secondary)] text-xs font-mono text-center py-4">
           No audio or transcript available for this session.

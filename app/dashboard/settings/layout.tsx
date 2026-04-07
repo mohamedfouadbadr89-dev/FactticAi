@@ -10,6 +10,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const tabs = [
     { label: 'System Configuration', href: '/dashboard/settings' },
     { label: 'Access Control', href: '/dashboard/settings/access' },
+    { label: 'API Keys', href: '/dashboard/settings/api-keys' },
   ];
 
   return (

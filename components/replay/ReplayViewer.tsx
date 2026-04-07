@@ -116,13 +116,13 @@ export default function ReplayViewer({ sessionId, recordingUrl }: ReplayViewerPr
       {/* Audio Player */}
       <div className="mb-8">
         <AudioPlayer
-          recordingUrl={recordingUrl}
+          recordingUrl={recordingUrl ?? null}
           transcript={events.map(e => ({
             role: e.event_type === "prompt_submitted" ? "user" : "assistant",
             content: e.content,
             timestamp: e.timestamp,
           }))}
-          onTurnChange={setActiveTurnIdx}
+          onTurnChange={(i: number) => setActiveTurnIdx(i)}
         />
       </div>
 
