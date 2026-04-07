@@ -29,7 +29,7 @@ const PROVIDERS: Provider[] = [
     description: 'Voice AI platform. Sends end-of-call transcripts via webhook.',
     webhookPath: '/api/integrations/vapi/webhook',
     signatureHeader: 'x-vapi-signature',
-    docsUrl: 'https://docs.vapi.ai/webhooks',
+    docsUrl: 'https://docs.vapi.ai',
     steps: [
       'Copy the webhook URL below',
       'Go to Vapi Dashboard → Settings → Webhooks',
@@ -47,7 +47,7 @@ const PROVIDERS: Provider[] = [
     description: 'Retell voice agents. Triggers on call_ended event.',
     webhookPath: '/api/integrations/retell/webhook',
     signatureHeader: 'x-retell-signature',
-    docsUrl: 'https://docs.retellai.com/api-references/webhook',
+    docsUrl: 'https://docs.retellai.com',
     steps: [
       'Copy the webhook URL below',
       'Go to RetellAI Dashboard → Webhooks',
@@ -64,7 +64,7 @@ const PROVIDERS: Provider[] = [
     description: 'ElevenLabs Conversational AI. Triggers on conversation.ended.',
     webhookPath: '/api/integrations/elevenlabs/webhook',
     signatureHeader: 'x-elevenlabs-signature',
-    docsUrl: 'https://elevenlabs.io/docs/conversational-ai/guides/webhooks',
+    docsUrl: 'https://elevenlabs.io/docs',
     steps: [
       'Copy the webhook URL below',
       'Go to ElevenLabs → Conversational AI → Your Agent → Webhooks',
@@ -81,7 +81,7 @@ const PROVIDERS: Provider[] = [
     description: 'OpenAI Realtime API sessions. POST session data on completion.',
     webhookPath: '/api/integrations/openai-realtime/webhook',
     signatureHeader: 'openai-signature',
-    docsUrl: 'https://platform.openai.com/docs/guides/realtime',
+    docsUrl: 'https://platform.openai.com/docs',
     steps: [
       'Copy the webhook URL below',
       'When your Realtime session ends, POST the session object to this URL',
@@ -114,7 +114,7 @@ const PROVIDERS: Provider[] = [
     description: 'Open-source voice AI framework. Self-hosted — POST sessions directly.',
     webhookPath: '/api/integrations/pipecat/webhook',
     signatureHeader: '—',
-    docsUrl: 'https://docs.pipecat.ai',
+    docsUrl: 'https://pipecat.ai',
     steps: [
       'Copy the webhook URL below',
       'In your Pipecat pipeline, add a post-call step that POSTs to this URL',
