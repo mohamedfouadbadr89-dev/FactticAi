@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { logger } from "@/lib/logger";
 import { CountUp } from "@/components/ui/CountUp";
@@ -36,11 +36,77 @@ interface ConversationData {
   governance_timeline: GovernanceEvent[];
 }
 
+const ACTIVE_STATUSES = new Set(["active", "in_progress", "live", "open"]);
+
+function isSessionLive(status: string) {
+  return ACTIVE_STATUSES.has(status?.toLowerCase());
+}
+
 export default function VoiceConversationPage() {
   const { conversationId } = useParams();
   const [data, setData] = useState<ConversationData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Live streaming state
+  const [liveTranscript, setLiveTranscript] = useState<TranscriptTurn[]>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamEnded, setStreamEnded] = useState(false);
+  const [newTurnIds, setNewTurnIds] = useState<Set<string>>(new Set());
+
+  const transcriptEndRef = useRef<HTMLDivElement>(null);
+  const esRef = useRef<EventSource | null>(null);
+  const seenIdsRef = useRef<Set<string>>(new Set());
+
+  const scrollToBottom = useCallback(() => {
+    transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  // Connect SSE stream when session is live
+  const connectStream = useCallback((sessionId: string) => {
+    if (esRef.current) esRef.current.close();
+
+    const es = new EventSource(`/api/voice/stream/${sessionId}`);
+    esRef.current = es;
+    setIsStreaming(true);
+
+    es.onmessage = (e) => {
+      try {
+        const turn: TranscriptTurn = JSON.parse(e.data);
+        if (seenIdsRef.current.has(turn.id)) return;
+        seenIdsRef.current.add(turn.id);
+
+        setLiveTranscript(prev => [...prev, turn]);
+        setNewTurnIds(prev => new Set(prev).add(turn.id));
+
+        // Remove animation class after 1.5s
+        setTimeout(() => {
+          setNewTurnIds(prev => {
+            const next = new Set(prev);
+            next.delete(turn.id);
+            return next;
+          });
+        }, 1500);
+
+        setTimeout(scrollToBottom, 50);
+      } catch {
+        // ignore parse errors
+      }
+    };
+
+    es.addEventListener("done", () => {
+      setIsStreaming(false);
+      setStreamEnded(true);
+      es.close();
+      esRef.current = null;
+    });
+
+    es.onerror = () => {
+      setIsStreaming(false);
+      es.close();
+      esRef.current = null;
+    };
+  }, [scrollToBottom]);
 
   useEffect(() => {
     async function fetchDetails() {
@@ -49,7 +115,15 @@ export default function VoiceConversationPage() {
         if (!res.ok) throw new Error("Failed to load conversation details");
         const result = await res.json();
         if (result.success) {
-          setData(result.data);
+          const d: ConversationData = result.data;
+          setData(d);
+
+          if (isSessionLive(d.status)) {
+            // Seed seenIds with existing transcript so SSE doesn't duplicate them
+            d.transcript.forEach(t => seenIdsRef.current.add(t.id));
+            setLiveTranscript(d.transcript);
+            connectStream(d.id);
+          }
         } else {
           setError(result.error);
         }
@@ -61,7 +135,11 @@ export default function VoiceConversationPage() {
       }
     }
     fetchDetails();
-  }, [conversationId]);
+
+    return () => {
+      esRef.current?.close();
+    };
+  }, [conversationId, connectStream]);
 
   if (isLoading) return (
     <div className="p-8 space-y-6">
@@ -80,6 +158,10 @@ export default function VoiceConversationPage() {
       {error || "Conversation details not available."}
     </div>
   );
+
+  const live = isSessionLive(data.status);
+  // When live, use liveTranscript; when static, use data.transcript
+  const displayTranscript = live ? liveTranscript : data.transcript;
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] p-8 animate-fadeIn">
@@ -101,8 +183,25 @@ export default function VoiceConversationPage() {
             Started: {new Date(data.started_at).toLocaleString()} · Duration: {data.ended_at ? '12m 42s' : 'Ongoing'}
           </p>
         </div>
-        <div className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest ${data.total_risk > 0.4 ? 'bg-[var(--danger-bg)] text-[var(--danger)]' : 'bg-[var(--success-bg)] text-[var(--success)]'}`}>
-          {data.total_risk > 0.4 ? '⚠ High Risk Detected' : '✓ Compliant'}
+        <div className="flex items-center gap-3">
+          {/* LIVE badge */}
+          {live && isStreaming && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/40 rounded-full">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-red-500">Live</span>
+            </div>
+          )}
+          {streamEnded && (
+            <div className="px-3 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-full">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Session Ended</span>
+            </div>
+          )}
+          <div className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest ${data.total_risk > 0.4 ? 'bg-[var(--danger-bg)] text-[var(--danger)]' : 'bg-[var(--success-bg)] text-[var(--success)]'}`}>
+            {data.total_risk > 0.4 ? '⚠ High Risk Detected' : '✓ Compliant'}
+          </div>
         </div>
       </div>
 
@@ -126,42 +225,103 @@ export default function VoiceConversationPage() {
         </div>
       </div>
 
-      {/* Audio Player */}
-      <div className="mb-8">
-        <AudioPlayer
-          recordingUrl={data.recording_url ?? null}
-          transcript={data.transcript.map(t => ({
-            role: t.role,
-            content: t.content,
-            timestamp: t.timestamp,
-          }))}
-        />
-      </div>
+      {/* Audio Player — only for completed sessions */}
+      {!live && (
+        <div className="mb-8">
+          <AudioPlayer
+            recordingUrl={data.recording_url ?? null}
+            transcript={data.transcript.map(t => ({
+              role: t.role,
+              content: t.content,
+              timestamp: t.timestamp,
+            }))}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Transcript View */}
         <div className="lg:col-span-2 space-y-6">
           <div className="card overflow-hidden">
             <div className="card-header border-b border-[var(--border-primary)] flex items-center justify-between">
-              <h3 className="card-title">Live Transcript</h3>
+              <div className="flex items-center gap-3">
+                <h3 className="card-title">{live ? "Live Transcript" : "Transcript"}</h3>
+                {live && isStreaming && (
+                  <span className="text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/30">
+                    Streaming
+                  </span>
+                )}
+                {streamEnded && (
+                  <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] bg-[var(--bg-secondary)] px-2 py-0.5 rounded-full border border-[var(--border-primary)]">
+                    Ended
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2">
-                 <button className="text-[var(--accent)] text-xs font-bold hover:underline">Download Metadata</button>
+                {live && (
+                  <span className="text-[10px] text-[var(--text-secondary)] font-medium">
+                    {displayTranscript.length} turn{displayTranscript.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+                <button className="text-[var(--accent)] text-xs font-bold hover:underline">Download Metadata</button>
               </div>
             </div>
             <div className="p-6 max-h-[600px] overflow-y-auto space-y-6 font-medium">
-              {data.transcript.map((turn) => (
-                <div key={turn.id} className={`flex flex-col ${turn.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`p-4 rounded-2xl max-w-[85%] ${turn.role === 'user' ? 'bg-[var(--accent)] text-white rounded-tr-none' : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-tl-none border border-[var(--border-primary)]'}`}>
+              {displayTranscript.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 text-[var(--text-secondary)]">
+                  {live ? (
+                    <>
+                      <span className="relative flex h-4 w-4 mb-4">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500" />
+                      </span>
+                      <p className="text-sm font-medium">Waiting for conversation to start…</p>
+                    </>
+                  ) : (
+                    <p className="text-sm font-medium">No transcript available.</p>
+                  )}
+                </div>
+              )}
+              {displayTranscript.map((turn) => (
+                <div
+                  key={turn.id}
+                  className={`flex flex-col transition-all duration-500 ${turn.role === 'user' ? 'items-end' : 'items-start'} ${newTurnIds.has(turn.id) ? 'animate-slideIn' : ''}`}
+                >
+                  <div className={`p-4 rounded-2xl max-w-[85%] ${turn.role === 'user' ? 'bg-[var(--accent)] text-white rounded-tr-none' : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-tl-none border border-[var(--border-primary)]'} ${newTurnIds.has(turn.id) ? 'ring-2 ring-[var(--accent)]/40' : ''}`}>
                     <p className="text-sm">{turn.content}</p>
                     <div className="mt-2 flex items-center gap-3 text-[10px] font-bold opacity-70">
                       <span>{turn.role.toUpperCase()}</span>
                       <span>·</span>
                       <span className={turn.risk_score > 0.4 ? 'text-red-300' : ''}>RISK: {Math.round(turn.risk_score * 100)}%</span>
+                      <span>·</span>
+                      <span>{new Date(turn.timestamp).toLocaleTimeString()}</span>
                     </div>
                   </div>
                 </div>
               ))}
+              {/* Auto-scroll anchor */}
+              <div ref={transcriptEndRef} />
             </div>
+
+            {/* Live turn counter bar */}
+            {live && (
+              <div className="border-t border-[var(--border-primary)] px-6 py-3 flex items-center justify-between bg-[var(--bg-secondary)]">
+                <span className="text-[10px] text-[var(--text-secondary)] font-medium">
+                  {isStreaming ? "Polling every 1.5s via SSE" : "Stream disconnected"}
+                </span>
+                {isStreaming && (
+                  <div className="flex gap-1">
+                    {[0, 1, 2].map(i => (
+                      <span
+                        key={i}
+                        className="w-1 h-3 bg-[var(--accent)] rounded-full animate-bounce"
+                        style={{ animationDelay: `${i * 0.15}s` }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
