@@ -12,7 +12,6 @@ import {
   TestTube,
   ShieldAlert,
   Bot,
-  FileText,
   Webhook,
   ShieldCheck,
   Settings,
@@ -20,7 +19,8 @@ import {
   BarChart,
   User,
   CreditCard,
-  Mic2
+  Mic2,
+  Cable,
 } from "lucide-react";
 
 export type PlanTier = 'starter' | 'growth' | 'scale';
@@ -57,28 +57,29 @@ export const navGroups: { group: string; items: NavItem[] }[] = [
       { label: "Live Monitor",       href: "/dashboard/observability", icon: Activity, id: "nav-live-monitor",       minPlan: 'growth' },
       { label: "Voice Monitor",      href: "/dashboard/voice",         icon: Mic2,     id: "nav-voice-monitor",      minPlan: 'growth' },
       { label: "Drift Intelligence", href: "/dashboard/compliance",    icon: Network,  id: "nav-drift-intelligence", minPlan: 'growth' },
-      { label: "Alerts",             href: "/dashboard/alerts",        icon: Bell,     id: "nav-alerts"                                 },
+      { label: "Agents",             href: "/dashboard/agents",        icon: Bot,      id: "nav-agents"                                },
+      { label: "Alerts",             href: "/dashboard/alerts",        icon: Bell,     id: "nav-alerts"                                },
     ]
   },
   {
     group: "ANALYTICS",
     items: [
-      { label: "Reports",    href: "/dashboard/reports",    icon: BarChart,    id: "nav-reports"    },
-      { label: "Forensics",  href: "/dashboard/forensics",  icon: Search,      id: "nav-forensics",  minPlan: 'growth' },
-      { label: "Incidents",  href: "/dashboard/incidents",  icon: AlertCircle, id: "nav-incidents"   },
+      { label: "Reports",   href: "/dashboard/reports",   icon: BarChart,    id: "nav-reports"   },
+      { label: "Incidents", href: "/dashboard/incidents", icon: AlertCircle, id: "nav-incidents" },
     ]
   },
   {
     group: "FORENSICS",
     items: [
-      { label: "Investigations", href: "/dashboard/investigations", icon: Search,      id: "nav-investigations", minPlan: 'scale'  },
-      { label: "Session Replay", href: "/dashboard/replay",         icon: PlayCircle,  id: "nav-session-replay", minPlan: 'growth' },
+      { label: "Forensics",      href: "/dashboard/forensics",      icon: Search,     id: "nav-forensics",      minPlan: 'growth' },
+      { label: "Investigations", href: "/dashboard/investigations", icon: Search,     id: "nav-investigations", minPlan: 'scale'  },
+      { label: "Session Replay", href: "/dashboard/replay",         icon: PlayCircle, id: "nav-session-replay", minPlan: 'growth' },
     ]
   },
   {
     group: "TESTING",
     items: [
-      { label: "Simulation Lab",        href: "/dashboard/simulation", icon: TestTube,   id: "nav-simulation-lab",   minPlan: 'growth' },
+      { label: "Simulation Lab",        href: "/dashboard/simulation", icon: TestTube,    id: "nav-simulation-lab",  minPlan: 'growth' },
       { label: "Stress Testing",        href: "/dashboard/testing",    icon: ShieldAlert, id: "nav-stress-testing",  minPlan: 'scale'  },
       { label: "Governance Playground", href: "/dashboard/playground", icon: ShieldCheck, id: "nav-playground"                        },
     ]
@@ -86,14 +87,14 @@ export const navGroups: { group: string; items: NavItem[] }[] = [
   {
     group: "INTEGRATIONS",
     items: [
-      { label: "AI Providers", href: "/dashboard/agents",               icon: Bot,     id: "nav-ai-providers" },
-      { label: "Webhooks",     href: "/dashboard/settings/integrations", icon: Webhook, id: "nav-webhooks"     },
+      { label: "Platforms", href: "/dashboard/settings/integrations", icon: Cable,   id: "nav-platforms" },
+      { label: "Webhooks",  href: "/dashboard/settings/webhooks",     icon: Webhook, id: "nav-webhooks"  },
     ]
   },
   {
     group: "FINANCE",
     items: [
-      { label: "Usage",   href: "/dashboard/usage",   icon: Activity,  id: "nav-usage"   },
+      { label: "Usage",   href: "/dashboard/usage",   icon: Activity,   id: "nav-usage"   },
       { label: "Billing", href: "/dashboard/billing", icon: CreditCard, id: "nav-billing" },
     ]
   },
@@ -101,8 +102,8 @@ export const navGroups: { group: string; items: NavItem[] }[] = [
     group: "SYSTEM",
     items: [
       { label: "Access Control", href: "/dashboard/settings/access", icon: ShieldCheck, id: "nav-access-control" },
-      { label: "Settings",       href: "/dashboard/settings",         icon: Settings,    id: "nav-settings"       },
-      { label: "Profile",        href: "/dashboard/profile",           icon: User,        id: "nav-profile"        },
+      { label: "Settings",       href: "/dashboard/settings",        icon: Settings,    id: "nav-settings"       },
+      { label: "Profile",        href: "/dashboard/profile",         icon: User,        id: "nav-profile"        },
     ]
   }
 ];
