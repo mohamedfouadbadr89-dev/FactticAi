@@ -28,8 +28,12 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
     fetch('/api/dashboard/stats')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        const score = data?.health?.governance_score ?? data?.data?.health?.governance_score;
+        const score =
+          data?.governance?.governance_score ??
+          data?.health?.governance_score ??
+          data?.data?.health?.governance_score;
         if (typeof score === 'number') setHealthScore(score);
+        else setHealthScore(100); // default when no data yet
       })
       .catch(() => {});
   }, []);
