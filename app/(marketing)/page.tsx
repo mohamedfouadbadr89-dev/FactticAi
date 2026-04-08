@@ -1,5 +1,6 @@
 import React from "react";
 import "./home.css";
+import { PricingSection } from "@/components/marketing/PricingSection";
 
 export default function MarketingPage() {
   return (
@@ -414,39 +415,7 @@ export default function MarketingPage() {
       {/* ══ PRICING ══ */}
       <section className="hp-pricing hp-section">
         <div className="hp-section-inner">
-          <div style={{textAlign:"center",marginBottom:56}}>
-            <div className="hp-eyebrow hp-eyebrow-center">Simple, Transparent Pricing</div>
-            <h2 className="hp-h2" style={{textAlign:"center"}}>Governance That Scales<br /><strong>with Your AI Risk.</strong></h2>
-            <p style={{textAlign:"center",color:"var(--hp-muted)",fontSize:14,marginTop:12}}>
-              1 session = 1 voice call or 1 chat thread &nbsp;·&nbsp; Unlimited agents on all plans
-            </p>
-          </div>
-          <div className="hp-pricing-grid">
-            {[
-              {feat:false,tier:"STARTER",name:"Starter",desc:"For teams deploying their first AI agent in production.",price:"$49",psub:"/ month · from 1,000 sessions",feats:["Risk scoring (BLOCK / ALLOW)","3 policy rules","Alerts & webhooks","API access","All integrations (Vapi, Retell…)","2 team seats","Email support"],btn:"ghost",btnTxt:"Get Started",href:"/login"},
-              {feat:true, tier:"GROWTH — Most Popular",name:"Growth",desc:"For fast-moving teams running voice AI or LLMs in production.",price:"$299",psub:"/ month · from 10,000 sessions",feats:["Everything in Starter","Unlimited policy rules","Live monitor + Voice monitor","Session replay","Forensics & investigations","Simulation lab","10 seats · Priority support"],btn:"solid",btnTxt:"Get Started",href:"/login"},
-              {feat:false,tier:"SCALE",name:"Scale",desc:"For enterprises with compliance and audit requirements.",price:"Custom",psub:"From 100,000 sessions / month",feats:["Everything in Growth","Stress testing","White-label reports","SOC2 / HIPAA / GDPR","Self-hosting / VPC","Custom SLA","Dedicated support engineer"],btn:"ghost",btnTxt:"Talk to Sales",href:"/contact"},
-            ].map(p=>(
-              <div key={p.tier} className={`hp-pc${p.feat?" featured":""}`}>
-                <div className="hp-pc-tier">{p.tier}</div>
-                <div className="hp-pc-name">{p.name}</div>
-                <div className="hp-pc-desc">{p.desc}</div>
-                <div className="hp-pc-price">{p.price}</div>
-                <div className="hp-pc-psub">{p.psub}</div>
-                <div className="hp-pc-feats">
-                  {p.feats.map(f=>(
-                    <div key={f} className="hp-pc-feat">
-                      <span className="hp-pc-feat-ico">{p.feat?"◆":"✓"}</span>{f}
-                    </div>
-                  ))}
-                </div>
-                <a href={p.href} className={`hp-pc-btn ${p.btn}`}>{p.btnTxt}</a>
-              </div>
-            ))}
-          </div>
-          <div style={{textAlign:"center",marginTop:32,fontSize:12,color:"var(--hp-muted)"}}>
-            Annual billing saves 20% &nbsp;·&nbsp; <a href="/pricing" style={{color:"var(--hp-accent)"}}>See full feature comparison →</a>
-          </div>
+          <PricingSection />
         </div>
       </section>
 
