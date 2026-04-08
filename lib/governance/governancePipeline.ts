@@ -3,6 +3,7 @@ import { PolicyEvaluator } from './modules/policyEvaluator';
 import { GuardrailDetector } from './modules/guardrailDetector';
 import { RiskScorer } from './modules/riskScorer';
 import { EvidenceLedger } from '../evidence/evidenceLedger';
+import { GovernanceAlertEngine } from './alertEngine';
 import { authorizeOrgAccess } from '@/lib/security/authorizeOrgAccess';
 import { classify } from './llmClassifier';
 import { logger } from '@/lib/logger';
@@ -161,6 +162,49 @@ export class GovernancePipeline {
                 decision: result.decision,
                 incremental_risk: result.risk_score
             });
+
+            // Upsert session record (read by maturity engine + dashboard stats)
+            await supabase.from('sessions').upsert({
+                id: sessionId,
+                org_id: params.org_id,
+                total_risk: result.risk_score,
+                decision: result.decision,
+                created_at: new Date().toISOString()
+            }, { onConflict: 'id' });
+
+            // Write incident for BLOCK decisions or high-risk events
+            if (result.decision === 'BLOCK' || result.risk_score >= 70) {
+                const violation = result.violations?.[0];
+                await supabase.from('incidents').insert({
+                    org_id: params.org_id,
+                    session_id: sessionId,
+                    title: violation?.policy_name
+                        ? `Policy Violation: ${violation.policy_name}`
+                        : `Governance Block — Risk ${result.risk_score}`,
+                    description: violation?.reason
+                        ?? `Decision: ${result.decision} | Risk: ${result.risk_score}/100`,
+                    risk_score: result.risk_score,
+                    decision: result.decision,
+                    status: 'open',
+                    created_at: new Date().toISOString()
+                });
+            }
+
+            // Fire alert (writes to governance_alerts, dispatches webhooks)
+            if (result.decision === 'BLOCK' || result.risk_score >= 60) {
+                GovernanceAlertEngine.triggerAlert({
+                    org_id: params.org_id,
+                    alert_type: result.decision === 'BLOCK' ? 'policy_block' : 'high_risk',
+                    severity: result.risk_score >= 80 ? 'critical' : 'warning',
+                    metadata: {
+                        session_id: sessionId,
+                        risk_score: result.risk_score,
+                        decision: result.decision,
+                        violations: result.violations,
+                        reason: result.violations?.[0]?.reason ?? null
+                    }
+                });
+            }
         } catch (e) { console.error('Persistence failed', e); }
     }
 }

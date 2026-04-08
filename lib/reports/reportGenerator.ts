@@ -691,16 +691,12 @@ td {
   // ── Internal: fetch evaluation metrics ──────────────────────────────────────
   private static async fetchMetrics(orgId: string, config: ReportConfig) {
     let query = supabaseServer
-      .from('evaluations')
-      .select('interaction_id, total_risk, severity_level, created_at, model_version_id')
+      .from('facttic_governance_events')
+      .select('id, session_id, risk_score, decision, event_type, created_at')
       .eq('org_id', orgId)
       .gte('created_at', config.startDate)
       .lte('created_at', config.endDate)
       .order('created_at', { ascending: false });
-
-    if (config.filters?.modelVersion) {
-      query = query.eq('model_version_id', config.filters.modelVersion);
-    }
 
     return await query;
   }
