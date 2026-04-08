@@ -8,22 +8,22 @@ export default function MarketingPage() {
 
       {/* ══ TICKER ══ */}
       <div className="hp-ticker">
-        <span className="hp-ticker-label">Live Platform Status</span>
+        <span className="hp-ticker-label">Integrations</span>
         <div className="hp-ticker-track">
           <div className="hp-ticker-inner">
             {[...Array(2)].map((_, r) => (
               <React.Fragment key={r}>
                 {[
-                  ["Governance Health Stream","Active"],
-                  ["Tamper-Proof Audit Chain","Verified"],
-                  ["Policy Engine","v3.2.1"],
-                  ["Active Orgs","247"],
-                  ["Sessions Monitored Today","1.2M+"],
-                  ["SOC 2 Type II","Certified"],
-                  ["GDPR Compliance","Enforced"],
-                  ["RCA Confidence Avg","91%"],
-                  ["Drift Detection","Real-Time"],
-                  ["Multi-Agent Control","Active"],
+                  ["Vapi", "Connected"],
+                  ["Retell AI", "Connected"],
+                  ["ElevenLabs", "Connected"],
+                  ["Bland AI", "Connected"],
+                  ["OpenAI", "Connected"],
+                  ["Anthropic", "Connected"],
+                  ["Pipecat", "Connected"],
+                  ["Azure OpenAI", "Connected"],
+                  ["Voice + Chat", "Both supported"],
+                  ["Webhook setup", "< 5 minutes"],
                 ].map(([label, val]) => (
                   <span key={label+r} className="hp-ticker-item">{label} <span>{val}</span></span>
                 ))}
@@ -41,33 +41,33 @@ export default function MarketingPage() {
           <div>
             <div className="hp-hero-label hp-a-fadeup hp-a1">
               <div className="hp-hero-label-dot" />
-              Enterprise AI Governance Platform — WF2A Rev 3
+              AI Governance for Voice &amp; Chat
             </div>
             <h1 className="hp-hero-title hp-a-fadeup hp-a2">
-              <em>Control</em>
-              <strong>What Your AI Agents</strong>
-              Actually Do.
+              One wrong response.
+              <strong>One compliance violation.</strong>
+              <em>Facttic makes sure it never happens.</em>
             </h1>
             <p className="hp-hero-desc hp-a-fadeup hp-a3">
-              Facttic is the <strong>first governance-first behavioral control layer</strong> for enterprise AI. Not an observability tool. Not a dashboard. A complete platform that enforces policy, detects drift, proves integrity, and gives executives full visibility — across every agent, channel, and deployment.
+              Connect your voice agent or LLM in minutes. Set your policies.
+              Facttic monitors every conversation — and alerts you the moment something goes wrong.
             </p>
             <div className="hp-hero-actions hp-a-fadeup hp-a4">
-              <button className="hp-btn-primary">Request Enterprise Access</button>
-              <button className="hp-btn-ghost">View Platform Architecture →</button>
+              <a href="/login" className="hp-btn-primary">Start Free →</a>
+              <a href="#how-it-works" className="hp-btn-ghost">See how it works</a>
             </div>
             <div className="hp-trust hp-a-fadeup hp-a5">
               {[
-                { icon: "M6 1l1.8 3.6L12 5.3l-3 2.9.7 4.1L6 10.4l-3.7 1.9.7-4.1-3-2.9 4.2-.7z", label: "SOC 2 Type II" },
-                { icon: "M4 4V3a2 2 0 1 1 4 0v1M2 4h8v7H2z", label: "GDPR / HIPAA Ready" },
-                { icon: "M4 6l1.5 1.5L8 4M6 1.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z", label: "Tamper-Proof Audit" },
-                { icon: "M2 10V5l4-4 4 4v5H7V8H5v2z", label: "Self-Host / VPC" },
+                { label: "Vapi" },
+                { label: "Retell AI" },
+                { label: "ElevenLabs" },
+                { label: "OpenAI" },
+                { label: "Anthropic" },
+                { label: "Bland AI" },
               ].map((t, i) => (
                 <React.Fragment key={t.label}>
                   {i > 0 && <div className="hp-trust-div" />}
-                  <div className="hp-trust-item">
-                    <svg viewBox="0 0 12 12" fill="none"><path d={t.icon} stroke="currentColor" strokeWidth="1.2" /></svg>
-                    {t.label}
-                  </div>
+                  <div className="hp-trust-item">{t.label}</div>
                 </React.Fragment>
               ))}
             </div>
@@ -82,75 +82,75 @@ export default function MarketingPage() {
                 <div className="hp-dp-dot" style={{background:"#E74C3C",marginLeft:4}} />
                 <div style={{marginLeft:10}}>
                   <div className="hp-dp-orglbl">Active Org</div>
-                  <div className="hp-dp-org">Meridian Financial Group</div>
+                  <div className="hp-dp-org">Acme Voice AI</div>
                 </div>
                 <div className="hp-dp-score">
                   <div>
-                    <div className="hp-dp-scorelbl">Gov. Health</div>
-                    <div className="hp-dp-scorenum">84</div>
+                    <div className="hp-dp-scorelbl">Risk Score</div>
+                    <div className="hp-dp-scorenum">LOW</div>
                   </div>
                 </div>
                 <div className="hp-dp-tamper">
                   <div className="hp-dp-tamper-dot" />
-                  <div className="hp-dp-tamper-txt">Tamper-Proof</div>
+                  <div className="hp-dp-tamper-txt">Monitoring</div>
                 </div>
               </div>
 
               <div className="hp-dp-body">
                 <div className="hp-dp-sidebar">
-                  <div className="hp-dp-sec">Gov. Core</div>
+                  <div className="hp-dp-sec">Governance</div>
                   <div className="hp-dp-nav on">
                     <svg viewBox="0 0 10 10" fill="none"><rect x="0.5" y="0.5" width="3.5" height="3.5" stroke="currentColor" strokeWidth="1"/><rect x="6" y="0.5" width="3.5" height="3.5" stroke="currentColor" strokeWidth="1"/><rect x="0.5" y="6" width="3.5" height="3.5" stroke="currentColor" strokeWidth="1"/><rect x="6" y="6" width="3.5" height="3.5" stroke="currentColor" strokeWidth="1"/></svg>
-                    Overview
+                    Dashboard
                   </div>
                   <div className="hp-dp-nav">
                     <svg viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="3.5" stroke="currentColor" strokeWidth="1"/><path d="M5 2.5v3l1.5 1" stroke="currentColor" strokeWidth="1"/></svg>
-                    Drift Intel
+                    Live Monitor
                   </div>
                   <div className="hp-dp-nav">
                     <svg viewBox="0 0 10 10" fill="none"><path d="M5 0.5l1.5 3L9.5 4l-2.5 2.5.5 3.5L5 8.5 2.5 10l.5-3.5L0.5 4l3-0.5z" stroke="currentColor" strokeWidth="1"/></svg>
                     Alerts
                   </div>
-                  <div className="hp-dp-sec">Security</div>
+                  <div className="hp-dp-sec">Forensics</div>
+                  <div className="hp-dp-nav">
+                    <svg viewBox="0 0 10 10" fill="none"><circle cx="4" cy="4" r="3" stroke="currentColor" strokeWidth="1"/><path d="M7 7l2 2" stroke="currentColor" strokeWidth="1"/></svg>
+                    Session Replay
+                  </div>
                   <div className="hp-dp-nav">
                     <svg viewBox="0 0 10 10" fill="none"><rect x="1" y="3" width="8" height="6" rx="0.5" stroke="currentColor" strokeWidth="1"/><path d="M3 3V2a2 2 0 0 1 4 0v1" stroke="currentColor" strokeWidth="1"/></svg>
-                    Audit Log
+                    Forensics
                   </div>
+                  <div className="hp-dp-sec">Testing</div>
                   <div className="hp-dp-nav">
-                    <svg viewBox="0 0 10 10" fill="none"><path d="M5 0.5C3 0.5 1.5 1.5 1.5 3v1.5c0 2 1.5 4 3.5 5 2-1 3.5-3 3.5-5V3C8.5 1.5 7 0.5 5 0.5z" stroke="currentColor" strokeWidth="1"/></svg>
-                    Integrity
-                  </div>
-                  <div className="hp-dp-sec">Voice</div>
-                  <div className="hp-dp-nav">
-                    <svg viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="3.5" stroke="currentColor" strokeWidth="1"/><path d="M3.5 5a1.5 1.5 0 0 0 3 0M5 2v.5M5 7.5V8" stroke="currentColor" strokeWidth="1"/></svg>
-                    Live Mon.
+                    <svg viewBox="0 0 10 10" fill="none"><path d="M3 1h4l1 3H2L3 1z" stroke="currentColor" strokeWidth="1"/><rect x="1" y="4" width="8" height="5" rx="0.5" stroke="currentColor" strokeWidth="1"/></svg>
+                    Simulation
                   </div>
                 </div>
 
                 <div className="hp-dp-main">
                   <div className="hp-dp-score-row">
-                    <div className="hp-dp-big">84</div>
+                    <div className="hp-dp-big" style={{fontSize:20,color:"#2ECC71"}}>ALLOW</div>
                     <div className="hp-dp-meta">
-                      <div className="hp-dp-sm"><span className="hp-dp-sm-val">428</span><span className="hp-dp-sm-lbl">Sessions</span></div>
-                      <div className="hp-dp-sm"><span className="hp-dp-sm-val">87</span><span className="hp-dp-sm-lbl">Voice Calls</span></div>
-                      <div className="hp-dp-sm"><span className="hp-dp-sm-val" style={{color:"#C9A84C"}}>2.4%</span><span className="hp-dp-sm-lbl">Drift Freq</span></div>
-                      <div className="hp-dp-sm"><span className="hp-dp-sm-val" style={{color:"#2ECC71"}}>91%</span><span className="hp-dp-sm-lbl">RCA Conf.</span></div>
+                      <div className="hp-dp-sm"><span className="hp-dp-sm-val">128</span><span className="hp-dp-sm-lbl">Sessions</span></div>
+                      <div className="hp-dp-sm"><span className="hp-dp-sm-val">43</span><span className="hp-dp-sm-lbl">Voice Calls</span></div>
+                      <div className="hp-dp-sm"><span className="hp-dp-sm-val" style={{color:"#E74C3C"}}>2</span><span className="hp-dp-sm-lbl">Violations</span></div>
+                      <div className="hp-dp-sm"><span className="hp-dp-sm-val" style={{color:"#F39C12"}}>1</span><span className="hp-dp-sm-lbl">Blocked</span></div>
                     </div>
                   </div>
                   <div className="hp-dp-chart">
-                    <div className="hp-dp-chart-lbl">Drift Trend — 30 Days</div>
+                    <div className="hp-dp-chart-lbl">Risk Events — Last 7 Days</div>
                     <svg viewBox="0 0 320 50" preserveAspectRatio="none" style={{width:"100%",height:48}}>
-                      <path d="M0,42 L32,36 L64,33 L96,29 L128,27 L160,24 L192,20 L224,17 L256,14 L288,11 L320,8" fill="none" stroke="rgba(201,168,76,0.6)" strokeWidth="1.5"/>
-                      <path d="M0,42 L32,36 L64,33 L96,29 L128,27 L160,24 L192,20 L224,17 L256,14 L288,11 L320,8 L320,50 L0,50 Z" fill="rgba(201,168,76,0.06)"/>
-                      <circle cx="96" cy="29" r="3" fill="#E74C3C"/>
-                      <circle cx="320" cy="8" r="3.5" fill="#E74C3C"/>
+                      <path d="M0,45 L40,40 L80,42 L120,35 L160,38 L200,25 L240,20 L280,28 L320,15" fill="none" stroke="rgba(201,168,76,0.6)" strokeWidth="1.5"/>
+                      <path d="M0,45 L40,40 L80,42 L120,35 L160,38 L200,25 L240,20 L280,28 L320,15 L320,50 L0,50 Z" fill="rgba(201,168,76,0.06)"/>
+                      <circle cx="200" cy="25" r="3" fill="#E74C3C"/>
+                      <circle cx="320" cy="15" r="3.5" fill="#F39C12"/>
                     </svg>
                   </div>
                   <div className="hp-dp-alerts">
                     {[
-                      {col:"#E74C3C",txt:"Behavioral Drift — Customer Advisory Channel",tag:"HIGH",tagCol:"#E74C3C"},
-                      {col:"#E74C3C",txt:"Policy Boundary Breach — Voice Channel",tag:"HIGH",tagCol:"#E74C3C"},
-                      {col:"#F39C12",txt:"Instruction Set Drift — Support Tier 2",tag:"MED",tagCol:"#F39C12"},
+                      {col:"#E74C3C",txt:"Jailbreak attempt detected — Voice Channel",tag:"BLOCK",tagCol:"#E74C3C"},
+                      {col:"#F39C12",txt:"Policy violation — off-topic response",tag:"WARN",tagCol:"#F39C12"},
+                      {col:"#2ECC71",txt:"128 sessions monitored — all within policy",tag:"OK",tagCol:"#2ECC71"},
                     ].map((a,i) => (
                       <div key={i} className="hp-dp-alert">
                         <div className="hp-dp-alert-dot" style={{background:a.col}} />
@@ -163,8 +163,8 @@ export default function MarketingPage() {
               </div>
 
               <div className="hp-dp-watermark">
-                <div className="hp-dp-badge">Executive Dashboard · Live View</div>
-                <div style={{marginLeft:"auto",fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:"rgba(255,255,255,0.2)",letterSpacing:1}}>Feb 26, 2026 · 09:41 UTC</div>
+                <div className="hp-dp-badge">Governance Dashboard · Live View</div>
+                <div style={{marginLeft:"auto",fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:"rgba(255,255,255,0.2)",letterSpacing:1}}>Real-time monitoring active</div>
               </div>
             </div>
           </div>
@@ -175,11 +175,11 @@ export default function MarketingPage() {
       <div className="hp-metrics">
         <div className="hp-metrics-inner">
           {[
-            {lbl:"Platform Scope",num:"12",sup:"+",desc:"Governance Intelligence Layers"},
-            {lbl:"Feature Modules",num:"80",sup:"+",desc:"Enterprise control capabilities"},
-            {lbl:"Avg. RCA Confidence",num:"91",sup:"%",desc:"Root cause accuracy across orgs"},
-            {lbl:"Tamper Events",num:"0",sup:".",desc:"Cryptographic audit integrity — 30d clean"},
-            {lbl:"AI Providers Supported",num:"All",sup:".",desc:"Provider-agnostic governance layer"},
+            {lbl:"Setup Time",num:"5",sup:"min",desc:"Webhook connected — no SDK required"},
+            {lbl:"Integrations",num:"7",sup:"+",desc:"Voice & chat providers supported"},
+            {lbl:"Decision Types",num:"2",sup:"",desc:"BLOCK or ALLOW — every conversation"},
+            {lbl:"Alert Latency",num:"<1",sup:"s",desc:"Real-time violation detection"},
+            {lbl:"Session Types",num:"All",sup:"",desc:"Voice calls and chat threads"},
           ].map(m => (
             <div key={m.lbl} className="hp-metric">
               <div className="hp-metric-lbl">{m.lbl}</div>
@@ -190,43 +190,49 @@ export default function MarketingPage() {
         </div>
       </div>
 
-      {/* ══ WHAT IS FACTTIC ══ */}
-      <section className="hp-what hp-section">
+      {/* ══ HOW IT WORKS ══ */}
+      <section id="how-it-works" className="hp-what hp-section">
         <div className="hp-section-inner">
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:48,alignItems:"start",marginBottom:60}}>
             <div>
-              <div className="hp-eyebrow">Product Positioning</div>
-              <h2 className="hp-h2">Not a Dashboard.<br /><strong>A Governance <em>Platform.</em></strong></h2>
+              <div className="hp-eyebrow">How it works</div>
+              <h2 className="hp-h2">Connected in minutes.<br /><strong>Governing <em>forever.</em></strong></h2>
             </div>
             <div style={{paddingTop:32}}>
-              <p className="hp-sub">Every tool in the AI observability category shows you what happened. Facttic controls what is <em>allowed</em> to happen — and proves it, immutably, to regulators, auditors, and boards.</p>
+              <p className="hp-sub">No SDK. No code changes to your existing stack. Just point your voice platform or LLM at a webhook URL — and Facttic starts governing every conversation from that moment.</p>
             </div>
           </div>
           <div className="hp-what-grid">
             <div className="hp-notvs">
-              <div className="hp-notvs-grid">
-                <div className="hp-nvcol">
-                  <div className="hp-nvcol-hd no">✗ Facttic is NOT</div>
-                  {["An LLM debugging console","An observability dashboard","A developer trace viewer","A startup analytics tool","A purple-gradient SaaS","A single-modal tool"].map(t=>(
-                    <div key={t} className="hp-nvitem"><span className="hp-nvico">✗</span>{t}</div>
-                  ))}
-                </div>
-                <div className="hp-nvcol">
-                  <div className="hp-nvcol-hd yes">✓ Facttic IS</div>
-                  {["A behavioral control layer","A cryptographic audit system","An enterprise governance platform","A compliance evidence generator","Executive + Engineering parity","Chat + Voice + Multi-Agent"].map(t=>(
-                    <div key={t} className="hp-nvitem"><span className="hp-nvico" style={{color:"var(--hp-green)"}}>✓</span>{t}</div>
-                  ))}
-                </div>
+              <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                {[
+                  {num:"01",title:"Connect your platform",desc:"Copy your Facttic webhook URL. Paste it into Vapi, Retell, ElevenLabs, Bland, or any other provider. Takes under 5 minutes.",tag:"Vapi · Retell · ElevenLabs · Bland · OpenAI · Anthropic · Pipecat"},
+                  {num:"02",title:"Set your policies",desc:"Define what your AI can and can't say. Block topics, flag sensitive content, set risk thresholds. No code — just rules.",tag:"Policy rules · Risk thresholds · Blocked topics"},
+                  {num:"03",title:"Govern every conversation",desc:"Every session gets analyzed in real-time. BLOCK or ALLOW. Risk score assigned. Alert sent if needed. Full audit trail kept.",tag:"BLOCK / ALLOW · Risk score · Alerts · Audit log"},
+                ].map((s,i) => (
+                  <div key={s.num} className="hp-sec-item" style={{borderBottom: i < 2 ? "1px solid var(--border-subtle)" : "none", paddingBottom:24, marginBottom:24}}>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,fontWeight:700,color:"var(--hp-gold)",letterSpacing:2,flexShrink:0,marginTop:2}}>{s.num}</div>
+                    <div>
+                      <div className="hp-sec-title">{s.title}</div>
+                      <div className="hp-sec-desc">{s.desc}</div>
+                      <div style={{marginTop:8,fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:"var(--text-muted)",letterSpacing:1}}>{s.tag}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
             <div className="hp-what-stats">
+              <div className="hp-sec-rlbl" style={{marginBottom:16}}>What Facttic catches</div>
               {[
-                {num:"12",sup:"+",lbl:"Platform Intelligence Layers",desc:"From behavioral drift detection to cryptographic audit chains — every governance layer in one platform."},
-                {num:"80",sup:"+",lbl:"Enterprise Control Modules",desc:"RCA engines, hallucination detection, voice governance, compliance exports, multi-agent risk mapping."},
-                {num:"2",sup:"×",lbl:"Executive + Advanced Modes",desc:"CFO sees governance scores and risk trends. CTO sees drift indices, prompt hashes, and system telemetry."},
+                {ico:"🚫",lbl:"Jailbreak attempts",desc:"Detect when users try to manipulate your AI agent into breaking its rules."},
+                {ico:"⚠️",lbl:"Policy violations",desc:"Flag responses that break your defined content policies or topic restrictions."},
+                {ico:"💬",lbl:"Hallucinations",desc:"Identify when your AI confidently says something that isn't true."},
+                {ico:"🔒",lbl:"Sensitive data leaks",desc:"Catch when your AI reveals PII, credentials, or confidential information."},
+                {ico:"📉",lbl:"Behavioral drift",desc:"Detect when your agent starts behaving differently from how it was deployed."},
+                {ico:"💉",lbl:"Prompt injection",desc:"Identify attempts to override system instructions via user messages."},
               ].map(s=>(
-                <div key={s.lbl} className="hp-wstat">
-                  <div className="hp-wstat-num">{s.num}<span>{s.sup}</span></div>
+                <div key={s.lbl} className="hp-wstat" style={{marginBottom:16}}>
+                  <div style={{fontSize:18,flexShrink:0}}>{s.ico}</div>
                   <div><div className="hp-wstat-lbl">{s.lbl}</div><div className="hp-wstat-desc">{s.desc}</div></div>
                 </div>
               ))}
@@ -235,28 +241,28 @@ export default function MarketingPage() {
         </div>
       </section>
 
-      {/* ══ PLATFORM LAYERS ══ */}
+      {/* ══ FEATURES ══ */}
       <div className="hp-layers">
         <div className="hp-section-inner">
           <div className="hp-layers-header">
             <div>
-              <div className="hp-eyebrow" style={{color:"var(--hp-gold)"}}>Platform Architecture</div>
-              <h2 className="hp-layers-h2">Every Intelligence Layer.<br /><strong>One <em>Platform.</em></strong></h2>
+              <div className="hp-eyebrow" style={{color:"var(--hp-gold)"}}>Platform Features</div>
+              <h2 className="hp-layers-h2">Everything you need<br /><strong>to govern <em>AI in production.</em></strong></h2>
             </div>
             <div>
-              <p className="hp-layers-sub">Facttic is architected as a modular governance intelligence system. Each layer operates independently but contributes to a unified composite health score — giving you atomic control and systemic awareness simultaneously.</p>
+              <p className="hp-layers-sub">From the moment a conversation starts to the moment you need to investigate an incident — Facttic covers the full lifecycle of AI governance.</p>
             </div>
           </div>
           <div className="hp-layers-grid">
             {[
-              {c:"c1",ico:"⬡",num:"Layer 01",title:"Governance Core & Drift Intelligence",feats:["Model Version Drift Detection","Cross-Session Hallucination Patterns","Silent Regression Detection","Risk Momentum Scoring","Predictive Drift Escalation"],count:9},
-              {c:"c2",ico:"🔐",num:"Layer 02",title:"Security & Tamper-Proof Layer",feats:["Cryptographic Audit Log Export","Dual-Key BYOK Encryption","Agent Version Integrity Lock","Secure Event Hash Ledger","Audit Integrity Verification API"],count:6},
-              {c:"c3",ico:"◎",num:"Layer 03",title:"Enterprise Observability & Health Stream",feats:["Real-Time Governance Health API","Org-Scoped Risk Telemetry","OpenTelemetry-Compatible Events","Drift-to-Incident Correlation","Governance Composite Index"],count:10},
-              {c:"c4",ico:"⚖",num:"Layer 04",title:"Compliance & Data Intelligence",feats:["PII Exposure Heatmap","Data Residency Tagging","GDPR Article 17 Execution","Automated Compliance Evidence","Retention Policy Engine"],count:10},
-              {c:"c5",ico:"◈",num:"Layer 05",title:"Voice Governance Extensions",feats:["Interruption Risk Metric","Voice Latency Drift Heatmap","Audio Stream Integrity","Post-Call Risk Re-Scoring","Over-Talk Collision Index"],count:5},
-              {c:"c6",ico:"◆",num:"Layer 06",title:"Billing & Economic Defense",feats:["EU Burn Rate Forecast Engine","Hard Cap Breach Forecasting","Anomalous Billing Spike Detection","Sandbox Isolation Guard","Abuse Detection Engine"],count:10},
-              {c:"c7",ico:"◉",num:"Layer 07",title:"Multi-Agent & Enterprise Controls",feats:["Agent Dependency Mapping","Cross-Agent Escalation Tracking","Shared Context Contamination","Role-Level Policy Matrix","Feature Entitlement Engine"],count:10},
-              {c:"c8",ico:"⟳",num:"Layer 08",title:"Human-in-the-Loop & AI Behavior Forensics",feats:["Escalation Queue Management","Instruction Override Detection","Agent Behavioral Baseline Profiler","Automated Kill-Switch Policy","Governance Policy Simulation"],count:12},
+              {c:"c1",ico:"🟢",num:"Live Monitor",title:"Real-time session monitoring",feats:["See every voice call and chat as it happens","Risk score updated in real-time","BLOCK / ALLOW decisions surfaced instantly","Alert triggered on first violation"]},
+              {c:"c2",ico:"▶",num:"Session Replay",title:"Go back to any conversation",feats:["Full transcript of every session","Replay voice calls step by step","See exactly when and where things went wrong","Export for compliance review"]},
+              {c:"c3",ico:"🔍",num:"Forensics",title:"Deep investigation tools",feats:["Search across all sessions by keyword","Filter by risk level, provider, date","Timeline view of every event","Build incident reports"]},
+              {c:"c4",ico:"🧪",num:"Simulation Lab",title:"Test before you ship",feats:["Run test conversations against your policies","Catch violations before production","Simulate edge cases and jailbreak attempts","Validate policy changes safely"]},
+              {c:"c5",ico:"🔔",num:"Alerts & Webhooks",title:"Get notified immediately",feats:["Webhook fired on every violation","Slack, email, or any HTTP endpoint","Filter by event type and severity","HMAC-signed payloads for security"]},
+              {c:"c6",ico:"📊",num:"Reports",title:"Audit-ready exports",feats:["Download compliance reports","Session summary by date range","Violation breakdown by type","Share with legal or compliance teams"]},
+              {c:"c7",ico:"⚙️",num:"Policy Engine",title:"Define your own rules",feats:["Set blocked topics and content types","Define risk thresholds per channel","Different rules for voice vs chat","Unlimited rules on Growth and Scale"]},
+              {c:"c8",ico:"🔌",num:"Integrations",title:"Works with your stack",feats:["Vapi · Retell AI · ElevenLabs · Bland AI","OpenAI · Anthropic · Azure · Pipecat","Webhook-based — no SDK needed","Connect any provider with an HTTP call"]},
             ].map(l=>(
               <div key={l.num} className={`hp-lcard ${l.c}`}>
                 <div className="hp-lcard-ico">{l.ico}</div>
@@ -265,113 +271,19 @@ export default function MarketingPage() {
                 <div className="hp-lcard-feats">
                   {l.feats.map(f=><div key={f} className="hp-lcard-feat">{f}</div>)}
                 </div>
-                <div className="hp-lcard-count"><strong>{l.count}</strong> Modules</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ══ MODES ══ */}
-      <section className="hp-modes hp-section">
-        <div className="hp-section-inner">
-          <div className="hp-eyebrow">Platform Modes</div>
-          <h2 className="hp-h2">Built for the <strong>Boardroom</strong><br />and the <em>War Room.</em></h2>
-          <div className="hp-modes-grid">
-            <div className="hp-mode dark">
-              <div className="hp-mode-badge exec">Executive Mode</div>
-              <h3 className="hp-mode-title">Governance health at a glance. No engineering background required.</h3>
-              <p className="hp-mode-desc">Designed for C-suite, legal, compliance, and risk officers. Facttic's Executive Mode translates complex AI behavioral data into clear governance scores, risk signals, and audit-ready snapshots. No noise. Just authority.</p>
-              <div className="hp-mode-aud">Audience → CFO · CLO · CISO · Board Risk Committee</div>
-              <div className="hp-mode-feats">
-                {["Composite Governance Health Score (84/100)","Executive Alert Summary (3 active)","Drift Trend Visualization (30/90 day)","Risk Breakdown Panel (6 dimensions)","Governance Snapshot — Phase 1–6","One-click Compliance Report Export"].map(f=>(
-                  <div key={f} className="hp-mode-feat"><span className="hp-mf-check gold">◆</span>{f}</div>
-                ))}
-              </div>
-            </div>
-            <div className="hp-mode">
-              <div className="hp-mode-badge adv">Advanced Mode</div>
-              <h3 className="hp-mode-title">Full behavioral forensics. Every signal. Full control.</h3>
-              <p className="hp-mode-desc">Built for AI engineers, platform architects, and security teams. Advanced Mode exposes every governance primitive — prompt hashes, environment snapshots, silent regression indexes, cross-agent risk matrices, and raw event telemetry.</p>
-              <div className="hp-mode-aud">Audience → CTO · AI Engineers · Security Ops · Platform Teams</div>
-              <div className="hp-mode-feats">
-                {["Prompt & Config Integrity Hashing","Environment Snapshot Comparator","Silent Regression Detection Engine","Cross-Agent Anomaly Matrix","Audit Log API (Cryptographic Signature)","Live Governance Health Stream API"].map(f=>(
-                  <div key={f} className="hp-mode-feat"><span className="hp-mf-check blue">◆</span>{f}</div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ SECURITY ══ */}
-      <section className="hp-security hp-section">
-        <div className="hp-section-inner">
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:48,alignItems:"start",marginBottom:52}}>
-            <div>
-              <div className="hp-eyebrow">Security Architecture</div>
-              <h2 className="hp-h2">Tamper-Proof.<br /><strong>Cryptographically <em>Proven.</em></strong></h2>
-            </div>
-            <div style={{paddingTop:28}}>
-              <p className="hp-sub">Facttic doesn't just monitor AI governance — it proves it. Every audit event is cryptographically signed, forming an immutable chain that satisfies financial regulators, healthcare auditors, and enterprise security teams.</p>
-            </div>
-          </div>
-          <div className="hp-security-grid">
-            <div className="hp-sec-items">
-              {[
-                {ico:"🔒",num:"Immutable Audit Log",title:"Cryptographic Signature on Every Event",desc:"Every governance event is SHA-256 signed and chained. Any tampering breaks the chain and triggers an immediate integrity alert."},
-                {ico:"🗝",num:"Encryption Model",title:"Dual-Key BYOK (Bring Your Own Key)",desc:"Your data is encrypted with your own key. Facttic cannot access your governance data. Full key sovereignty for regulated industries."},
-                {ico:"⚡",num:"Session Integrity",title:"Agent Version Lock + Tamper Detection",desc:"Every session is fingerprinted. Any mid-session agent version change, prompt mutation, or config drift is flagged immediately."},
-                {ico:"📋",num:"Third-Party Audit",title:"Audit Readiness Export — One Click",desc:"Generate auditor-ready evidence packages with a single action. Supports SOC 2, ISO 27001, HIPAA, and GDPR Article 17 documentation."},
-              ].map(s=>(
-                <div key={s.num} className="hp-sec-item">
-                  <div className="hp-sec-ico">{s.ico}</div>
-                  <div>
-                    <div className="hp-sec-num">{s.num}</div>
-                    <div className="hp-sec-title">{s.title}</div>
-                    <div className="hp-sec-desc">{s.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="hp-sec-right">
-              <div className="hp-sec-rlbl">Live Hash Chain Preview — Audit Log</div>
-              <div className="hp-hash-block">
-                <div className="hp-hash-lbl">Event Hash — Session INV-0047</div>
-                <div className="hp-hash-val">a3f8c2d91b4e67f0a8c34b12d5e9f70821c4b3d6e8f1a2b5c7d9e4f80a1b3c5</div>
-                <div className="hp-hash-meta">SHA-256 · Signed 09:17:34 UTC · Block #847291</div>
-              </div>
-              <div className="hp-hash-block">
-                <div className="hp-hash-lbl">Previous Block Hash — Chain Link</div>
-                <div className="hp-hash-val">7e2f4a1c9b8d6e5f3a0c7b2d4e6f8a1c3d5e7f9b0a2c4e6d8f1a3b5c7d9e2f4</div>
-                <div className="hp-hash-meta">SHA-256 · Signed 09:17:31 UTC · Block #847290</div>
-              </div>
-              <div className="hp-chain">
-                {[
-                  {txt:"Chain integrity verified — 847,291 blocks",time:"Live"},
-                  {txt:"Zero tamper events — 30 day window",time:"30d"},
-                  {txt:"Dual-key encryption active — BYOK enabled",time:"Config"},
-                  {txt:"Audit export ready — SOC 2 / GDPR / HIPAA",time:"Ready"},
-                ].map(c=>(
-                  <div key={c.txt} className="hp-chain-item">
-                    <span className="hp-chain-ico">✓</span>
-                    <span className="hp-chain-txt">{c.txt}</span>
-                    <span className="hp-chain-time">{c.time}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ══ COMPLIANCE BADGES ══ */}
       <div className="hp-comp">
         <div className="hp-comp-inner">
-          <span className="hp-comp-lbl">Compliance & Infrastructure</span>
+          <span className="hp-comp-lbl">Compliance Ready</span>
           <div className="hp-comp-div" />
           <div className="hp-comp-badges">
-            {[["◉","SOC 2 Type II"],["◈","GDPR"],["⬡","HIPAA Ready"],["◆","ISO 27001"],["◎","PCI DSS"],["⚡","EU AI Act"]].map(([ico,name])=>(
+            {[["◉","SOC 2 Type II"],["◈","GDPR"],["⬡","HIPAA Ready"],["◆","ISO 27001"],["◎","EU AI Act"]].map(([ico,name])=>(
               <div key={name} className="hp-comp-badge">
                 <span className="hp-cb-ico">{ico}</span>
                 <span className="hp-cb-name">{name}</span>
@@ -379,35 +291,8 @@ export default function MarketingPage() {
             ))}
           </div>
           <div className="hp-comp-right">
-            <div className="hp-comp-self">Self-Host / VPC / On-Prem Available</div>
-            <div className="hp-comp-self">Enterprise SLA Guaranteed</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ══ POSITIONING ══ */}
-      <div className="hp-position">
-        <div className="hp-pos-inner">
-          <div className="hp-pos-quote">
-            <div className="hp-pq-mark">"</div>
-            <p className="hp-pq-text">Most AI tools tell you what your agents said. Facttic tells you whether <strong>your agents are still the agents you deployed</strong> — and proves it to your auditors.</p>
-            <div className="hp-pq-rule" />
-            <div className="hp-pq-attr">Facttic · Product Positioning · Enterprise AI Governance · 2026</div>
-          </div>
-          <div className="hp-vs-grid">
-            {[
-              {vs:"vs LangSmith",desc:"Debugging traces, developer-first, purple gradients. Tells engineers what happened in a session.",fact:"Governance control layer. Tells executives whether AI behavior is within authorized boundaries — with proof."},
-              {vs:"vs Helicone",desc:"Light observability, gradient cards, cost dashboards. Analytics layer on top of LLM APIs.",fact:"Behavioral enforcement. Cryptographic immutability. Compliance evidence. Multi-mode for C-suite and engineers."},
-              {vs:"vs Arize / Galileo",desc:"Model evaluation, bias monitoring, data science tooling. Built for ML teams in research environments.",fact:"Production AI governance. Real-time behavioral control, multi-agent risk, tamper-proof audit chain for regulated industries."},
-              {vs:"vs Internal Build",desc:"Months of engineering time, compliance gaps, no deterministic scoring, audit trail gaps, no executive layer.",fact:"Production-ready in days. 80+ governance modules. Board-level Executive Mode. Auditor-ready evidence generation."},
-            ].map(v=>(
-              <div key={v.vs} className="hp-vs-cell">
-                <div className="hp-vs-name">{v.vs}</div>
-                <div className="hp-vs-desc">{v.desc}</div>
-                <div className="hp-vs-arrow">Facttic →</div>
-                <div className="hp-vs-fact">{v.fact}</div>
-              </div>
-            ))}
+            <div className="hp-comp-self">Self-Host / VPC available on Scale</div>
+            <div className="hp-comp-self">Custom SLA on Scale</div>
           </div>
         </div>
       </div>
@@ -423,17 +308,17 @@ export default function MarketingPage() {
       <div className="hp-cta">
         <div className="hp-cta-inner">
           <div>
-            <div className="hp-cta-lbl">Ready to Govern Your AI?</div>
-            <h2 className="hp-cta-title">Your AI agents are live.<br /><strong>Is your governance?</strong></h2>
-            <p className="hp-cta-sub">Join enterprise teams who've moved beyond observability into true behavioral control. Request access to the Facttic platform — or schedule a walkthrough with our governance architects.</p>
+            <div className="hp-cta-lbl">Start governing your AI today</div>
+            <h2 className="hp-cta-title">Your AI agents are live right now.<br /><strong>Do you know what they&apos;re saying?</strong></h2>
+            <p className="hp-cta-sub">Connect your voice platform or LLM in under 5 minutes. No code changes. No SDK. Just a webhook URL and your first policy rule.</p>
           </div>
           <div className="hp-cta-right">
             <div className="hp-cta-form">
-              <input className="hp-cta-input" type="email" placeholder="your@enterprise.com" />
-              <button className="hp-cta-submit">Request Access</button>
+              <input className="hp-cta-input" type="email" placeholder="your@company.com" />
+              <a href="/login" className="hp-cta-submit">Start Free →</a>
             </div>
-            <div className="hp-cta-note">No developer setup required · Enterprise trial in 24h · SOC 2 Signed NDA on request</div>
-            <button className="hp-btn-ghost" style={{marginTop:4,fontSize:10}}>Schedule Architecture Walkthrough →</button>
+            <div className="hp-cta-note">Free trial included · No credit card required · Setup in 5 minutes</div>
+            <a href="/pricing" className="hp-btn-ghost" style={{marginTop:4,fontSize:10}}>See full pricing →</a>
           </div>
         </div>
       </div>
