@@ -24,14 +24,14 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
       { data: predictions, error: predictionErr },
       { data: determinismCheck, error: detErr }
     ] = await Promise.all([
-      // Total Sessions (Real Data)
-      supabaseServer.from('facttic_governance_events').select('*', { count: 'exact', head: true }).eq('org_id', orgId),
-      // Blocked Actions
-      supabaseServer.from('facttic_governance_events').select('*', { count: 'exact', head: true }).eq('org_id', orgId).eq('decision', 'BLOCK'),
+      // Total Sessions — from sessions table (written directly by pipeline, no GOVERNANCE_SECRET needed)
+      supabaseServer.from('sessions').select('*', { count: 'exact', head: true }).eq('org_id', orgId),
+      // Blocked Actions — from sessions table
+      supabaseServer.from('sessions').select('*', { count: 'exact', head: true }).eq('org_id', orgId).eq('decision', 'BLOCK'),
       // Open Incidents
       supabaseServer.from('incidents').select('*', { count: 'exact', head: true }).eq('org_id', orgId).neq('status', 'resolved'),
-      // Recent Events for Trend
-      supabaseServer.from('facttic_governance_events').select('risk_score, decision, created_at').eq('org_id', orgId).gt('created_at', timeThreshold).order('created_at', { ascending: true }),
+      // Recent Events for Trend — from sessions table (has total_risk and decision)
+      supabaseServer.from('sessions').select('total_risk, decision, created_at').eq('org_id', orgId).gt('created_at', timeThreshold).order('created_at', { ascending: true }),
       // Drift Trends
       supabaseServer.from('governance_predictions').select('created_at, drift_score').eq('org_id', orgId).order('created_at', { ascending: false }).limit(30),
       // Live Tamper Check RPC
@@ -51,8 +51,9 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
         : 'N/A';
 
     // Health Score: Derived from Risk + Incidents + Drift
+    // sessions.total_risk is 0-1; multiply by 100 to normalise to 0-100 scale
     const avgRisk = recentEvents && recentEvents.length > 0
-        ? recentEvents.reduce((acc, e) => acc + (Number(e.risk_score) || 0), 0) / recentEvents.length
+        ? recentEvents.reduce((acc, e) => acc + (Number(e.total_risk) || 0) * 100, 0) / recentEvents.length
         : 0;
     
     const driftScore = predictions && predictions.length > 0
