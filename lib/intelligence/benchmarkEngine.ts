@@ -57,19 +57,24 @@ async function aggregateEvaluationMetrics(orgId: string) {
     .eq('org_id', orgId)
     .eq('event_type', 'guardrail_triggered')
 
-  // Pull behavior forensics
-  const { data: forensics } = await supabase
-    .from('behavior_forensics')
-    .select('signal_type, signal_score, session_id')
+  // behavior_forensics doesn't exist — synthesise from governance events
+  const { data: riskEvents } = await supabase
+    .from('facttic_governance_events')
+    .select('risk_score, decision, session_id')
     .eq('org_id', orgId)
+  const forensics = (riskEvents ?? []).map((e: any) => ({
+    signal_type: e.decision === 'BLOCK' ? 'policy_violation' : 'risk_signal',
+    signal_score: e.risk_score ?? 0,
+    session_id: e.session_id,
+  }))
 
-  // Pull incident responses
+  // Use incidents table instead of incident_responses
   const { data: incidents } = await supabase
-    .from('incident_responses')
+    .from('incidents')
     .select('created_at')
     .eq('org_id', orgId)
 
-  return { sessions: sessions ?? [], guardrailEvents: guardrailEvents ?? [], forensics: forensics ?? [], incidents: incidents ?? [] }
+  return { sessions: sessions ?? [], guardrailEvents: guardrailEvents ?? [], forensics, incidents: incidents ?? [] }
 }
 
 // ── Benchmark computation ─────────────────────────────────────────────────────

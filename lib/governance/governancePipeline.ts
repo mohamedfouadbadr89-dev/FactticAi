@@ -193,6 +193,7 @@ export class GovernancePipeline {
             // incidents — BLOCK or high-risk events only
             if (result.decision === 'BLOCK' || result.risk_score >= 70) {
                 const violation = result.violations?.[0];
+                const now = new Date().toISOString();
                 await supabase.from('incidents').insert({
                     org_id: params.org_id,
                     session_id: sessionId,
@@ -204,7 +205,8 @@ export class GovernancePipeline {
                     risk_score: result.risk_score,
                     decision: result.decision,
                     status: 'open',
-                    created_at: new Date().toISOString()
+                    timestamp: now,
+                    created_at: now
                 });
             }
 
