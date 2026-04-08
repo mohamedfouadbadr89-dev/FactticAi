@@ -415,14 +415,17 @@ export default function MarketingPage() {
       <section className="hp-pricing hp-section">
         <div className="hp-section-inner">
           <div style={{textAlign:"center",marginBottom:56}}>
-            <div className="hp-eyebrow hp-eyebrow-center">Platform Tiers</div>
+            <div className="hp-eyebrow hp-eyebrow-center">Simple, Transparent Pricing</div>
             <h2 className="hp-h2" style={{textAlign:"center"}}>Governance That Scales<br /><strong>with Your AI Risk.</strong></h2>
+            <p style={{textAlign:"center",color:"var(--hp-muted)",fontSize:14,marginTop:12}}>
+              1 session = 1 voice call or 1 chat thread &nbsp;·&nbsp; Unlimited agents on all plans
+            </p>
           </div>
           <div className="hp-pricing-grid">
             {[
-              {feat:false,tier:"Tier 01",name:"Governance Foundation",desc:"Core behavioral monitoring, drift detection, and executive dashboard. For teams getting governance-serious.",price:"Contact",psub:"Per Org · Monthly",feats:["Executive Dashboard (Phase 1–3)","Behavioral Drift Detection","Active Alert System","RCA Engine (Standard)","Chat Channel Governance","Audit Log Export"],btn:"ghost",btnTxt:"Request Access"},
-              {feat:true, tier:"Tier 02 — Most Popular",name:"Enterprise Governance",desc:"Full 6-phase governance platform with voice, compliance, security layers, and executive + advanced modes.",price:"Contact",psub:"Per Org · Annual · Enterprise SLA",feats:["Everything in Foundation","Voice Governance Layer","PII Heatmap + Compliance Evidence","Tamper-Proof Audit Chain","BYOK Encryption","Advanced Mode (Full Access)"],btn:"solid",btnTxt:"Schedule Enterprise Demo"},
-              {feat:false,tier:"Tier 03",name:"Sovereign Platform",desc:"Full platform, self-hosted, with all 12 intelligence layers, multi-agent control, and custom SLAs.",price:"Custom",psub:"Self-Host / VPC / On-Prem",feats:["Everything in Enterprise","Self-Host / VPC Deployment","All 12 Intelligence Layers","Multi-Agent Control Suite","Custom Governance Rules Engine","Dedicated Implementation Team"],btn:"ghost",btnTxt:"Contact Enterprise Sales"},
+              {feat:false,tier:"STARTER",name:"Starter",desc:"For teams deploying their first AI agent in production.",price:"$49",psub:"/ month · from 1,000 sessions",feats:["Risk scoring (BLOCK / ALLOW)","3 policy rules","Alerts & webhooks","API access","All integrations (Vapi, Retell…)","2 team seats","Email support"],btn:"ghost",btnTxt:"Get Started",href:"/login"},
+              {feat:true, tier:"GROWTH — Most Popular",name:"Growth",desc:"For fast-moving teams running voice AI or LLMs in production.",price:"$299",psub:"/ month · from 10,000 sessions",feats:["Everything in Starter","Unlimited policy rules","Live monitor + Voice monitor","Session replay","Forensics & investigations","Simulation lab","10 seats · Priority support"],btn:"solid",btnTxt:"Get Started",href:"/login"},
+              {feat:false,tier:"SCALE",name:"Scale",desc:"For enterprises with compliance and audit requirements.",price:"Custom",psub:"From 100,000 sessions / month",feats:["Everything in Growth","Stress testing","White-label reports","SOC2 / HIPAA / GDPR","Self-hosting / VPC","Custom SLA","Dedicated support engineer"],btn:"ghost",btnTxt:"Talk to Sales",href:"/contact"},
             ].map(p=>(
               <div key={p.tier} className={`hp-pc${p.feat?" featured":""}`}>
                 <div className="hp-pc-tier">{p.tier}</div>
@@ -437,9 +440,12 @@ export default function MarketingPage() {
                     </div>
                   ))}
                 </div>
-                <button className={`hp-pc-btn ${p.btn}`}>{p.btnTxt}</button>
+                <a href={p.href} className={`hp-pc-btn ${p.btn}`}>{p.btnTxt}</a>
               </div>
             ))}
+          </div>
+          <div style={{textAlign:"center",marginTop:32,fontSize:12,color:"var(--hp-muted)"}}>
+            Annual billing saves 20% &nbsp;·&nbsp; <a href="/pricing" style={{color:"var(--hp-accent)"}}>See full feature comparison →</a>
           </div>
         </div>
       </section>

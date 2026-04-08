@@ -4,8 +4,8 @@ import { SectionWrapper } from "@/components/marketing/SectionWrapper";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Pricing — Facttic.AI Governance Tiers",
-  description: "Enterprise-grade AI governance tiers. Choose the institutional framework aligned to your regulatory obligations.",
+  title: "Pricing — Facttic AI Governance",
+  description: "Simple, transparent pricing for AI governance. Monitor voice calls and chat conversations. Starts at $49/month.",
 };
 
 const faqs = [
