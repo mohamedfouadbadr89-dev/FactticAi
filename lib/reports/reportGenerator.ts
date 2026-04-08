@@ -690,7 +690,7 @@ td {
 
   // ── Internal: fetch evaluation metrics ──────────────────────────────────────
   private static async fetchMetrics(orgId: string, config: ReportConfig) {
-    let query = supabaseServer
+    const { data, error } = await supabaseServer
       .from('facttic_governance_events')
       .select('id, session_id, risk_score, decision, event_type, created_at')
       .eq('org_id', orgId)
@@ -698,6 +698,16 @@ td {
       .lte('created_at', config.endDate)
       .order('created_at', { ascending: false });
 
-    return await query;
+    // Map DB fields → shape expected by generateHTML/generateCSV
+    const mapped = (data ?? []).map((r: any) => ({
+      ...r,
+      total_risk: (r.risk_score ?? 0) / 100,
+      severity_level:
+        r.risk_score >= 80 ? 'CRITICAL' :
+        r.risk_score >= 60 ? 'HIGH' :
+        r.risk_score >= 40 ? 'MEDIUM' : 'LOW',
+    }));
+
+    return { data: mapped, error };
   }
 }
