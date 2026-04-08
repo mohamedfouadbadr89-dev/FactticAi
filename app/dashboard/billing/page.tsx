@@ -135,7 +135,7 @@ export default function BillingPage() {
               <PricingSelector planId="starter" billingCycle={billingCycle} />
 
               <ul className="space-y-3 flex-grow">
-                {['Governance monitoring', 'Risk alerts', 'Playground access'].map(feat => (
+                {['Risk scoring (BLOCK/ALLOW)', '3 policy rules', 'All integrations', 'Alerts & webhooks', 'API access', '2 team seats'].map(feat => (
                   <li key={feat} className="flex items-center gap-2 text-[10px] font-bold text-[var(--text-secondary)]">
                     <CheckCircle className="w-3 h-3 text-[var(--success)]" /> {feat}
                   </li>
@@ -159,7 +159,7 @@ export default function BillingPage() {
               <PricingSelector planId="growth" billingCycle={billingCycle} />
 
               <ul className="space-y-3 flex-grow">
-                {['Incident timeline', 'Simulator lab', 'Full policy engine', 'Priority interceptors'].map(feat => (
+                {['Everything in Starter', 'Unlimited policy rules', 'Session replay', 'Forensics', 'Simulation lab', '10 seats · Priority support'].map(feat => (
                   <li key={feat} className="flex items-center gap-2 text-[10px] font-bold text-[var(--text-secondary)]">
                     <CheckCircle className="w-3 h-3 text-[var(--success)]" /> {feat}
                   </li>
@@ -180,7 +180,7 @@ export default function BillingPage() {
               <PricingSelector planId="scale" billingCycle={billingCycle} />
 
               <ul className="space-y-3 flex-grow">
-                {['Governance analytics', 'Drift intelligence', 'Full forensics tools', 'Custom guardrails'].map(feat => (
+                {['Everything in Growth', 'Investigations & stress testing', 'White-label reports', 'SOC2 / HIPAA / GDPR', 'Self-hosting / Custom SLA', 'Dedicated support engineer'].map(feat => (
                   <li key={feat} className="flex items-center gap-2 text-[10px] font-bold text-[var(--text-secondary)]">
                     <CheckCircle className="w-3 h-3 text-[var(--success)]" /> {feat}
                   </li>

@@ -1,101 +1,242 @@
 "use client";
 
-import React from 'react';
-import { Button } from '@/components/ui/Button';
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { Check, X, ChevronDown } from 'lucide-react';
 import { SectionWrapper } from './SectionWrapper';
+import { pricingPlans, annualPrice, fmtSessions, type PlanFeatures } from '@/config/pricing';
 
-const pricing = {
-  eyebrow: "Governance Frameworks",
-  title: "Enterprise-Grade Tiers.",
-  description: "Select the institutional governance framework aligned to your regulatory obligations and operational perimeter.",
-  tiers: [
-    { id: "foundation", label: "STANDARD", name: "Governance Foundation", price: "ENTERPRISE ENTRY", description: "Baseline deterministic oversight for emerging AI deployments.", featured: false, variant: "outline" as const, buttonText: "Request Evaluation", features: ["Control Plane Access", "Semantic Policy Enforcement", "Deterministic Audit Logs", "Standard SLA"] },
-    { id: "enterprise", label: "RECOMMENDED", name: "Enterprise Governance", price: "MANAGED IMPLEMENTATION", description: "Complete governance infrastructure for regulated institutions.", featured: true, variant: "primary" as const, buttonText: "Initialize Implementation", features: ["Executive Health Indexing", "Behavioral Drift Alarms", "Enterprise SLA (99.99%)", "Dedicated Support"] },
-    { id: "sovereign", label: "MAXIMUM SECURITY", name: "Sovereign Platform", price: "CUSTOM PROTOCOL", description: "Dedicated governance enclaves for air-gapped or critical state systems.", featured: false, variant: "outline" as const, buttonText: "Contact Systems Eng", features: ["Air-Gapped Audit Enclaves", "Hardware-Root Validation", "BYOK Encryption Support", "Custom SLA"] }
-  ]
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type Cycle = 'monthly' | 'annual';
+
+// ── Feature rows shown in every card ─────────────────────────────────────────
+
+const FEATURE_ROWS: { label: string; key: keyof PlanFeatures; format?: (v: any) => string }[] = [
+  { label: 'Policy rules',      key: 'policyRules',    format: v => v === null ? 'Unlimited' : `${v} rules` },
+  { label: 'Team seats',        key: 'seats',          format: v => v === null ? 'Unlimited' : `${v} seats`  },
+  { label: 'All integrations',  key: 'apiAccess'  },
+  { label: 'Alerts & webhooks', key: 'webhooks'   },
+  { label: 'Live monitoring',   key: 'apiAccess'  },
+  { label: 'Session replay',    key: 'sessionReplay'   },
+  { label: 'Forensics',         key: 'forensics'       },
+  { label: 'Investigations',    key: 'investigations'  },
+  { label: 'Simulation lab',    key: 'simulationLab'   },
+  { label: 'Stress testing',    key: 'stressTesting'   },
+  { label: 'Downloadable reports', key: 'apiAccess'   },
+  { label: 'White-label reports',  key: 'whiteLabel'  },
+  { label: 'SOC2 / HIPAA / GDPR', key: 'soc2'         },
+  { label: 'Self-hosting',      key: 'selfHosting'     },
+  { label: 'Custom SLA',        key: 'customSLA'       },
+];
+
+const SUPPORT_LABEL: Record<string, string> = {
+  email:     'Email support',
+  priority:  'Priority support',
+  dedicated: 'Dedicated engineer',
 };
 
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function CycleToggle({ value, onChange }: { value: Cycle; onChange: (c: Cycle) => void }) {
+  return (
+    <div className="inline-flex items-center gap-1 p-1 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-full">
+      {(['monthly', 'annual'] as Cycle[]).map(c => (
+        <button
+          key={c}
+          onClick={() => onChange(c)}
+          className={`px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${
+            value === c
+              ? 'bg-[var(--accent)] text-white shadow'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          {c === 'annual' ? (
+            <span className="flex items-center gap-2">
+              Annual
+              <span className="bg-[var(--success)]/20 text-[var(--success)] text-[9px] px-2 py-0.5 rounded-full font-black">
+                SAVE 20%
+              </span>
+            </span>
+          ) : 'Monthly'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function FeatureItem({ ok, label }: { ok: boolean | string; label: string }) {
+  if (typeof ok === 'string') {
+    return (
+      <li className="flex items-center gap-3 py-1">
+        <Check className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />
+        <span className="text-[13px] text-[var(--text-secondary)]">{ok}</span>
+      </li>
+    );
+  }
+  if (ok) {
+    return (
+      <li className="flex items-center gap-3 py-1">
+        <Check className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />
+        <span className="text-[13px] text-[var(--text-secondary)]">{label}</span>
+      </li>
+    );
+  }
+  return (
+    <li className="flex items-center gap-3 py-1 opacity-35">
+      <X className="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0" />
+      <span className="text-[13px] text-[var(--text-muted)] line-through">{label}</span>
+    </li>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
 export function PricingSection({ showDivider }: { showDivider?: boolean }) {
+  const [cycle, setCycle]   = useState<Cycle>('monthly');
+  const plans = Object.values(pricingPlans);
+
+  // Selected tier index per plan
+  const [selected, setSelected] = useState<Record<string, number>>({
+    starter: 0,
+    growth:  0,
+    scale:   0,
+  });
+
   return (
     <SectionWrapper
-      id="governance-frameworks"
-      eyebrow={pricing.eyebrow}
-      title={pricing.title}
-      description={pricing.description}
+      id="pricing"
+      eyebrow="Simple, Transparent Pricing"
+      title="One session. Any AI conversation."
+      description="1 monitored session = 1 voice call or 1 chat thread. Voice and chat count from the same quota."
       headerClassName="text-center mx-auto"
       showDivider={showDivider}
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch pt-8">
-        {pricing.tiers.map((tier) => {
-          const isEnterprise = tier.featured;
+      {/* Billing toggle */}
+      <div className="flex justify-center mb-12">
+        <CycleToggle value={cycle} onChange={setCycle} />
+      </div>
+
+      {/* Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+        {plans.map((plan, i) => {
+          const isGrowth   = plan.id === 'growth';
+          const tierIdx    = selected[plan.id] ?? 0;
+          const tier       = plan.tiers[tierIdx];
+          const monthly    = tier.price;
+          const display    = cycle === 'annual' ? annualPrice(monthly) : monthly;
+          const feats      = plan.features;
+
           return (
-            <div 
-              key={tier.id} 
-              className={`card bg-[var(--bg-elevated)] p-10 flex flex-col transition-all duration-300 border rounded-xl overflow-visible hover:-translate-y-[2px] ${
-                isEnterprise 
-                  ? "border-[var(--accent)] shadow-2xl scale-[1.03] z-10 card-primary-glow" 
-                  : "border-[var(--border-primary)]"
+            <div
+              key={plan.id}
+              className={`relative flex flex-col rounded-2xl border p-8 transition-all ${
+                isGrowth
+                  ? 'border-[var(--accent)] shadow-2xl shadow-[var(--accent)]/10 scale-[1.03] z-10'
+                  : 'border-[var(--border-primary)] hover:border-[var(--text-secondary)]/40'
               }`}
             >
-              {isEnterprise && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[var(--accent)] text-white text-[9px] font-mono font-bold px-4 py-1.5 rounded-full uppercase tracking-[0.2em] shadow-lg whitespace-nowrap">
-                  Recommended Protocol
+              {isGrowth && (
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 bg-[var(--accent)] text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-full whitespace-nowrap">
+                  Most Popular
                 </div>
               )}
-              
-              <div className="space-y-6 mb-12">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-mono font-bold text-[var(--accent)] uppercase tracking-widest">
-                    {tier.label}
-                  </span>
-                  <h3 className="text-3xl font-serif font-bold text-[var(--text-primary)]">
-                    {tier.name}
-                  </h3>
-                  <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-xl font-mono font-bold text-[var(--text-primary)] opacity-80 uppercase tracking-tighter">{tier.price}</span>
-                  </div>
-                  <p className="text-[10px] font-mono font-medium text-[var(--text-muted)] uppercase tracking-widest pt-2">
-                    Governance Tier v1.0
+
+              {/* Header */}
+              <div className="mb-6">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] mb-1">{plan.name}</p>
+                <p className="text-[12px] text-[var(--text-secondary)]">{plan.tagline}</p>
+              </div>
+
+              {/* Price */}
+              <div className="mb-2">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-sm font-black text-[var(--text-secondary)]">$</span>
+                  <span className="text-5xl font-black tracking-tighter text-[var(--text-primary)]">{display}</span>
+                  <span className="text-xs font-bold text-[var(--text-muted)] ml-1">/mo</span>
+                </div>
+                {cycle === 'annual' && (
+                  <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                    ${display * 12}/yr · save ${(monthly - display) * 12}
                   </p>
-                </div>
-                
-                <p className="text-sm font-medium text-[var(--text-secondary)] leading-relaxed">
-                  {tier.description}
-                </p>
+                )}
               </div>
 
-              <div className="space-y-6 flex-1">
-                <div className="flex items-center gap-2">
-                  <div className="h-px bg-[var(--border-primary)] flex-1" />
-                  <span className="text-[9px] font-mono font-black text-[var(--text-muted)] tracking-widest uppercase">
-                    Framework Features
-                  </span>
-                  <div className="h-px bg-[var(--border-primary)] flex-1" />
-                </div>
-                <ul className="space-y-5">
-                  {tier.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] mt-1.5 shrink-0" />
-                      <span className="text-[13px] font-semibold text-[var(--text-primary)] leading-tight">
-                        {feature}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="pt-12 mt-auto">
-                <Button 
-                  variant={tier.variant}
-                  className="w-full py-4 text-[12px] uppercase tracking-[0.2em] font-bold"
-                  aria-label={`Initialize ${tier.name} framework`}
+              {/* Session dropdown */}
+              <div className="relative mb-6">
+                <select
+                  value={tierIdx}
+                  onChange={e => setSelected(prev => ({ ...prev, [plan.id]: Number(e.target.value) }))}
+                  className="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl px-4 py-3 text-[12px] font-black uppercase tracking-wider cursor-pointer outline-none hover:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition-all"
                 >
-                  {tier.buttonText}
-                </Button>
+                  {plan.tiers.map((t, idx) => (
+                    <option key={idx} value={idx}>
+                      {fmtSessions(t.sessions)} sessions / month
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-secondary)] pointer-events-none" />
               </div>
+
+              {/* CTA */}
+              <Link
+                href="/login"
+                className={`block w-full text-center py-3.5 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] transition-all mb-8 ${
+                  isGrowth
+                    ? 'bg-[var(--accent)] text-white hover:opacity-90 shadow-lg shadow-[var(--accent)]/20'
+                    : 'bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] hover:bg-[var(--accent)] hover:text-white hover:border-[var(--accent)]'
+                }`}
+              >
+                {plan.id === 'scale' ? 'Talk to Sales' : 'Get Started'}
+              </Link>
+
+              {/* Divider */}
+              <div className="border-t border-[var(--border-subtle)] mb-6" />
+
+              {/* Features */}
+              <ul className="space-y-0.5 flex-1">
+                {/* Support */}
+                <FeatureItem ok={SUPPORT_LABEL[feats.support]} label="" />
+
+                {/* Policy rules */}
+                <FeatureItem
+                  ok={feats.policyRules === null ? 'Unlimited policy rules' : `${feats.policyRules} policy rules`}
+                  label=""
+                />
+
+                {/* Seats */}
+                <FeatureItem
+                  ok={feats.seats === null ? 'Unlimited team seats' : `${feats.seats} team seats`}
+                  label=""
+                />
+
+                {FEATURE_ROWS.slice(2).map(row => {
+                  const val = feats[row.key];
+                  const display = row.format ? row.format(val) : val;
+                  return <FeatureItem key={row.key + row.label} ok={typeof display === 'string' ? display : !!val} label={row.label} />;
+                })}
+              </ul>
             </div>
           );
         })}
+      </div>
+
+      {/* Session explainer */}
+      <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6 text-[12px] text-[var(--text-muted)] font-medium">
+        <span className="flex items-center gap-2">
+          <span className="text-base">🎙️</span>
+          1 voice call = 1 session
+        </span>
+        <span className="hidden sm:block w-px h-4 bg-[var(--border-subtle)]" />
+        <span className="flex items-center gap-2">
+          <span className="text-base">💬</span>
+          1 chat thread = 1 session
+        </span>
+        <span className="hidden sm:block w-px h-4 bg-[var(--border-subtle)]" />
+        <span className="flex items-center gap-2">
+          <span className="text-base">🤖</span>
+          Unlimited agents on all plans
+        </span>
       </div>
     </SectionWrapper>
   );
