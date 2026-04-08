@@ -131,30 +131,48 @@ export class GovernancePipeline {
             }
         }
 
+        // ── Layer 3: Response-level governance (if response provided) ────────────
+        // Evaluate the AI's actual response for sensitive content leaks.
+        let responseViolations: any[] = [];
+        if (params.response && params.response.trim().length > 0) {
+            const responseGuardrail = GuardrailDetector.evaluate('', params.response);
+            const responsePolicies = PolicyEvaluator.evaluate(params.response, policies || []);
+            const responseRisk = RiskScorer.computeScore(responsePolicies, responseGuardrail);
+            if (responseRisk > riskScore) {
+                riskScore = Math.min(responseRisk, policyResult.score_ceiling ?? 100);
+                responseViolations = responsePolicies.violations;
+            }
+        }
+
         const decision: PipelineDecision = riskScore >= 80 ? 'BLOCK' : riskScore >= 40 ? 'WARN' : 'ALLOW';
         return {
             success: true,
             session_id: sessionId,
             decision,
             risk_score: riskScore,
-            violations: policyResult.violations,
+            violations: [...policyResult.violations, ...responseViolations],
             behavior: { ...guardrailResult.metrics, llm_flags: llmFlags },
         };
     }
 
     private static async persistInternal(result: any, params: any, sessionId: string) {
+        // EvidenceLedger is isolated — if GOVERNANCE_SECRET is missing or the
+        // append_governance_ledger RPC doesn't exist, it must NOT block the
+        // writes to sessions / incidents / governance_alerts which power the UI.
+        void EvidenceLedger.write({
+            session_id: sessionId,
+            org_id: params.org_id,
+            event_type: 'governance_eval',
+            prompt: params.prompt,
+            model: params.model || 'facttic-v5',
+            decision: result.decision,
+            risk_score: result.risk_score,
+            violations: result.violations,
+            latency: result.latency
+        }).catch(e => logger.error('EVIDENCE_LEDGER_WRITE_FAILED', { sessionId, error: e?.message }));
+
         try {
-            await EvidenceLedger.write({
-                session_id: sessionId,
-                org_id: params.org_id,
-                event_type: 'governance_eval',
-                prompt: params.prompt,
-                model: params.model || 'facttic-v5',
-                decision: result.decision,
-                risk_score: result.risk_score,
-                violations: result.violations,
-                latency: result.latency
-            });
+            // session_turns — raw turn log
             await supabase.from('session_turns').insert({
                 session_id: sessionId,
                 org_id: params.org_id,
@@ -163,7 +181,7 @@ export class GovernancePipeline {
                 incremental_risk: result.risk_score
             });
 
-            // Upsert session record (read by maturity engine + dashboard stats)
+            // sessions — dashboard Sessions Today counter
             await supabase.from('sessions').upsert({
                 id: sessionId,
                 org_id: params.org_id,
@@ -172,7 +190,7 @@ export class GovernancePipeline {
                 created_at: new Date().toISOString()
             }, { onConflict: 'id' });
 
-            // Write incident for BLOCK decisions or high-risk events
+            // incidents — BLOCK or high-risk events only
             if (result.decision === 'BLOCK' || result.risk_score >= 70) {
                 const violation = result.violations?.[0];
                 await supabase.from('incidents').insert({
@@ -190,7 +208,7 @@ export class GovernancePipeline {
                 });
             }
 
-            // Fire alert (writes to governance_alerts, dispatches webhooks)
+            // governance_alerts — BLOCK or risk >= 60
             if (result.decision === 'BLOCK' || result.risk_score >= 60) {
                 GovernanceAlertEngine.triggerAlert({
                     org_id: params.org_id,
@@ -205,6 +223,8 @@ export class GovernancePipeline {
                     }
                 });
             }
-        } catch (e) { console.error('Persistence failed', e); }
+        } catch (e: any) {
+            logger.error('PERSIST_INTERNAL_FAILED', { sessionId, org_id: params.org_id, error: e?.message });
+        }
     }
 }

@@ -147,7 +147,8 @@ function GovernanceMaturityPanel() {
                 const res = await fetch('/api/governance/maturity');
                 if (res.ok) {
                     const data = await res.json();
-                    setMaturityData(data);
+                    // API returns { current: {...maturity...}, history: [...] }
+                    setMaturityData(data.current ?? data);
                 }
             } catch (error) {
                 console.error("Failed to load maturity index:", error);

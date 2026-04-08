@@ -65,10 +65,12 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
       health: {
         governance_score: isBaseline ? null : healthScore,
         sessions_today: totalSessions,
+        voice_calls: 0,
+        drift_freq: `${(driftScore * 100).toFixed(1)}%`,
         policy_adherence: adherence,
         tamper_integrity: determinismCheck === true ? "Verified" : "Warning",
         open_alerts: openIncidents || 0,
-        rca_confidence: isBaseline ? "Awaiting Baseline" : "94.2%",
+        rca_confidence: isBaseline ? "0%" : "94.2%",
         baseline_mode: isBaseline,
         avg_risk_24h: avgRisk.toFixed(1),
         blocked_24h: blockedCount || 0
