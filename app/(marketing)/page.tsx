@@ -1,6 +1,8 @@
 import React from "react";
 import "./home.css";
 import { PricingSection } from "@/components/marketing/PricingSection";
+import { LiveGovernanceDemo } from "@/components/marketing/LiveGovernanceDemo";
+import { ScrollReveal } from "@/components/marketing/ScrollReveal";
 
 export default function MarketingPage() {
   return (
@@ -50,11 +52,11 @@ export default function MarketingPage() {
             </h1>
             <p className="hp-hero-desc hp-a-fadeup hp-a3">
               Connect your voice agent or LLM in minutes. Set your policies.
-              Facttic monitors every conversation — and alerts you the moment something goes wrong.
+              Facttic monitors every conversation — and blocks the moment something goes wrong.
             </p>
             <div className="hp-hero-actions hp-a-fadeup hp-a4">
               <a href="/login" className="hp-btn-primary">Start Free →</a>
-              <a href="#how-it-works" className="hp-btn-ghost">See how it works</a>
+              <a href="#demo" className="hp-btn-ghost">See it in action</a>
             </div>
             <div className="hp-trust hp-a-fadeup hp-a5">
               {[
@@ -73,7 +75,7 @@ export default function MarketingPage() {
             </div>
           </div>
 
-          {/* Dashboard Preview */}
+          {/* Dashboard Preview — alerts animate in with staggered delays */}
           <div className="hp-a-fadein hp-a3">
             <div className="hp-dp">
               <div className="hp-dp-topbar">
@@ -146,6 +148,7 @@ export default function MarketingPage() {
                       <circle cx="320" cy="15" r="3.5" fill="#F39C12"/>
                     </svg>
                   </div>
+                  {/* Alerts animate in one by one via CSS nth-child delays */}
                   <div className="hp-dp-alerts">
                     {[
                       {col:"#E74C3C",txt:"Jailbreak attempt detected — Voice Channel",tag:"BLOCK",tagCol:"#E74C3C"},
@@ -190,53 +193,79 @@ export default function MarketingPage() {
         </div>
       </div>
 
+      {/* ══ LIVE GOVERNANCE DEMO ══ */}
+      <section id="demo" className="hp-demo">
+        <div className="hp-demo-inner">
+          <ScrollReveal>
+            <div className="hp-demo-header">
+              <div>
+                <div className="hp-eyebrow">See it in action</div>
+                <h2 className="hp-h2">A policy violation just happened.<br /><strong><em>Facttic blocked it.</em></strong></h2>
+              </div>
+              <div style={{paddingTop:32}}>
+                <p className="hp-sub">This is what happens in real-time — the moment your AI agent tries to say something it shouldn't. Facttic intercepts, evaluates against your policies, and blocks the response before it reaches the user.</p>
+              </div>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal delay={100}>
+            <LiveGovernanceDemo />
+          </ScrollReveal>
+        </div>
+      </section>
+
       {/* ══ HOW IT WORKS ══ */}
       <section id="how-it-works" className="hp-what hp-section">
         <div className="hp-section-inner">
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:48,alignItems:"start",marginBottom:60}}>
-            <div>
-              <div className="hp-eyebrow">How it works</div>
-              <h2 className="hp-h2">Connected in minutes.<br /><strong>Governing <em>forever.</em></strong></h2>
+          <ScrollReveal>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:48,alignItems:"start",marginBottom:60}}>
+              <div>
+                <div className="hp-eyebrow">How it works</div>
+                <h2 className="hp-h2">Connected in minutes.<br /><strong>Governing <em>forever.</em></strong></h2>
+              </div>
+              <div style={{paddingTop:32}}>
+                <p className="hp-sub">No SDK. No code changes to your existing stack. Just point your voice platform or LLM at a webhook URL — and Facttic starts governing every conversation from that moment.</p>
+              </div>
             </div>
-            <div style={{paddingTop:32}}>
-              <p className="hp-sub">No SDK. No code changes to your existing stack. Just point your voice platform or LLM at a webhook URL — and Facttic starts governing every conversation from that moment.</p>
-            </div>
-          </div>
+          </ScrollReveal>
           <div className="hp-what-grid">
-            <div className="hp-notvs">
-              <div style={{display:"flex",flexDirection:"column",gap:0}}>
-                {[
-                  {num:"01",title:"Connect your platform",desc:"Copy your Facttic webhook URL. Paste it into Vapi, Retell, ElevenLabs, Bland, or any other provider. Takes under 5 minutes.",tag:"Vapi · Retell · ElevenLabs · Bland · OpenAI · Anthropic · Pipecat"},
-                  {num:"02",title:"Set your policies",desc:"Define what your AI can and can't say. Block topics, flag sensitive content, set risk thresholds. No code — just rules.",tag:"Policy rules · Risk thresholds · Blocked topics"},
-                  {num:"03",title:"Govern every conversation",desc:"Every session gets analyzed in real-time. BLOCK or ALLOW. Risk score assigned. Alert sent if needed. Full audit trail kept.",tag:"BLOCK / ALLOW · Risk score · Alerts · Audit log"},
-                ].map((s,i) => (
-                  <div key={s.num} className="hp-sec-item" style={{borderBottom: i < 2 ? "1px solid var(--border-subtle)" : "none", paddingBottom:24, marginBottom:24}}>
-                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,fontWeight:700,color:"var(--hp-gold)",letterSpacing:2,flexShrink:0,marginTop:2}}>{s.num}</div>
-                    <div>
-                      <div className="hp-sec-title">{s.title}</div>
-                      <div className="hp-sec-desc">{s.desc}</div>
-                      <div style={{marginTop:8,fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:"var(--text-muted)",letterSpacing:1}}>{s.tag}</div>
+            <ScrollReveal delay={0}>
+              <div className="hp-notvs">
+                <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                  {[
+                    {num:"01",title:"Connect your platform",desc:"Copy your Facttic webhook URL. Paste it into Vapi, Retell, ElevenLabs, Bland, or any other provider. Takes under 5 minutes.",tag:"Vapi · Retell · ElevenLabs · Bland · OpenAI · Anthropic · Pipecat"},
+                    {num:"02",title:"Set your policies",desc:"Define what your AI can and can't say. Block topics, flag sensitive content, set risk thresholds. No code — just rules.",tag:"Policy rules · Risk thresholds · Blocked topics"},
+                    {num:"03",title:"Govern every conversation",desc:"Every session gets analyzed in real-time. BLOCK or ALLOW. Risk score assigned. Alert sent if needed. Full audit trail kept.",tag:"BLOCK / ALLOW · Risk score · Alerts · Audit log"},
+                  ].map((s,i) => (
+                    <div key={s.num} className="hp-sec-item" style={{borderBottom: i < 2 ? "1px solid var(--border-subtle)" : "none", paddingBottom:24, marginBottom:24}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,fontWeight:700,color:"var(--hp-gold)",letterSpacing:2,flexShrink:0,marginTop:2}}>{s.num}</div>
+                      <div>
+                        <div className="hp-sec-title">{s.title}</div>
+                        <div className="hp-sec-desc">{s.desc}</div>
+                        <div style={{marginTop:8,fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:"var(--text-muted)",letterSpacing:1}}>{s.tag}</div>
+                      </div>
                     </div>
+                  ))}
+                </div>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal delay={150}>
+              <div className="hp-what-stats">
+                <div className="hp-sec-rlbl" style={{marginBottom:16}}>What Facttic catches</div>
+                {[
+                  {ico:"🚫",lbl:"Jailbreak attempts",desc:"Detect when users try to manipulate your AI agent into breaking its rules."},
+                  {ico:"⚠️",lbl:"Policy violations",desc:"Flag responses that break your defined content policies or topic restrictions."},
+                  {ico:"💬",lbl:"Hallucinations",desc:"Identify when your AI confidently says something that isn't true."},
+                  {ico:"🔒",lbl:"Sensitive data leaks",desc:"Catch when your AI reveals PII, credentials, or confidential information."},
+                  {ico:"📉",lbl:"Behavioral drift",desc:"Detect when your agent starts behaving differently from how it was deployed."},
+                  {ico:"💉",lbl:"Prompt injection",desc:"Identify attempts to override system instructions via user messages."},
+                ].map(s=>(
+                  <div key={s.lbl} className="hp-wstat" style={{marginBottom:16}}>
+                    <div style={{fontSize:18,flexShrink:0}}>{s.ico}</div>
+                    <div><div className="hp-wstat-lbl">{s.lbl}</div><div className="hp-wstat-desc">{s.desc}</div></div>
                   </div>
                 ))}
               </div>
-            </div>
-            <div className="hp-what-stats">
-              <div className="hp-sec-rlbl" style={{marginBottom:16}}>What Facttic catches</div>
-              {[
-                {ico:"🚫",lbl:"Jailbreak attempts",desc:"Detect when users try to manipulate your AI agent into breaking its rules."},
-                {ico:"⚠️",lbl:"Policy violations",desc:"Flag responses that break your defined content policies or topic restrictions."},
-                {ico:"💬",lbl:"Hallucinations",desc:"Identify when your AI confidently says something that isn't true."},
-                {ico:"🔒",lbl:"Sensitive data leaks",desc:"Catch when your AI reveals PII, credentials, or confidential information."},
-                {ico:"📉",lbl:"Behavioral drift",desc:"Detect when your agent starts behaving differently from how it was deployed."},
-                {ico:"💉",lbl:"Prompt injection",desc:"Identify attempts to override system instructions via user messages."},
-              ].map(s=>(
-                <div key={s.lbl} className="hp-wstat" style={{marginBottom:16}}>
-                  <div style={{fontSize:18,flexShrink:0}}>{s.ico}</div>
-                  <div><div className="hp-wstat-lbl">{s.lbl}</div><div className="hp-wstat-desc">{s.desc}</div></div>
-                </div>
-              ))}
-            </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -244,58 +273,98 @@ export default function MarketingPage() {
       {/* ══ FEATURES ══ */}
       <div className="hp-layers">
         <div className="hp-section-inner">
-          <div className="hp-layers-header">
-            <div>
-              <div className="hp-eyebrow" style={{color:"var(--hp-gold)"}}>Platform Features</div>
-              <h2 className="hp-layers-h2">Everything you need<br /><strong>to govern <em>AI in production.</em></strong></h2>
-            </div>
-            <div>
-              <p className="hp-layers-sub">From the moment a conversation starts to the moment you need to investigate an incident — Facttic covers the full lifecycle of AI governance.</p>
-            </div>
-          </div>
-          <div className="hp-layers-grid">
-            {[
-              {c:"c1",ico:"🟢",num:"Live Monitor",title:"Real-time session monitoring",feats:["See every voice call and chat as it happens","Risk score updated in real-time","BLOCK / ALLOW decisions surfaced instantly","Alert triggered on first violation"]},
-              {c:"c2",ico:"▶",num:"Session Replay",title:"Go back to any conversation",feats:["Full transcript of every session","Replay voice calls step by step","See exactly when and where things went wrong","Export for compliance review"]},
-              {c:"c3",ico:"🔍",num:"Forensics",title:"Deep investigation tools",feats:["Search across all sessions by keyword","Filter by risk level, provider, date","Timeline view of every event","Build incident reports"]},
-              {c:"c4",ico:"🧪",num:"Simulation Lab",title:"Test before you ship",feats:["Run test conversations against your policies","Catch violations before production","Simulate edge cases and jailbreak attempts","Validate policy changes safely"]},
-              {c:"c5",ico:"🔔",num:"Alerts & Webhooks",title:"Get notified immediately",feats:["Webhook fired on every violation","Slack, email, or any HTTP endpoint","Filter by event type and severity","HMAC-signed payloads for security"]},
-              {c:"c6",ico:"📊",num:"Reports",title:"Audit-ready exports",feats:["Download compliance reports","Session summary by date range","Violation breakdown by type","Share with legal or compliance teams"]},
-              {c:"c7",ico:"⚙️",num:"Policy Engine",title:"Define your own rules",feats:["Set blocked topics and content types","Define risk thresholds per channel","Different rules for voice vs chat","Unlimited rules on Growth and Scale"]},
-              {c:"c8",ico:"🔌",num:"Integrations",title:"Works with your stack",feats:["Vapi · Retell AI · ElevenLabs · Bland AI","OpenAI · Anthropic · Azure · Pipecat","Webhook-based — no SDK needed","Connect any provider with an HTTP call"]},
-            ].map(l=>(
-              <div key={l.num} className={`hp-lcard ${l.c}`}>
-                <div className="hp-lcard-ico">{l.ico}</div>
-                <div className="hp-lcard-num">{l.num}</div>
-                <div className="hp-lcard-title">{l.title}</div>
-                <div className="hp-lcard-feats">
-                  {l.feats.map(f=><div key={f} className="hp-lcard-feat">{f}</div>)}
-                </div>
+          <ScrollReveal>
+            <div className="hp-layers-header">
+              <div>
+                <div className="hp-eyebrow" style={{color:"var(--hp-gold)"}}>Platform Features</div>
+                <h2 className="hp-layers-h2">Everything you need<br /><strong>to govern <em>AI in production.</em></strong></h2>
               </div>
-            ))}
-          </div>
+              <div>
+                <p className="hp-layers-sub">From the moment a conversation starts to the moment you need to investigate an incident — Facttic covers the full lifecycle of AI governance.</p>
+              </div>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal delay={80}>
+            <div className="hp-layers-grid">
+              {[
+                {c:"c1",ico:"🟢",num:"Live Monitor",title:"Real-time session monitoring",feats:["See every voice call and chat as it happens","Risk score updated in real-time","BLOCK / ALLOW decisions surfaced instantly","Alert triggered on first violation"]},
+                {c:"c2",ico:"▶",num:"Session Replay",title:"Go back to any conversation",feats:["Full transcript of every session","Replay voice calls step by step","See exactly when and where things went wrong","Export for compliance review"]},
+                {c:"c3",ico:"🔍",num:"Forensics",title:"Deep investigation tools",feats:["Search across all sessions by keyword","Filter by risk level, provider, date","Timeline view of every event","Build incident reports"]},
+                {c:"c4",ico:"🧪",num:"Simulation Lab",title:"Test before you ship",feats:["Run test conversations against your policies","Catch violations before production","Simulate edge cases and jailbreak attempts","Validate policy changes safely"]},
+                {c:"c5",ico:"🔔",num:"Alerts & Webhooks",title:"Get notified immediately",feats:["Webhook fired on every violation","Slack, email, or any HTTP endpoint","Filter by event type and severity","HMAC-signed payloads for security"]},
+                {c:"c6",ico:"📊",num:"Reports",title:"Audit-ready exports",feats:["Download compliance reports","Session summary by date range","Violation breakdown by type","Share with legal or compliance teams"]},
+                {c:"c7",ico:"⚙️",num:"Policy Engine",title:"Define your own rules",feats:["Set blocked topics and content types","Define risk thresholds per channel","Different rules for voice vs chat","Unlimited rules on Growth and Scale"]},
+                {c:"c8",ico:"🔌",num:"Integrations",title:"Works with your stack",feats:["Vapi · Retell AI · ElevenLabs · Bland AI","OpenAI · Anthropic · Azure · Pipecat","Webhook-based — no SDK needed","Connect any provider with an HTTP call"]},
+              ].map(l=>(
+                <div key={l.num} className={`hp-lcard ${l.c}`}>
+                  <div className="hp-lcard-ico">{l.ico}</div>
+                  <div className="hp-lcard-num">{l.num}</div>
+                  <div className="hp-lcard-title">{l.title}</div>
+                  <div className="hp-lcard-feats">
+                    {l.feats.map(f=><div key={f} className="hp-lcard-feat">{f}</div>)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollReveal>
+        </div>
+      </div>
+
+      {/* ══ INTEGRATIONS GRID ══ */}
+      <div className="hp-integrations">
+        <div className="hp-int-inner">
+          <ScrollReveal>
+            <div className="hp-int-header">
+              <div className="hp-int-eyebrow">Integrations</div>
+              <h2 className="hp-h2" style={{textAlign:"center",marginBottom:8}}>Works with your <em>existing stack.</em></h2>
+              <p className="hp-int-sub">Webhook-based. No SDK. No code changes. Connect in minutes.</p>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal delay={100}>
+            <div className="hp-int-grid">
+              {[
+                {ico:"▶",name:"Vapi",type:"Voice Platform",status:"Supported"},
+                {ico:"◉",name:"Retell AI",type:"Voice Platform",status:"Supported"},
+                {ico:"♫",name:"ElevenLabs",type:"Voice Platform",status:"Supported"},
+                {ico:"≋",name:"Bland AI",type:"Voice Platform",status:"Supported"},
+                {ico:"◌",name:"OpenAI",type:"LLM / Realtime",status:"Supported"},
+                {ico:"⊕",name:"Anthropic",type:"LLM",status:"Supported"},
+                {ico:"◈",name:"Pipecat",type:"Voice Framework",status:"Supported"},
+                {ico:"◎",name:"Azure OpenAI",type:"LLM",status:"Supported"},
+              ].map(p => (
+                <div key={p.name} className="hp-int-card">
+                  <div className="hp-int-ico">{p.ico}</div>
+                  <div className="hp-int-name">{p.name}</div>
+                  <div className="hp-int-type">{p.type}</div>
+                  <div className="hp-int-status">Connected</div>
+                </div>
+              ))}
+            </div>
+          </ScrollReveal>
         </div>
       </div>
 
       {/* ══ COMPLIANCE BADGES ══ */}
-      <div className="hp-comp">
-        <div className="hp-comp-inner">
-          <span className="hp-comp-lbl">Compliance Ready</span>
-          <div className="hp-comp-div" />
-          <div className="hp-comp-badges">
-            {[["◉","SOC 2 Type II"],["◈","GDPR"],["⬡","HIPAA Ready"],["◆","ISO 27001"],["◎","EU AI Act"]].map(([ico,name])=>(
-              <div key={name} className="hp-comp-badge">
-                <span className="hp-cb-ico">{ico}</span>
-                <span className="hp-cb-name">{name}</span>
-              </div>
-            ))}
-          </div>
-          <div className="hp-comp-right">
-            <div className="hp-comp-self">Self-Host / VPC available on Scale</div>
-            <div className="hp-comp-self">Custom SLA on Scale</div>
+      <ScrollReveal>
+        <div className="hp-comp">
+          <div className="hp-comp-inner">
+            <span className="hp-comp-lbl">Compliance Ready</span>
+            <div className="hp-comp-div" />
+            <div className="hp-comp-badges">
+              {[["◉","SOC 2 Type II"],["◈","GDPR"],["⬡","HIPAA Ready"],["◆","ISO 27001"],["◎","EU AI Act"]].map(([ico,name])=>(
+                <div key={name} className="hp-comp-badge">
+                  <span className="hp-cb-ico">{ico}</span>
+                  <span className="hp-cb-name">{name}</span>
+                </div>
+              ))}
+            </div>
+            <div className="hp-comp-right">
+              <div className="hp-comp-self">Self-Host / VPC available on Scale</div>
+              <div className="hp-comp-self">Custom SLA on Scale</div>
+            </div>
           </div>
         </div>
-      </div>
+      </ScrollReveal>
 
       {/* ══ PRICING ══ */}
       <section className="hp-pricing hp-section">
@@ -305,23 +374,25 @@ export default function MarketingPage() {
       </section>
 
       {/* ══ CTA ══ */}
-      <div className="hp-cta">
-        <div className="hp-cta-inner">
-          <div>
-            <div className="hp-cta-lbl">Start governing your AI today</div>
-            <h2 className="hp-cta-title">Your AI agents are live right now.<br /><strong>Do you know what they&apos;re saying?</strong></h2>
-            <p className="hp-cta-sub">Connect your voice platform or LLM in under 5 minutes. No code changes. No SDK. Just a webhook URL and your first policy rule.</p>
-          </div>
-          <div className="hp-cta-right">
-            <div className="hp-cta-form">
-              <input className="hp-cta-input" type="email" placeholder="your@company.com" />
-              <a href="/login" className="hp-cta-submit">Start Free →</a>
+      <ScrollReveal>
+        <div className="hp-cta">
+          <div className="hp-cta-inner">
+            <div>
+              <div className="hp-cta-lbl">Start governing your AI today</div>
+              <h2 className="hp-cta-title">Your AI agents are live right now.<br /><strong>Do you know what they&apos;re saying?</strong></h2>
+              <p className="hp-cta-sub">Connect your voice platform or LLM in under 5 minutes. No code changes. No SDK. Just a webhook URL and your first policy rule.</p>
             </div>
-            <div className="hp-cta-note">Free trial included · No credit card required · Setup in 5 minutes</div>
-            <a href="/pricing" className="hp-btn-ghost" style={{marginTop:4,fontSize:10}}>See full pricing →</a>
+            <div className="hp-cta-right">
+              <div className="hp-cta-form">
+                <input className="hp-cta-input" type="email" placeholder="your@company.com" />
+                <a href="/login" className="hp-cta-submit">Start Free →</a>
+              </div>
+              <div className="hp-cta-note">Free trial included · No credit card required · Setup in 5 minutes</div>
+              <a href="/pricing" className="hp-btn-ghost" style={{marginTop:4,fontSize:10}}>See full pricing →</a>
+            </div>
           </div>
         </div>
-      </div>
+      </ScrollReveal>
 
     </div>
   );
