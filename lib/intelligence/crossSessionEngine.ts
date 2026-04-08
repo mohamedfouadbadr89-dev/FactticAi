@@ -113,9 +113,9 @@ export class CrossSessionEngine {
         return f.hallucination && f.hallucination >= 0.8;
       });
 
-      const meta = latestHallucination?.metadata || {};
+      const meta: any = latestHallucination?.metadata || {};
       const { fingerprint, promptHash, model } = generateFingerprint(
-        latestHallucination?.content || meta?.content || '', 
+        latestHallucination?.content || meta?.content || '',
         meta?.prompt_hash || 'UNKNOWN_PROMPT',
         meta?.model_id || 'UNKNOWN_MODEL',
         meta?.temperature || 0
