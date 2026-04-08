@@ -194,10 +194,10 @@ function GovernanceMaturityPanel() {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'Policy Coverage', value: maturityData.metrics.policy_coverage, icon: ShieldCheck },
-                    { label: 'Drift Stability', value: maturityData.metrics.drift_stability, icon: Activity },
-                    { label: 'Risk Exposure', value: maturityData.metrics.risk_exposure, icon: ShieldAlert },
-                    { label: 'Incident Frequency', value: maturityData.metrics.incident_frequency, icon: Cpu },
+                    { label: 'Policy Coverage', value: maturityData.policy_coverage ?? maturityData.metrics?.policy_coverage ?? 0, icon: ShieldCheck },
+                    { label: 'Risk Stability', value: maturityData.risk_stability ?? maturityData.metrics?.drift_stability ?? 0, icon: Activity },
+                    { label: 'Risk Exposure', value: 100 - (maturityData.risk_stability ?? maturityData.metrics?.risk_exposure ?? 100), icon: ShieldAlert },
+                    { label: 'Incident Response', value: maturityData.incident_response_score ?? maturityData.metrics?.incident_frequency ?? 0, icon: Cpu },
                 ].map((metric, idx) => {
                     const metricColor = getColorClass(metric.value);
                     const Icon = metric.icon;
