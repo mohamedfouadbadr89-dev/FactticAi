@@ -6,25 +6,23 @@ import { supabaseServer } from '@/lib/supabaseServer';
 /**
  * GET /api/governance/investigations
  *
- * Retrieves active governance investigations.
- * Filters drift_alerts where lifecycle_status is 'investigating'.
+ * Retrieves open governance investigations (incidents with status 'open').
+ * Sources from the `incidents` table which GovernancePipeline now writes to.
  */
 export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
   try {
-    // Query active alerts from drift_alerts — 'status' is the correct column name
     const { data, error } = await supabaseServer
-      .from('drift_alerts')
-      .select(`
-        *,
-        governance_root_cause_reports (*)
-      `)
+      .from('incidents')
+      .select('*')
       .eq('org_id', orgId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false });
+      .eq('status', 'open')
+      .order('timestamp', { ascending: false })
+      .limit(50);
 
     if (error) {
-      logger.error('GOVERNANCE_INVESTIGATIONS_FETCH_FAILED', { orgId, error: error.message });
-      return NextResponse.json({ error: 'INVESTIGATIONS_FETCH_FAILED' }, { status: 500 });
+      // Table may not exist yet — return empty gracefully
+      logger.warn('GOVERNANCE_INVESTIGATIONS_FETCH_FAILED', { orgId, error: error.message });
+      return NextResponse.json({ success: true, data: [] });
     }
 
     return NextResponse.json({

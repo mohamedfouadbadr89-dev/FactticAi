@@ -161,7 +161,15 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
         { label: "Avg Risk (24h)", value: `${avgRisk24h.toFixed(1)}/100`, percent: avgRisk24h, color: avgRisk24h > 50 ? "text-amber-700" : "text-emerald-700", barColor: avgRisk24h > 50 ? "bg-amber-500" : "bg-emerald-500" },
         { label: "Open Incidents", value: String(activeIncidents), percent: Math.min(activeIncidents * 10, 100), color: activeIncidents > 5 ? "text-red-700" : "text-amber-700", barColor: activeIncidents > 5 ? "bg-red-500" : "bg-amber-500" },
       ],
-      investigations: [] // Logic for merging alerts into investigations would go here
+      investigations: {
+        open_count: activeIncidents,
+        recent: alerts?.slice(0, 5).map(a => ({
+          id: a.id.substring(0, 8).toUpperCase(),
+          type: a.alert_type || 'GOVERNANCE_ALERT',
+          severity: a.severity,
+          created_at: a.created_at,
+        })) || [],
+      }
     };
 
     return NextResponse.json({

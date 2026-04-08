@@ -684,18 +684,29 @@ td {
 
   // ── Internal: fetch evaluation metrics ──────────────────────────────────────
   private static async fetchMetrics(orgId: string, config: ReportConfig) {
-    let query = supabaseServer
-      .from('evaluations')
-      .select('interaction_id, total_risk, severity_level, created_at, model_version_id')
+    // facttic_governance_events is the source of truth — evaluations table does not exist
+    const { data, error } = await supabaseServer
+      .from('facttic_governance_events')
+      .select('id, session_id, decision, risk_score, event_type, payload, created_at')
       .eq('org_id', orgId)
       .gte('created_at', config.startDate)
       .lte('created_at', config.endDate)
       .order('created_at', { ascending: false });
 
-    if (config.filters?.modelVersion) {
-      query = query.eq('model_version_id', config.filters.modelVersion);
-    }
+    if (error) return { data: null, error };
 
-    return await query;
+    // Map facttic_governance_events fields to the shape the report HTML expects
+    const mapped = (data || []).map(row => ({
+      interaction_id: row.session_id || row.id,
+      total_risk: typeof row.risk_score === 'number' ? row.risk_score / 100 : 0,
+      severity_level:
+        (row.risk_score ?? 0) >= 90 ? 'CRITICAL' :
+        (row.risk_score ?? 0) >= 70 ? 'HIGH' :
+        (row.risk_score ?? 0) >= 40 ? 'MEDIUM' : 'LOW',
+      created_at: row.created_at,
+      model_version_id: row.event_type || null,
+    }));
+
+    return { data: mapped, error: null };
   }
 }

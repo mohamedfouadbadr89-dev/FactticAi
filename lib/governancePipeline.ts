@@ -179,6 +179,53 @@ export class GovernancePipeline {
       const finalRiskScore = composite.risk_score;
       const behavior = composite.behavior;
 
+      // Persist incidents + sessions + trigger alerts (async, non-blocking)
+      if (session_id) {
+        setImmediate(async () => {
+          try {
+            // Upsert session record so dashboard session counts are populated
+            await supabaseServer
+              .from('sessions')
+              .upsert({
+                id: session_id,
+                org_id,
+                total_risk: finalRiskScore,
+                decision,
+                created_at: new Date().toISOString(),
+              }, { onConflict: 'id' });
+
+            // Write incident row when BLOCK or high risk
+            if (decision === 'BLOCK' || finalRiskScore >= 70) {
+              const topViolation = allViolations[0];
+              await supabaseServer
+                .from('incidents')
+                .insert({
+                  org_id,
+                  session_id,
+                  title: topViolation?.policy_name || 'Governance Block',
+                  description: topViolation?.explanation || `Decision: ${decision} — risk score ${finalRiskScore}`,
+                  risk_score: finalRiskScore,
+                  decision,
+                  violation: topViolation?.policy_name || 'policy_violation',
+                  status: 'open',
+                  timestamp: new Date().toISOString(),
+                });
+            }
+
+            // Trigger alert evaluation
+            GovernanceAlertEngine.evaluate({
+              org_id,
+              session_id,
+              risk_score: finalRiskScore,
+              policy_action: decision === 'BLOCK' ? 'block' : decision === 'WARN' ? 'warn' : undefined,
+              metadata: { behavior, violations: allViolations.length },
+            });
+          } catch (persistErr: any) {
+            logger.error('PIPELINE_PERSIST_ERROR', { org_id, session_id, error: persistErr.message });
+          }
+        });
+      }
+
       return {
         decision,
         risk_score: finalRiskScore,
