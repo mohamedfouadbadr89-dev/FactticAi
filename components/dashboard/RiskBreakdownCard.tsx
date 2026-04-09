@@ -10,12 +10,10 @@ interface Props {
 }
 
 const defaultMetrics: RiskMetric[] = [
-  { label: "Policy Adherence", value: "96.2%", percent: 96.2, color: "text-[var(--success)]", barColor: "bg-[var(--success)]" },
-  { label: "Behavioral Drift", value: "2.4%", percent: 2.4, color: "text-[var(--warning)]", barColor: "bg-[var(--warning)]" },
-  { label: "Tamper Events", value: "0", percent: 100, color: "text-[var(--success)]", barColor: "bg-[var(--success)]" },
-  { label: "RCA Confidence", value: "91%", percent: 91, color: "text-[var(--accent)]", barColor: "bg-[var(--accent)]" },
-  { label: "Escalation Rate", value: "0.7%", percent: 0.7, color: "text-[var(--success)]", barColor: "bg-[var(--success)]" },
-  { label: "Open Investigations", value: "4", percent: 40, color: "text-[var(--warning)]", barColor: "bg-[var(--warning)]" },
+  { label: "Policy Adherence", value: "N/A", percent: 0, color: "text-[var(--text-secondary)]", barColor: "bg-[var(--text-secondary)]" },
+  { label: "Tamper Integrity", value: "N/A", percent: 0, color: "text-[var(--text-secondary)]", barColor: "bg-[var(--text-secondary)]" },
+  { label: "RCA Confidence", value: "N/A", percent: 0, color: "text-[var(--text-secondary)]", barColor: "bg-[var(--text-secondary)]" },
+  { label: "Open Incidents", value: "0", percent: 0, color: "text-[var(--text-secondary)]", barColor: "bg-[var(--text-secondary)]" },
 ];
 
 const PAGE_SIZE = 4;

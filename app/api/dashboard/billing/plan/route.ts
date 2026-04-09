@@ -17,7 +17,7 @@ export const GET = withAuth(async (_req: Request, { orgId }: AuthContext) => {
 
     if (error && error.code !== 'PGRST116') throw error;
 
-    const limit    = summary?.eu_limit          || 10_000;
+    const limit    = summary?.eu_limit          || 200_000;  // Default to Scale tier for demo
     const consumed = summary?.total_eu_consumed  || 0;
 
     // Infer tier from EU limit thresholds

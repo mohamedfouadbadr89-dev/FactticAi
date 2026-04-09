@@ -15,13 +15,7 @@ const statusClass: Record<string, string> = {
   Closed: "bg-[var(--success-bg)] text-[var(--success)]",
 };
 
-const defaultRows: InvestigationRow[] = [
-  { id: "INV-440", name: "Data Exfiltration Risk", channel: "Chat", phase: "Phase 3", status: "Open", rca: "94%", rcaColor: "text-emerald-600", assigned: "M. Chen", updated: "2m ago" },
-  { id: "INV-439", name: "Unsanctioned API Access", channel: "Voice", phase: "Phase 5", status: "Review", rca: "78%", rcaColor: "text-amber-600", assigned: "S. Patel", updated: "15m ago" },
-  { id: "INV-438", name: "Hallucination Spike", channel: "Chat", phase: "Phase 2", status: "Open", rca: "91%", rcaColor: "text-emerald-600", assigned: "R. Kim", updated: "1h ago" },
-  { id: "INV-437", name: "Policy Override Detected", channel: "Chat", phase: "Phase 6", status: "Open", rca: "67%", rcaColor: "text-amber-600", assigned: "A. Torres", updated: "3h ago" },
-  { id: "INV-435", name: "Compliance Drift — SOC2", channel: "Voice", phase: "Phase 4", status: "Closed", rca: "99%", rcaColor: "text-emerald-600", assigned: "J. Liu", updated: "1d ago" },
-];
+const defaultRows: InvestigationRow[] = [];
 
 const PAGE_SIZE = 5;
 

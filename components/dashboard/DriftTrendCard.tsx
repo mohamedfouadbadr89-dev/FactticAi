@@ -20,7 +20,7 @@ export default function DriftTrendCard({ initialData, filters }: Props) {
   const [period, setPeriod] = useState("30");
   const [isLoading, setIsLoading] = useState(false);
   
-  const d = data ?? { current: "2.4%", avg_period: "1.8%", baseline: "0.9%" };
+  const d = data ?? { current: "0.0%", avg_period: "0.0%", baseline: "0.0%" };
 
   // Replay State
   const [isReplaying, setIsReplaying] = useState(false);
