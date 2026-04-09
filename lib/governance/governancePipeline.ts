@@ -180,6 +180,7 @@ export class GovernancePipeline {
             session_id: sessionId,
             org_id: params.org_id,
             role: 'user',
+            content: params.prompt || 'Governance evaluation',
             decision: result.decision,
             incremental_risk: Math.min(1, result.risk_score / 100),
             turn_index: 1
