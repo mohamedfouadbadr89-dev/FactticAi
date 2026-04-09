@@ -171,62 +171,63 @@ export class GovernancePipeline {
             latency: result.latency
         }).catch(e => logger.error('EVIDENCE_LEDGER_WRITE_FAILED', { sessionId, error: e?.message }));
 
-        try {
-            // session_turns — raw turn log
-            await supabase.from('session_turns').insert({
+        // Each write is independent — one failure must NOT block the others
+
+        // session_turns — raw turn log
+        void supabase.from('session_turns').insert({
+            session_id: sessionId,
+            org_id: params.org_id,
+            prompt: params.prompt,
+            decision: result.decision,
+            incremental_risk: result.risk_score
+        }).then(({ error }) => { if (error) logger.warn('SESSION_TURNS_WRITE_FAILED', { sessionId, error: error.message }); });
+
+        // sessions — dashboard Sessions Today counter (most important write)
+        const now = new Date().toISOString();
+        supabase.from('sessions').upsert({
+            id: sessionId,
+            org_id: params.org_id,
+            total_risk: result.risk_score,
+            decision: result.decision,
+            created_at: now
+        }, { onConflict: 'id' }).then(({ error }) => {
+            if (error) logger.error('SESSIONS_UPSERT_FAILED', { sessionId, error: error.message });
+            else logger.info('SESSION_WRITTEN', { sessionId, org_id: params.org_id, decision: result.decision });
+        });
+
+        // incidents — BLOCK or high-risk events only
+        if (result.decision === 'BLOCK' || result.risk_score >= 70) {
+            const violation = result.violations?.[0];
+            void supabase.from('incidents').insert({
+                org_id: params.org_id,
                 session_id: sessionId,
-                org_id: params.org_id,
-                prompt: params.prompt,
+                title: violation?.policy_name
+                    ? `Policy Violation: ${violation.policy_name}`
+                    : `Governance Block — Risk ${result.risk_score}`,
+                description: violation?.reason
+                    ?? `Decision: ${result.decision} | Risk: ${result.risk_score}/100`,
+                risk_score: result.risk_score,
                 decision: result.decision,
-                incremental_risk: result.risk_score
-            });
+                status: 'open',
+                timestamp: now,
+                created_at: now
+            }).then(({ error }) => { if (error) logger.warn('INCIDENT_INSERT_FAILED', { sessionId, error: error.message }); });
+        }
 
-            // sessions — dashboard Sessions Today counter
-            await supabase.from('sessions').upsert({
-                id: sessionId,
+        // governance_alerts — BLOCK or risk >= 60
+        if (result.decision === 'BLOCK' || result.risk_score >= 60) {
+            GovernanceAlertEngine.triggerAlert({
                 org_id: params.org_id,
-                total_risk: result.risk_score,
-                decision: result.decision,
-                created_at: new Date().toISOString()
-            }, { onConflict: 'id' });
-
-            // incidents — BLOCK or high-risk events only
-            if (result.decision === 'BLOCK' || result.risk_score >= 70) {
-                const violation = result.violations?.[0];
-                const now = new Date().toISOString();
-                await supabase.from('incidents').insert({
-                    org_id: params.org_id,
+                alert_type: result.decision === 'BLOCK' ? 'policy_block' : 'high_risk',
+                severity: result.risk_score >= 80 ? 'critical' : 'warning',
+                metadata: {
                     session_id: sessionId,
-                    title: violation?.policy_name
-                        ? `Policy Violation: ${violation.policy_name}`
-                        : `Governance Block — Risk ${result.risk_score}`,
-                    description: violation?.reason
-                        ?? `Decision: ${result.decision} | Risk: ${result.risk_score}/100`,
                     risk_score: result.risk_score,
                     decision: result.decision,
-                    status: 'open',
-                    timestamp: now,
-                    created_at: now
-                });
-            }
-
-            // governance_alerts — BLOCK or risk >= 60
-            if (result.decision === 'BLOCK' || result.risk_score >= 60) {
-                GovernanceAlertEngine.triggerAlert({
-                    org_id: params.org_id,
-                    alert_type: result.decision === 'BLOCK' ? 'policy_block' : 'high_risk',
-                    severity: result.risk_score >= 80 ? 'critical' : 'warning',
-                    metadata: {
-                        session_id: sessionId,
-                        risk_score: result.risk_score,
-                        decision: result.decision,
-                        violations: result.violations,
-                        reason: result.violations?.[0]?.reason ?? null
-                    }
-                });
-            }
-        } catch (e: any) {
-            logger.error('PERSIST_INTERNAL_FAILED', { sessionId, org_id: params.org_id, error: e?.message });
+                    violations: result.violations,
+                    reason: result.violations?.[0]?.reason ?? null
+                }
+            });
         }
     }
 }
