@@ -21,7 +21,7 @@ export interface TimelineResult {
 export async function buildTimeline(sessionId: string): Promise<TimelineResult | null> {
   try {
 
-    const { data: events, error } = await supabaseServer
+    const { data: ledgerEvents, error } = await supabaseServer
       .from("facttic_governance_events")
       .select("*")
       .eq("session_id", sessionId)
@@ -29,7 +29,33 @@ export async function buildTimeline(sessionId: string): Promise<TimelineResult |
 
     if (error) {
       logger.error("TIMELINE_QUERY_FAILED", { sessionId, error: error.message });
-      throw error;
+    }
+
+    // Fall back to session_turns when EvidenceLedger is empty (e.g. GOVERNANCE_SECRET not set)
+    let events = ledgerEvents && ledgerEvents.length > 0 ? ledgerEvents : null;
+
+    if (!events) {
+      const { data: turns, error: turnsError } = await supabaseServer
+        .from("session_turns")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("created_at", { ascending: true });
+
+      if (!turnsError && turns && turns.length > 0) {
+        // Map session_turns rows to the shape buildTimeline expects
+        events = turns.map((t: any) => ({
+          session_id: t.session_id,
+          org_id: t.org_id,
+          timestamp: t.created_at ? new Date(t.created_at).getTime() : Date.now(),
+          created_at: t.created_at,
+          prompt: t.prompt,
+          model: 'facttic-v5',
+          decision: t.decision,
+          risk_score: t.incremental_risk ?? 0,
+          violations: [],
+          latency: 0,
+        }));
+      }
     }
 
     if (!events || events.length === 0) {
