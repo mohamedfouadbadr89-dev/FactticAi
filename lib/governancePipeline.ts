@@ -203,7 +203,7 @@ export class GovernancePipeline {
                   org_id,
                   session_id,
                   title: topViolation?.policy_name || 'Governance Block',
-                  description: topViolation?.explanation || `Decision: ${decision} — risk score ${finalRiskScore}`,
+                  description: (topViolation as any)?.explanation || `Decision: ${decision} — risk score ${finalRiskScore}`,
                   risk_score: finalRiskScore,
                   decision,
                   violation: topViolation?.policy_name || 'policy_violation',
