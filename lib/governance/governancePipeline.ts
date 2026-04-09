@@ -174,10 +174,11 @@ export class GovernancePipeline {
         // Each write is independent — one failure must NOT block the others
 
         // session_turns — raw turn log
+        // Columns confirmed from migration 20260409000001: session_id, org_id, decision, incremental_risk, turn_index
+        // NO prompt column in this table
         void supabase.from('session_turns').insert({
             session_id: sessionId,
             org_id: params.org_id,
-            prompt: params.prompt,
             decision: result.decision,
             incremental_risk: Math.min(1, result.risk_score / 100),
             turn_index: 1
@@ -185,13 +186,13 @@ export class GovernancePipeline {
 
         // sessions — dashboard Sessions Today counter (most important write)
         // total_risk is stored as decimal 0–1; risk_score from pipeline is integer 0–100
+        // status: omit to use DEFAULT 'completed' — avoids sessions_status_check constraint violation
         const now = new Date().toISOString();
         supabase.from('sessions').upsert({
             id: sessionId,
             org_id: params.org_id,
             total_risk: Math.min(1, result.risk_score / 100),
             decision: result.decision,
-            status: result.decision === 'BLOCK' ? 'blocked' : 'completed',
             started_at: now,
             ended_at: now,
             created_at: now
@@ -211,21 +212,15 @@ export class GovernancePipeline {
         });
 
         // incidents — BLOCK or high-risk events only
+        // Columns confirmed from migrations: org_id, status, timestamp, risk_score, decision
+        // NO title, description, session_id, created_at columns
         if (result.decision === 'BLOCK' || result.risk_score >= 70) {
-            const violation = result.violations?.[0];
             void supabase.from('incidents').insert({
                 org_id: params.org_id,
-                session_id: sessionId,
-                title: violation?.policy_name
-                    ? `Policy Violation: ${violation.policy_name}`
-                    : `Governance Block — Risk ${result.risk_score}`,
-                description: violation?.reason
-                    ?? `Decision: ${result.decision} | Risk: ${result.risk_score}/100`,
                 risk_score: result.risk_score,
                 decision: result.decision,
                 status: 'open',
-                timestamp: now,
-                created_at: now
+                timestamp: now
             }).then(({ error }) => { if (error) logger.warn('INCIDENT_INSERT_FAILED', { sessionId, error: error.message }); });
         }
 
