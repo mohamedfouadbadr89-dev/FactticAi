@@ -179,16 +179,17 @@ export class GovernancePipeline {
             org_id: params.org_id,
             prompt: params.prompt,
             decision: result.decision,
-            incremental_risk: result.risk_score,
+            incremental_risk: Math.min(1, result.risk_score / 100),
             turn_index: 1
         }).then(({ error }) => { if (error) logger.warn('SESSION_TURNS_WRITE_FAILED', { sessionId, error: error.message }); });
 
         // sessions — dashboard Sessions Today counter (most important write)
+        // total_risk is stored as decimal 0–1; risk_score from pipeline is integer 0–100
         const now = new Date().toISOString();
         supabase.from('sessions').upsert({
             id: sessionId,
             org_id: params.org_id,
-            total_risk: result.risk_score,
+            total_risk: Math.min(1, result.risk_score / 100),
             decision: result.decision,
             status: result.decision === 'BLOCK' ? 'blocked' : 'completed',
             started_at: now,
