@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 const featured = {
   slug: "deterministic-governance-2026",
   category: "Research",
-  date: "March 10, 2026",
+  date: "April 2, 2026",
   readTime: "8 min read",
   title: "Why Deterministic Governance Is the Only Safe Path for Enterprise AI",
   excerpt:
@@ -22,7 +22,7 @@ const posts = [
   {
     slug: "soc2-ai-governance",
     category: "Compliance",
-    date: "Feb 28, 2026",
+    date: "Mar 22, 2026",
     readTime: "5 min read",
     title: "SOC2 Type II Certification for AI Systems: What Auditors Actually Want",
     excerpt: "Breaking down what SOC2 auditors look for in AI-integrated systems and how to prepare your governance infrastructure.",
@@ -31,7 +31,7 @@ const posts = [
   {
     slug: "behavioral-drift-detection",
     category: "Engineering",
-    date: "Feb 14, 2026",
+    date: "Mar 10, 2026",
     readTime: "6 min read",
     title: "Detecting Behavioral Drift in Production LLMs Before It Becomes a Liability",
     excerpt: "How Facttic.AI's drift detection engine identifies statistical anomalies in AI output distributions to surface risks before incidents occur.",
@@ -40,7 +40,7 @@ const posts = [
   {
     slug: "hipaa-ai-deployment",
     category: "Compliance",
-    date: "Jan 30, 2026",
+    date: "Feb 24, 2026",
     readTime: "4 min read",
     title: "HIPAA-Compliant AI Deployment: A Governance Checklist",
     excerpt: "A practical checklist for healthcare organizations deploying AI systems under HIPAA obligations.",
@@ -49,7 +49,7 @@ const posts = [
   {
     slug: "governance-execution-architecture",
     category: "Engineering",
-    date: "Jan 17, 2026",
+    date: "Feb 8, 2026",
     readTime: "9 min read",
     title: "Architecture of a Sub-50ms Governance Pipeline",
     excerpt: "How we built the Facttic.AI execution layer to enforce governance policies at inference time without meaningful latency overhead.",
@@ -58,19 +58,19 @@ const posts = [
   {
     slug: "executive-health-index",
     category: "Product",
-    date: "Jan 5, 2026",
+    date: "Jan 20, 2026",
     readTime: "3 min read",
     title: "Introducing the Executive Health Index",
     excerpt: "A single governance score derived from behavioral compliance, drift velocity, alert frequency, and policy coverage — designed for C-suite accountability.",
     author: "Product Team",
   },
   {
-    slug: "sovereign-platform-launch",
+    slug: "scale-tier-launch",
     category: "Product",
-    date: "Dec 20, 2025",
+    date: "Jan 5, 2026",
     readTime: "3 min read",
-    title: "Sovereign Platform: Air-Gapped Governance for Critical Infrastructure",
-    excerpt: "Announcing dedicated governance enclaves for air-gapped state systems and critical infrastructure operators.",
+    title: "Scale Tier: Self-Hosted Governance for Critical Infrastructure",
+    excerpt: "Announcing the Scale tier with self-hosting options, SOC2 Type II certification, HIPAA BAAs, and dedicated implementation support for enterprises with strict compliance requirements.",
     author: "Product Team",
   },
 ];

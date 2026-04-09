@@ -658,15 +658,9 @@ td {
     try {
       const html = await this.generateHTML(orgId, config);
 
-      // Cross-platform Chrome/Chromium path detection
-      const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
-        || (process.platform === 'darwin'
-          ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-          : '/usr/bin/chromium-browser');
-
       const browser = await puppeteer.launch({
-        executablePath,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+        executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
       });
 
       const page = await browser.newPage();
@@ -690,24 +684,29 @@ td {
 
   // ── Internal: fetch evaluation metrics ──────────────────────────────────────
   private static async fetchMetrics(orgId: string, config: ReportConfig) {
+    // facttic_governance_events is the source of truth — evaluations table does not exist
     const { data, error } = await supabaseServer
       .from('facttic_governance_events')
-      .select('id, session_id, risk_score, decision, event_type, created_at')
+      .select('id, session_id, decision, risk_score, event_type, payload, created_at')
       .eq('org_id', orgId)
       .gte('created_at', config.startDate)
       .lte('created_at', config.endDate)
       .order('created_at', { ascending: false });
 
-    // Map DB fields → shape expected by generateHTML/generateCSV
-    const mapped = (data ?? []).map((r: any) => ({
-      ...r,
-      total_risk: (r.risk_score ?? 0) / 100,
+    if (error) return { data: null, error };
+
+    // Map facttic_governance_events fields to the shape the report HTML expects
+    const mapped = (data || []).map(row => ({
+      interaction_id: row.session_id || row.id,
+      total_risk: typeof row.risk_score === 'number' ? row.risk_score / 100 : 0,
       severity_level:
-        r.risk_score >= 80 ? 'CRITICAL' :
-        r.risk_score >= 60 ? 'HIGH' :
-        r.risk_score >= 40 ? 'MEDIUM' : 'LOW',
+        (row.risk_score ?? 0) >= 90 ? 'CRITICAL' :
+        (row.risk_score ?? 0) >= 70 ? 'HIGH' :
+        (row.risk_score ?? 0) >= 40 ? 'MEDIUM' : 'LOW',
+      created_at: row.created_at,
+      model_version_id: row.event_type || null,
     }));
 
-    return { data: mapped, error };
+    return { data: mapped, error: null };
   }
 }
