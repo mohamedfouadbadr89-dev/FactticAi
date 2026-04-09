@@ -189,10 +189,23 @@ export class GovernancePipeline {
             org_id: params.org_id,
             total_risk: result.risk_score,
             decision: result.decision,
+            status: result.decision === 'BLOCK' ? 'blocked' : 'completed',
+            started_at: now,
+            ended_at: now,
             created_at: now
         }, { onConflict: 'id' }).then(({ error }) => {
-            if (error) logger.error('SESSIONS_UPSERT_FAILED', { sessionId, error: error.message });
-            else logger.info('SESSION_WRITTEN', { sessionId, org_id: params.org_id, decision: result.decision });
+            if (error) {
+                // Fallback: write only guaranteed columns (id, org_id, created_at)
+                logger.warn('SESSIONS_UPSERT_FULL_FAILED', { sessionId, error: error.message });
+                return supabase.from('sessions').upsert(
+                    { id: sessionId, org_id: params.org_id, created_at: now },
+                    { onConflict: 'id' }
+                ).then(({ error: e2 }) => {
+                    if (e2) logger.error('SESSIONS_UPSERT_MINIMAL_FAILED', { sessionId, error: e2.message });
+                    else logger.info('SESSION_WRITTEN_MINIMAL', { sessionId, org_id: params.org_id });
+                });
+            }
+            logger.info('SESSION_WRITTEN', { sessionId, org_id: params.org_id, decision: result.decision });
         });
 
         // incidents — BLOCK or high-risk events only
