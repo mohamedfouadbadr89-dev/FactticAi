@@ -43,7 +43,7 @@ export const GET = withAuth(async (req: Request, { orgId }: AuthContext) => {
     }
 
     const totalSessions = sessionCount || 0;
-    const isBaseline = totalSessions < 100;
+    const isBaseline = totalSessions === 0;
     
     // Policy Adherence: Real ratio
     const adherence = totalSessions > 0 
