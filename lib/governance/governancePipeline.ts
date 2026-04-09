@@ -179,7 +179,8 @@ export class GovernancePipeline {
             org_id: params.org_id,
             prompt: params.prompt,
             decision: result.decision,
-            incremental_risk: result.risk_score
+            incremental_risk: result.risk_score,
+            turn_index: 1
         }).then(({ error }) => { if (error) logger.warn('SESSION_TURNS_WRITE_FAILED', { sessionId, error: error.message }); });
 
         // sessions — dashboard Sessions Today counter (most important write)
