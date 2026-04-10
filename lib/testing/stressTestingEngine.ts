@@ -5,7 +5,6 @@ import { GovernancePipeline } from '../governancePipeline';
 
 export interface StressTestOptions {
   org_id: string;
-  user_id?: string;
   concurrency: number;
   duration_seconds: number;
   endpoint?: string;
@@ -49,7 +48,7 @@ export class StressTestingEngine {
   ];
 
   static async runStressTest(options: StressTestOptions): Promise<StressTestResult | null> {
-    const { org_id, user_id = 'stress-test', concurrency, duration_seconds } = options;
+    const { org_id, concurrency, duration_seconds } = options;
     const results: { success: boolean; latency: number }[] = [];
     const startTime = Date.now();
     const endTime = startTime + (duration_seconds * 1000);
@@ -66,7 +65,6 @@ export class StressTestingEngine {
           try {
             await GovernancePipeline.execute({
               org_id,
-              user_id,
               session_id: `stress_${Date.now()}_${i}`,
               prompt,
             });
