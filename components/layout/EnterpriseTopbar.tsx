@@ -11,6 +11,7 @@ import { useInteractionMode } from "@/store/interactionMode";
 import { Menu, Compass } from "lucide-react";
 import AgentSwitcher from "@/components/dashboard/AgentSwitcher";
 import OnboardingTour from "@/components/ui/OnboardingTour";
+import KillSwitchButton from "@/components/dashboard/KillSwitchButton";
 
 export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
   const { mode: channel, setMode: setChannel } = useInteractionMode();
@@ -122,6 +123,8 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
           <Compass className="w-3.5 h-3.5" />
           Take a tour
         </button>
+
+        <KillSwitchButton />
 
         <button
           onClick={handleResetDemo}

@@ -1,0 +1,220 @@
+/* ─────────────────────────────────────────────────────────────
+   home-additions.css — purely additive styles for new marketing
+   sections. Do NOT duplicate or override rules from home.css.
+   Sections added:
+     1. .hp-control  →  Deterministic Control + Zero Latency + Live Logs
+   ───────────────────────────────────────────────────────────── */
+
+.hp-control {
+  padding: 96px 0;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  position: relative;
+}
+
+.hp-control::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(212, 165, 116, 0.04) 0, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(212, 165, 116, 0.03) 0, transparent 40%);
+  pointer-events: none;
+}
+
+.hp-control-header {
+  max-width: 720px;
+  margin-bottom: 56px;
+  position: relative;
+  z-index: 1;
+}
+
+.hp-control-header .hp-h2 {
+  margin-top: 12px;
+  margin-bottom: 20px;
+}
+
+.hp-control-header .hp-sub {
+  max-width: 580px;
+  margin-bottom: 24px;
+}
+
+.hp-control-cta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.hp-control-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 32px;
+  align-items: stretch;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 960px) {
+  .hp-control-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Terminal (live logs) ─── */
+.hp-log-terminal {
+  background: #0a0c10;
+  border: 1px solid rgba(212, 165, 116, 0.15);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 20px 60px rgba(0, 0, 0, 0.35);
+  font-family: "IBM Plex Mono", "SF Mono", Menlo, monospace;
+  display: flex;
+  flex-direction: column;
+  min-height: 340px;
+}
+
+.hp-log-head {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #0d1016;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 14px;
+}
+
+.hp-log-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.hp-log-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: block;
+}
+
+.hp-log-dots span:nth-child(1) { background: #ff5f57; }
+.hp-log-dots span:nth-child(2) { background: #febc2e; }
+.hp-log-dots span:nth-child(3) { background: #28c840; }
+
+.hp-log-title {
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.5px;
+}
+
+.hp-log-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #28c840;
+  text-transform: uppercase;
+}
+
+.hp-log-live::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #28c840;
+  box-shadow: 0 0 8px #28c840;
+  animation: hp-log-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes hp-log-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.hp-log-body {
+  flex: 1;
+  margin: 0;
+  padding: 20px 22px;
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: rgba(220, 230, 245, 0.88);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.hp-log-body .hp-log-block {
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+.hp-log-body .hp-log-drift {
+  color: #febc2e;
+}
+
+.hp-log-body .hp-log-safe {
+  color: rgba(180, 200, 220, 0.7);
+}
+
+.hp-log-body .hp-log-evidence {
+  color: #d4a574;
+}
+
+.hp-log-foot {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: #0b0e13;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.5px;
+}
+
+/* ─── Right: feature tiles ─── */
+.hp-control-features {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  height: 100%;
+}
+
+.hp-cf-tile {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 28px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.25s ease, transform 0.25s ease;
+}
+
+.hp-cf-tile:hover {
+  border-color: rgba(212, 165, 116, 0.35);
+  transform: translateY(-2px);
+}
+
+.hp-cf-ico {
+  font-size: 24px;
+  color: var(--hp-gold, #d4a574);
+  line-height: 1;
+}
+
+.hp-cf-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.hp-cf-desc {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}

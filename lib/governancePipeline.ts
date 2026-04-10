@@ -22,6 +22,7 @@ import { GovernanceAlertEngine } from './governance/alertEngine';
 import { ComplianceIntelligenceEngine } from './compliance/complianceIntelligenceEngine';
 import { runAnalyzers } from './governance/analyzers/runAnalyzers';
 import { computeCompositeRisk } from './metrics/compositeRiskEngine';
+import { isKillSwitchEnabled } from './killSwitch';
 
 
 export interface GovernanceExecutionResult {
@@ -71,6 +72,22 @@ export class GovernancePipeline {
   }) {
     const { org_id, session_id, prompt, response } = params;
     const t0 = Date.now();
+
+    // ── Kill Switch (emergency bypass) ─────────────────────────────
+    // When enabled for this org, short-circuit the entire pipeline with a
+    // passthrough ALLOW. Lets traffic keep flowing while enforcement is
+    // temporarily suspended — e.g. when internal policies are causing
+    // false-positive blocks in production.
+    if (await isKillSwitchEnabled(org_id)) {
+      return {
+        decision: 'ALLOW',
+        risk_score: 0,
+        violations: [],
+        signals: { kill_switch_bypass: true },
+        latency_ms: Date.now() - t0,
+        bypass: 'kill_switch',
+      };
+    }
 
     try {
       const withTimeout = <T>(p: Promise<T>, fallback: T, ms = 3000): Promise<T> =>

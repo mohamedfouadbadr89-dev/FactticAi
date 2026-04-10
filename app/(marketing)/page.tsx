@@ -1,5 +1,6 @@
 import React from "react";
 import "./home.css";
+import "./home-additions.css";
 import { PricingSection } from "@/components/marketing/PricingSection";
 import { LiveGovernanceDemo } from "@/components/marketing/LiveGovernanceDemo";
 import { ScrollReveal } from "@/components/marketing/ScrollReveal";
@@ -264,6 +265,83 @@ export default function MarketingPage() {
                     <div><div className="hp-wstat-lbl">{s.lbl}</div><div className="hp-wstat-desc">{s.desc}</div></div>
                   </div>
                 ))}
+              </div>
+            </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ══ DETERMINISTIC CONTROL + ZERO LATENCY + LIVE LOGS ══ */}
+      <section className="hp-control hp-section">
+        <div className="hp-section-inner">
+          <ScrollReveal>
+            <div className="hp-control-header">
+              <div className="hp-eyebrow">Built for engineers</div>
+              <h2 className="hp-h2">
+                Deterministic control.<br />
+                <strong><em>Zero latency.</em></strong>
+              </h2>
+              <p className="hp-sub">
+                Every decision is reproducible. Every log is tamper-proof. Your AI keeps its
+                speed — your compliance team keeps its receipts.
+              </p>
+              <div className="hp-control-cta">
+                <a href="/signup" className="hp-btn-primary">Get Started →</a>
+                <a href="#demo" className="hp-btn-ghost">See the demo</a>
+              </div>
+            </div>
+          </ScrollReveal>
+
+          <div className="hp-control-grid">
+            {/* Live governance log terminal */}
+            <ScrollReveal delay={100}>
+              <div className="hp-log-terminal">
+                <div className="hp-log-head">
+                  <div className="hp-log-dots">
+                    <span /><span /><span />
+                  </div>
+                  <div className="hp-log-title">facttic://governance-stream</div>
+                  <div className="hp-log-live">Live</div>
+                </div>
+                <pre className="hp-log-body">
+{`[14:32:01.203] `}<span className="hp-log-safe">{`▸ session sess_7a2b… started (voice/vapi)`}</span>{`
+[14:32:01.442] `}<span className="hp-log-safe">{`▸ turn_01 classified: safe · risk 0.12`}</span>{`
+[14:32:02.117] `}<span className="hp-log-safe">{`▸ turn_02 classified: safe · risk 0.08`}</span>{`
+[14:32:03.891] `}<span className="hp-log-drift">{`⚠ turn_03 classified: drift · risk 0.67`}</span>{`
+[14:32:03.903] `}<span className="hp-log-block">{`✕ turn_03 BLOCKED by policy:pii-leak`}</span>{`
+[14:32:03.904] `}<span className="hp-log-evidence">{`▸ evidence.write → ledger#8f3a2c`}</span>{`
+[14:32:04.221] `}<span className="hp-log-safe">{`▸ turn_04 classified: safe · risk 0.14`}</span>{`
+[14:32:05.019] `}<span className="hp-log-safe">{`▸ turn_05 classified: safe · risk 0.09`}</span>{`
+[14:32:05.812] `}<span className="hp-log-evidence">{`▸ snapshot.score → 0.978 (governance_ok)`}</span>
+                </pre>
+                <div className="hp-log-foot">
+                  <span>~0.3ms median decision latency</span>
+                  <span>SHA-256 evidence chain</span>
+                </div>
+              </div>
+            </ScrollReveal>
+
+            {/* Feature tiles */}
+            <ScrollReveal delay={200}>
+              <div className="hp-control-features">
+                <div className="hp-cf-tile">
+                  <div className="hp-cf-ico">⬢</div>
+                  <div className="hp-cf-title">Deterministic Control</div>
+                  <div className="hp-cf-desc">
+                    Same input, same policy, same decision — every time. No model drift.
+                    No probabilistic guesswork. Every ruling reproducible down to the byte
+                    and tied to a cryptographic evidence entry.
+                  </div>
+                </div>
+                <div className="hp-cf-tile">
+                  <div className="hp-cf-ico">⚡</div>
+                  <div className="hp-cf-title">Zero Latency</div>
+                  <div className="hp-cf-desc">
+                    Instant protection without feeling slowness in your AI's response.
+                    Median governance decision under 1ms. Your agent stays as fast as it
+                    was yesterday — your policies just caught up.
+                  </div>
+                </div>
               </div>
             </ScrollReveal>
           </div>
