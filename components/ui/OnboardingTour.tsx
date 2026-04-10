@@ -39,21 +39,21 @@ const TOUR_STEPS: TourStep[] = [
   }
 ];
 
-export default function OnboardingTour() {
-  const [isVisible, setIsVisible] = useState(false);
+interface OnboardingTourProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export default function OnboardingTour({ open, onClose }: OnboardingTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, height: 0 });
   const pathname = usePathname();
+  const isVisible = open;
 
+  // Reset to first step whenever the tour is reopened
   useEffect(() => {
-    // Only run on client side once
-    const hasSeenTour = localStorage.getItem('facttic_tour_completed');
-    if (!hasSeenTour) {
-      // Delay slightly so the DOM can settle
-      const timer = setTimeout(() => setIsVisible(true), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, []);
+    if (open) setCurrentStep(0);
+  }, [open]);
 
   useEffect(() => {
     if (!isVisible) return;
@@ -108,8 +108,8 @@ export default function OnboardingTour() {
 
   const completeTour = () => {
     cleanupHighlight();
-    setIsVisible(false);
     localStorage.setItem('facttic_tour_completed', 'true');
+    onClose();
   };
 
   if (!isVisible) return null;

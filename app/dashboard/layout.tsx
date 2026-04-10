@@ -4,7 +4,6 @@ import DashboardSidebar from "@/components/layout/DashboardSidebar";
 import EnterpriseTopbar from "@/components/layout/EnterpriseTopbar";
 import { SimulationProvider } from "@/lib/dashboard/SimulationContext";
 import { AgentProvider } from "@/lib/dashboard/AgentContext";
-import OnboardingTour from "@/components/ui/OnboardingTour";
 import UserFeedbackWidget from "@/components/ui/UserFeedbackWidget";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import { useState, useEffect, useRef } from "react";
@@ -37,7 +36,6 @@ export default function DashboardLayout({
   return (
     <AgentProvider>
     <SimulationProvider>
-      <OnboardingTour />
       <UserFeedbackWidget />
       <div className="flex h-screen overflow-hidden bg-[var(--bg-secondary)]">
         {/* Mobile Backdrop */}

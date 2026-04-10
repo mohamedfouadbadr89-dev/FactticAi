@@ -8,14 +8,16 @@ import { AuditModeOverlay } from "@/components/ui/AuditModeOverlay";
 import { useSimulationState, useSimulationActions } from "@/lib/dashboard/SimulationContext";
 import GlobalSearch from "@/components/ui/GlobalSearch";
 import { useInteractionMode } from "@/store/interactionMode";
-import { Menu } from "lucide-react";
+import { Menu, Compass } from "lucide-react";
 import AgentSwitcher from "@/components/dashboard/AgentSwitcher";
+import OnboardingTour from "@/components/ui/OnboardingTour";
 
 export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
   const { mode: channel, setMode: setChannel } = useInteractionMode();
   const [mode, setMode] = useState<"executive" | "advanced">("executive");
   const [auditMode, setAuditMode] = useState(false);
   const [healthScore, setHealthScore] = useState<number | null>(null);
+  const [tourOpen, setTourOpen] = useState(false);
   const { startSimulation, resetSimulation } = useSimulationActions();
   const { isSimulating, simulationStep } = useSimulationState();
 
@@ -113,6 +115,15 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
       {/* Right Section */}
       <div className="flex items-center gap-4">
         <button
+          onClick={() => setTourOpen(true)}
+          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 border border-[var(--border-primary)] text-[var(--text-secondary)] hover:text-[var(--accent)] hover:border-[var(--accent)] text-[10px] font-black uppercase tracking-widest rounded-lg transition-all"
+          title="Take a guided tour of the dashboard"
+        >
+          <Compass className="w-3.5 h-3.5" />
+          Take a tour
+        </button>
+
+        <button
           onClick={handleResetDemo}
           className="px-3 py-1.5 bg-red-500/10 border border-red-500/40 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-red-500/20 transition-all"
         >
@@ -147,6 +158,7 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
       </div>
 
       <AuditModeOverlay isOpen={auditMode} onClose={toggleAuditMode} />
+      <OnboardingTour open={tourOpen} onClose={() => setTourOpen(false)} />
     </header>
   );
 }
