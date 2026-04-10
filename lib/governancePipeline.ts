@@ -62,11 +62,12 @@ export class GovernancePipeline {
    * Orchestrates a unified governance evaluation flow (v1.0)
    * Centralizes engine calls previously handled in the API layer.
    */
-  static async execute(params: { 
-    org_id: string, 
-    session_id?: string | undefined, 
-    prompt?: string | undefined, 
-    response?: string | undefined 
+  static async execute(params: {
+    org_id: string,
+    session_id?: string | undefined,
+    prompt?: string | undefined,
+    response?: string | undefined,
+    [key: string]: any
   }) {
     const { org_id, session_id, prompt, response } = params;
     const t0 = Date.now();
