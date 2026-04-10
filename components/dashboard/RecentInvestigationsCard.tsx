@@ -20,7 +20,7 @@ const defaultRows: InvestigationRow[] = [];
 const PAGE_SIZE = 5;
 
 export default function RecentInvestigationsCard({ data }: Props) {
-  const rows = data ?? defaultRows;
+  const rows = Array.isArray(data) ? data : defaultRows;
   const [page, setPage] = useState(0);
 
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));

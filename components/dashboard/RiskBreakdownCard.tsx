@@ -19,7 +19,7 @@ const defaultMetrics: RiskMetric[] = [
 const PAGE_SIZE = 4;
 
 export default function RiskBreakdownCard({ data }: Props) {
-  const metrics = data ?? defaultMetrics;
+  const metrics = Array.isArray(data) ? data : defaultMetrics;
   const [page, setPage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(metrics.length / PAGE_SIZE));
   const pageMetrics = metrics.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);

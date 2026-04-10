@@ -25,7 +25,7 @@ const PAGE_SIZE = 3;
 
 export default function ActiveAlertsCard({ data }: Props) {
   const router = useRouter();
-  const alerts = data ?? [];
+  const alerts = Array.isArray(data) ? data : [];
 
   const [page, setPage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(alerts.length / PAGE_SIZE));

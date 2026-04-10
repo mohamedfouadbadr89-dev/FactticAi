@@ -154,7 +154,7 @@ export default function DashboardPage() {
             <GovernanceSnapshotCard stats={data as any} />
           </div>
           <div className="lg:col-span-2">
-            <RecentInvestigationsCard data={data?.investigations} />
+            <RecentInvestigationsCard data={(data as any)?.investigations?.recent} />
           </div>
         </div>
 
