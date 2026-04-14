@@ -13,7 +13,6 @@ import IntelligenceDashboard from "@/components/dashboard/IntelligenceDashboard"
 import DashboardFilters from "@/components/dashboard/DashboardFilters";
 import { useDashboardData } from "@/lib/dashboard/useDashboardData";
 import React from "react";
-import QuickStart from "@/components/onboarding/QuickStart";
 import { useInteractionMode } from "@/store/interactionMode";
 
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -59,8 +58,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
-      <QuickStart />
-
       {/* Governance Status Bar */}
       <div className="w-full h-8 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] flex items-center justify-center text-xs uppercase tracking-wider text-[var(--text-secondary)]">
         <div className="flex items-center gap-6">

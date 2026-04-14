@@ -6,6 +6,7 @@ import { SimulationProvider } from "@/lib/dashboard/SimulationContext";
 import { AgentProvider } from "@/lib/dashboard/AgentContext";
 import UserFeedbackWidget from "@/components/ui/UserFeedbackWidget";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import QuickStart from "@/components/onboarding/QuickStart";
 import { useState, useEffect, useRef } from "react";
 
 export default function DashboardLayout({
@@ -37,6 +38,7 @@ export default function DashboardLayout({
     <AgentProvider>
     <SimulationProvider>
       <UserFeedbackWidget />
+      <QuickStart />
       <div className="flex h-screen overflow-hidden bg-[var(--bg-secondary)]">
         {/* Mobile Backdrop */}
         {isSidebarOpen && (

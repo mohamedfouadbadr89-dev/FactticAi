@@ -117,11 +117,10 @@ export default function EnterpriseTopbar({ onToggleSidebar }: { onToggleSidebar?
       <div className="flex items-center gap-4">
         <button
           onClick={() => setTourOpen(true)}
-          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 border border-[var(--border-primary)] text-[var(--text-secondary)] hover:text-[var(--accent)] hover:border-[var(--accent)] text-[10px] font-black uppercase tracking-widest rounded-lg transition-all"
-          title="Take a guided tour of the dashboard"
+          className="hidden md:flex items-center justify-center w-8 h-8 border border-[var(--border-primary)] text-[var(--text-secondary)] hover:text-[var(--accent)] hover:border-[var(--accent)] rounded-lg transition-all"
+          title="Take a guided tour"
         >
           <Compass className="w-3.5 h-3.5" />
-          Take a tour
         </button>
 
         <KillSwitchButton />

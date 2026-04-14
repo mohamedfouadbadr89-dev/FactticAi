@@ -14,29 +14,41 @@ export interface TourStep {
 
 const TOUR_STEPS: TourStep[] = [
   {
-    targetId: 'tour-nav-intelligence',
-    title: 'Governance Intelligence',
-    content: 'This is your central command center. Here you monitor behavioral drift, compliance scoring, and system health in real-time.',
+    targetId: 'nav-dashboard',
+    title: 'Dashboard',
+    content: 'Your main overview — health score, risk trend, active alerts, and governance state at a glance.',
     position: 'right',
   },
   {
-    targetId: 'tour-nav-reports',
-    title: 'Advanced Reporting',
-    content: 'Generate executive PDFs and distribute automated summaries directly to your stakeholders.',
+    targetId: 'nav-connect-ai',
+    title: 'Connect AI',
+    content: 'Link your voice or chat provider here. Paste a webhook URL and Facttic starts monitoring instantly.',
     position: 'right',
   },
   {
-    targetId: 'tour-nav-settings',
-    title: 'System & Extensibility',
-    content: 'Manage Access Control (RBAC), configure Datadog/Auth0 telemetry, and fine-tune system secrets.',
+    targetId: 'nav-policies',
+    title: 'Policies',
+    content: 'Define what your AI can and cannot say. Set risk thresholds, blocked topics, and compliance rules.',
     position: 'right',
   },
   {
-    targetId: 'tour-profile',
-    title: 'Institutional Identity',
-    content: 'Manage your personal profile, check your assigned roles, and update metadata.',
+    targetId: 'nav-playground',
+    title: 'Governance Playground',
+    content: 'Test prompts against your policies before going live. See BLOCK/ALLOW decisions and risk scores in real-time.',
     position: 'right',
-  }
+  },
+  {
+    targetId: 'nav-alerts',
+    title: 'Alerts',
+    content: 'Every policy violation triggers an alert here. Review, investigate, or dismiss — full audit trail kept.',
+    position: 'right',
+  },
+  {
+    targetId: 'nav-settings',
+    title: 'Settings',
+    content: 'API keys, access control, integrations, and org configuration. Everything you need to manage your setup.',
+    position: 'right',
+  },
 ];
 
 interface OnboardingTourProps {
